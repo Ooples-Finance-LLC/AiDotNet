@@ -1,4 +1,5 @@
 using AiDotNet.Enums;
+using AiDotNet.LinearAlgebra;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -8,17 +9,18 @@ namespace AiDotNet.Interfaces
     /// <summary>
     /// Interface for production monitoring of deployed models
     /// </summary>
-    public interface IProductionMonitor
+    /// <typeparam name="T">The numeric type used for calculations</typeparam>
+    public interface IProductionMonitor<T>
     {
         /// <summary>
         /// Monitors data drift between training and production data
         /// </summary>
-        Task<DriftDetectionResult> DetectDataDriftAsync(double[,] productionData, double[,] referenceData = null);
+        Task<DriftDetectionResult> DetectDataDriftAsync(Matrix<T> productionData, Matrix<T>? referenceData = null);
 
         /// <summary>
         /// Monitors concept drift in model predictions
         /// </summary>
-        Task<DriftDetectionResult> DetectConceptDriftAsync(double[] predictions, double[] actuals);
+        Task<DriftDetectionResult> DetectConceptDriftAsync(Vector<T> predictions, Vector<T> actuals);
 
         /// <summary>
         /// Tracks model performance metrics over time
@@ -43,7 +45,12 @@ namespace AiDotNet.Interfaces
         /// <summary>
         /// Logs prediction for monitoring
         /// </summary>
-        Task LogPredictionAsync(double[] features, double prediction, double? actual = null, DateTime? timestamp = null);
+        Task LogPredictionAsync(Vector<T> features, T prediction, DateTime? timestamp = null);
+        
+        /// <summary>
+        /// Logs prediction with actual value for monitoring
+        /// </summary>
+        Task LogPredictionAsync(Vector<T> features, T prediction, T actual, DateTime? timestamp = null);
 
         /// <summary>
         /// Gets monitoring metrics for a specific time period

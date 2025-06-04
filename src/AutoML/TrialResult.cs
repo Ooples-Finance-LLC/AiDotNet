@@ -45,9 +45,14 @@ namespace AiDotNet.AutoML
         public string? ErrorMessage { get; set; }
 
         /// <summary>
+        /// Gets or sets the status of this trial
+        /// </summary>
+        public TrialStatus Status { get; set; } = TrialStatus.Pending;
+
+        /// <summary>
         /// Gets or sets whether this trial was successful
         /// </summary>
-        public bool IsSuccessful => string.IsNullOrEmpty(ErrorMessage);
+        public bool IsSuccessful => Status == TrialStatus.Completed;
 
         /// <summary>
         /// Gets or sets additional metrics collected during the trial
@@ -68,6 +73,7 @@ namespace AiDotNet.AutoML
                 Duration = Duration,
                 ModelType = ModelType,
                 Timestamp = Timestamp,
+                Status = Status,
                 ErrorMessage = ErrorMessage,
                 AdditionalMetrics = new Dictionary<string, double>(AdditionalMetrics)
             };

@@ -17,7 +17,7 @@ namespace AiDotNet.Deployment.Techniques
         private readonly PruningConfig _config;
         private readonly Dictionary<string, IPruningStrategy<T, TInput, TOutput>> _strategies;
 
-        public ModelPruner(PruningConfig config = null)
+        public ModelPruner(PruningConfig? config = null)
         {
             _config = config ?? new PruningConfig();
             _strategies = InitializeStrategies();
@@ -75,7 +75,7 @@ namespace AiDotNet.Deployment.Techniques
         /// <summary>
         /// Performs iterative pruning with gradual sparsity increase.
         /// </summary>
-        public async Task<IFullModel<T, TInput, TOutput>> IterativePruneAsync(IFullModel<T, TInput, TOutput> model, PruningSchedule schedule)
+        public async Task<IFullModel<T, TInput, TOutput>> IterativePruneAsync(IFullModel<T, TInput, TOutput> model, PruningSchedule<T, TInput, TOutput> schedule)
         {
             var currentModel = model;
             var currentSparsity = 0.0f;
@@ -138,7 +138,7 @@ namespace AiDotNet.Deployment.Techniques
         /// <summary>
         /// Performs sensitivity analysis to determine layer importance.
         /// </summary>
-        public async Task<Dictionary<string, float>> SensitivityAnalysisAsync(IFullModel<T, TInput, TOutput> model, ValidationData validationData)
+        public async Task<Dictionary<string, float>> SensitivityAnalysisAsync(IFullModel<T, TInput, TOutput> model, ValidationData<T> validationData)
         {
             var sensitivities = new Dictionary<string, float>();
 
@@ -170,7 +170,7 @@ namespace AiDotNet.Deployment.Techniques
         /// </summary>
         public async Task<SparseModel<T, TInput, TOutput>> ConvertToSparseAsync(IFullModel<T, TInput, TOutput> prunedModel)
         {
-            var sparseModel = new SparseModel<double, Matrix<double>, Vector<double>>
+            var sparseModel = new SparseModel<T, TInput, TOutput>
             {
                 OriginalModel = prunedModel,
                 SparseWeights = new Dictionary<string, SparseMatrix>(),
@@ -281,7 +281,7 @@ namespace AiDotNet.Deployment.Techniques
                 LayerType.Input => 0.0f,
                 LayerType.Output => 0.3f,
                 LayerType.Convolutional => 0.7f,
-                LayerType.Dense => 0.9f,
+                LayerType.FullyConnected => 0.9f,
                 _ => 0.5f
             };
         }
@@ -291,7 +291,7 @@ namespace AiDotNet.Deployment.Techniques
             // Higher priority = prune first
             return layer.LayerType switch
             {
-                LayerType.Dense => 1,
+                LayerType.FullyConnected => 1,
                 LayerType.Convolutional => 2,
                 LayerType.Output => 3,
                 LayerType.Input => 4,
@@ -325,7 +325,7 @@ namespace AiDotNet.Deployment.Techniques
             return model;
         }
 
-        private async Task<float> EvaluateAccuracyAsync(IFullModel<T, TInput, TOutput> model, ValidationData validationData)
+        private async Task<float> EvaluateAccuracyAsync(IFullModel<T, TInput, TOutput> model, ValidationData<T> validationData)
         {
             // Simulate accuracy evaluation
             await Task.Delay(100);
@@ -354,7 +354,7 @@ namespace AiDotNet.Deployment.Techniques
             return 1.0f - (float)nonZeroElements / totalElements;
         }
 
-        private float CalculateCompressionRatio(SparseModel<double, Matrix<double>, Vector<double>> sparseModel)
+        private float CalculateCompressionRatio(SparseModel<T, TInput, TOutput> sparseModel)
         {
             // Calculate compression ratio based on sparse representation
             var originalSize = sparseModel.SparsityInfo.Count * 1000000 * 4; // Assume 1M params per layer, 4 bytes each
@@ -381,20 +381,20 @@ namespace AiDotNet.Deployment.Techniques
     /// <summary>
     /// Pruning schedule for iterative pruning.
     /// </summary>
-    public class PruningSchedule
+    public class PruningSchedule<T, TInput, TOutput>
     {
-        public List<PruningMilestone> Milestones { get; set; } = new List<PruningMilestone>();
+        public List<PruningMilestone<T, TInput, TOutput>> Milestones { get; set; } = new List<PruningMilestone<T, TInput, TOutput>>();
     }
 
     /// <summary>
     /// Pruning milestone.
     /// </summary>
-    public class PruningMilestone
+    public class PruningMilestone<T, TInput, TOutput>
     {
         public float TargetSparsity { get; set; }
         public string Strategy { get; set; } = "magnitude";
         public int FineTuneEpochs { get; set; } = 5;
-        public Action<IFullModel<T, TInput, TOutput>, float> OnComplete { get; set; }
+        public Action<IFullModel<T, TInput, TOutput>, float>? OnComplete { get; set; }
     }
 
     /// <summary>
@@ -426,10 +426,10 @@ namespace AiDotNet.Deployment.Techniques
     /// <summary>
     /// Validation data for pruning.
     /// </summary>
-    public class ValidationData
+    public class ValidationData<T>
     {
-        public List<Vector<T>> Inputs { get; set; }
-        public List<Vector<T>> Targets { get; set; }
+        public List<Vector<T>> Inputs { get; set; } = new List<Vector<T>>();
+        public List<Vector<T>> Targets { get; set; } = new List<Vector<T>>();
         public int BatchSize { get; set; } = 32;
     }
 

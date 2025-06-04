@@ -2,6 +2,7 @@ using AiDotNet.AutoML;
 using AiDotNet.Enums;
 using AiDotNet.Interfaces;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -74,7 +75,7 @@ namespace AiDotNet.Examples
             double[][] validFeatures,
             double[] validTargets)
         {
-            var gridSearch = new GridSearchAutoML(stepsPerDimension: 5, seed: 42);
+            var gridSearch = new GridSearchAutoML<double, double[][], double[]>(stepsPerDimension: 5, seed: 42);
 
             // Configure candidate models
             gridSearch.SetCandidateModels(new List<ModelType>
@@ -97,7 +98,7 @@ namespace AiDotNet.Examples
             gridSearch.SetSearchSpace(searchSpace);
 
             // Set optimization metric
-            gridSearch.SetOptimizationMetric(MetricType.RootMeanSquaredError, maximize: false);
+            gridSearch.SetOptimizationMetric(MetricType.RMSE, maximize: false);
 
             // Enable early stopping
             gridSearch.EnableEarlyStopping(patience: 20, minDelta: 0.0001);
@@ -128,7 +129,7 @@ namespace AiDotNet.Examples
             double[][] validFeatures,
             double[] validTargets)
         {
-            var randomSearch = new RandomSearchAutoML(maxTrials: 50, seed: 42);
+            var randomSearch = new RandomSearchAutoML<double, double[][], double[]>(maxTrials: 50, seed: 42);
 
             // Configure models and metrics
             randomSearch.SetCandidateModels(new List<ModelType>
@@ -139,7 +140,7 @@ namespace AiDotNet.Examples
                 ModelType.GradientBoosting
             });
 
-            randomSearch.SetOptimizationMetric(MetricType.RSquared, maximize: true);
+            randomSearch.SetOptimizationMetric(MetricType.R2, maximize: true);
 
             try
             {
@@ -178,7 +179,7 @@ namespace AiDotNet.Examples
             double[][] validFeatures,
             double[] validTargets)
         {
-            var bayesianOpt = new BayesianOptimizationAutoML(
+            var bayesianOpt = new BayesianOptimizationAutoML<double, double[][], double[]>(
                 numInitialPoints: 10, 
                 explorationWeight: 2.0, 
                 seed: 42);
@@ -189,11 +190,11 @@ namespace AiDotNet.Examples
                 ModelType.LinearRegression,
                 ModelType.RandomForest,
                 ModelType.GradientBoosting,
-                ModelType.SupportVectorMachine
+                ModelType.SupportVectorRegression
             });
 
             // Set metric
-            bayesianOpt.SetOptimizationMetric(MetricType.MeanAbsoluteError, maximize: false);
+            bayesianOpt.SetOptimizationMetric(MetricType.MAE, maximize: false);
 
             // Add constraints
             bayesianOpt.SetConstraints(new List<SearchConstraint>
@@ -222,15 +223,15 @@ namespace AiDotNet.Examples
 
                 // Show trial progression
                 var history = bayesianOpt.GetTrialHistory();
-                if (history.Count > 0)
+                if (history.Any())
                 {
                     Console.WriteLine("\nScore progression:");
-                    for (int i = 0; i < Math.Min(5, history.Count); i++)
+                    for (int i = 0; i < Math.Min(5, history.Count()); i++)
                     {
                         var trial = history[i];
                         Console.WriteLine($"  Trial {trial.TrialId}: Score={trial.Score:F4}");
                     }
-                    if (history.Count > 5)
+                    if (history.Count() > 5)
                     {
                         Console.WriteLine("  ...");
                         var lastTrial = history.Last();
@@ -265,9 +266,9 @@ namespace AiDotNet.Examples
             {
                 var sample = space.Sample();
                 Console.WriteLine($"\nSample {i + 1}:");
-                foreach (var (param, value) in sample)
+                foreach (var kvp in sample)
                 {
-                    Console.WriteLine($"  {param}: {value}");
+                    Console.WriteLine($"  {kvp.Key}: {kvp.Value}");
                 }
             }
 

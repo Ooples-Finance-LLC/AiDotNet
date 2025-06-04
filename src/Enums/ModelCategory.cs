@@ -178,4 +178,19 @@ public enum ModelCategory
     /// </para>
     /// </remarks>
     AutoML,
+
+    /// <summary>
+    /// Models that create new data samples similar to their training data.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Generative models learn to create new data that resembles their training data.
+    /// Instead of just analyzing or classifying existing data, these models can generate entirely new examples.
+    /// For instance, they can create realistic images, write text, compose music, or generate synthetic data
+    /// for testing. Examples include Generative Adversarial Networks (GANs), Variational Autoencoders (VAEs),
+    /// Diffusion Models, and Large Language Models (LLMs) like GPT. These models learn the underlying patterns
+    /// and distributions in their training data, then use that knowledge to produce novel outputs.
+    /// </para>
+    /// </remarks>
+    Generative,
 }

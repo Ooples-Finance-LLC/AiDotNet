@@ -1,4 +1,5 @@
 using AiDotNet.Interfaces;
+using AiDotNet.LinearAlgebra;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,8 @@ namespace AiDotNet.ProductionMonitoring
     /// <summary>
     /// Detects data drift between training and production data distributions
     /// </summary>
-    public class DataDriftDetector : ProductionMonitorBase
+    /// <typeparam name="T">The numeric type used for calculations</typeparam>
+    public class DataDriftDetector<T> : ProductionMonitorBase<T>
     {
         private readonly DriftDetectionMethod _method;
         private readonly int _windowSize;
@@ -35,7 +37,7 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Detects data drift between production and reference data
         /// </summary>
-        public override async Task<DriftDetectionResult> DetectDataDriftAsync(double[,] productionData, double[,] referenceData = null)
+        public override async Task<DriftDetectionResult> DetectDataDriftAsync(Matrix<T> productionData, Matrix<T>? referenceData = null)
         {
             referenceData = referenceData ?? _referenceData;
             
@@ -44,7 +46,7 @@ namespace AiDotNet.ProductionMonitoring
                 throw new InvalidOperationException("Reference data must be provided either in the method call or via SetReferenceData");
             }
 
-            if (productionData.GetLength(0) < _thresholds.MinimumSamplesForDriftDetection)
+            if (productionData.Rows < _thresholds.MinimumSamplesForDriftDetection)
             {
                 return new DriftDetectionResult
                 {
@@ -113,7 +115,7 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Detects concept drift in predictions
         /// </summary>
-        public override async Task<DriftDetectionResult> DetectConceptDriftAsync(double[] predictions, double[] actuals)
+        public override async Task<DriftDetectionResult> DetectConceptDriftAsync(Vector<T> predictions, Vector<T> actuals)
         {
             if (predictions.Length != actuals.Length)
             {

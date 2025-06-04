@@ -2464,5 +2464,133 @@ public enum ModelType
     [ModelInfo(ModelCategory.AutoML,
               new[] { MetricGroups.General, MetricGroups.Regression, MetricGroups.BinaryClassification, MetricGroups.MulticlassClassification },
               "Automated model selection and hyperparameter optimization")]
-    AutoML
+    AutoML,
+
+    //
+    // Vision Models
+    //
+
+    /// <summary>
+    /// Vision Transformer (ViT) for image classification and feature extraction.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Vision Transformer applies the transformer architecture (originally designed for text)
+    /// to images. It works by dividing an image into small patches (like 16x16 pixels), treating each patch as
+    /// a "word" in a sentence. These patches are then processed using self-attention mechanisms that allow the
+    /// model to understand relationships between different parts of the image. ViT has shown that pure transformer
+    /// architectures can match or exceed traditional convolutional neural networks on image tasks, especially when
+    /// trained on large datasets.
+    /// </para>
+    /// </remarks>
+    [ModelInfo(ModelCategory.NeuralNetwork,
+              new[] { MetricGroups.MulticlassClassification, MetricGroups.General },
+              "Transformer-based model for image classification")]
+    VisionTransformer,
+
+    //
+    // Generative Models
+    //
+
+    /// <summary>
+    /// Diffusion Model for high-quality image generation through iterative denoising.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Diffusion models generate images by learning to reverse a gradual noising process.
+    /// Imagine taking a clear image and slowly adding static until it becomes pure noise. Diffusion models learn
+    /// to reverse this process - starting from random noise and gradually removing it to create a clear image.
+    /// This approach has proven incredibly effective for generating high-quality, diverse images and is the
+    /// foundation of many modern AI art generators like DALL-E 2 and Stable Diffusion.
+    /// </para>
+    /// </remarks>
+    [ModelInfo(ModelCategory.NeuralNetwork,
+              new[] { MetricGroups.General },
+              "Generative model using iterative denoising process")]
+    DiffusionModel,
+
+    /// <summary>
+    /// Denoising Diffusion Implicit Models (DDIM) for faster sampling in diffusion models.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> DDIM is an improved version of diffusion models that can generate images much faster.
+    /// While standard diffusion models might need 1000 steps to generate an image, DDIM can produce similar quality
+    /// with just 50-100 steps. It achieves this by using a deterministic sampling process instead of the random
+    /// process used in standard diffusion models, making generation 10-50x faster while maintaining quality.
+    /// </para>
+    /// </remarks>
+    [ModelInfo(ModelCategory.NeuralNetwork,
+              new[] { MetricGroups.General },
+              "Fast deterministic sampling for diffusion models")]
+    DDIMModel,
+
+    /// <summary>
+    /// Latent Diffusion Model that operates in a compressed latent space for efficiency.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Latent Diffusion Models work in a compressed representation of images rather than
+    /// directly on pixels. First, an encoder compresses the image into a smaller "latent" representation (like
+    /// a compressed file). The diffusion process then happens in this compressed space, which is much more
+    /// efficient. Finally, a decoder expands the result back to a full image. This approach, used in Stable
+    /// Diffusion, makes it possible to generate high-resolution images on consumer hardware.
+    /// </para>
+    /// </remarks>
+    [ModelInfo(ModelCategory.NeuralNetwork,
+              new[] { MetricGroups.General },
+              "Efficient diffusion model operating in latent space")]
+    LatentDiffusionModel,
+
+    /// <summary>
+    /// Score-based Stochastic Differential Equation model for continuous-time diffusion.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Score-based SDEs provide a mathematical framework for diffusion models using
+    /// continuous-time processes. Instead of discrete steps, they model the noising/denoising process as a
+    /// smooth, continuous flow. This theoretical foundation enables more flexible sampling strategies and
+    /// better understanding of how diffusion models work. While more complex mathematically, they offer
+    /// advantages in terms of flexibility and theoretical guarantees.
+    /// </para>
+    /// </remarks>
+    [ModelInfo(ModelCategory.NeuralNetwork,
+              new[] { MetricGroups.General },
+              "Continuous-time diffusion using stochastic differential equations")]
+    ScoreSDE,
+
+    /// <summary>
+    /// Consistency Model for single-step generation with consistency constraints.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Consistency Models are designed to generate high-quality images in just one or
+    /// very few steps, unlike diffusion models that need many steps. They achieve this by learning to map
+    /// any noisy image directly to the clean image it would become after full denoising. This makes them
+    /// extremely fast - potentially real-time generation - while maintaining quality comparable to diffusion
+    /// models. They represent a significant advancement in making AI image generation practical for
+    /// real-time applications.
+    /// </para>
+    /// </remarks>
+    [ModelInfo(ModelCategory.NeuralNetwork,
+              new[] { MetricGroups.General },
+              "Fast single-step generation with consistency constraints")]
+    ConsistencyModel,
+
+    /// <summary>
+    /// Flow Matching Model using optimal transport for generative modeling.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Flow Matching models generate data by learning smooth transformations from simple
+    /// distributions (like Gaussian noise) to complex data distributions (like images). They use concepts from
+    /// optimal transport theory to find the most efficient path between noise and data. Think of it as finding
+    /// the smoothest way to morph random noise into meaningful images. This approach can be more stable to
+    /// train than GANs and more efficient than standard diffusion models.
+    /// </para>
+    /// </remarks>
+    [ModelInfo(ModelCategory.NeuralNetwork,
+              new[] { MetricGroups.General },
+              "Generative model using optimal transport flow matching")]
+    FlowMatchingModel
 }

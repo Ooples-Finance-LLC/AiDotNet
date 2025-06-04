@@ -6,7 +6,7 @@ namespace AiDotNet.Interfaces
     /// <summary>
     /// Interface for multimodal AI models that can process multiple input modalities
     /// </summary>
-    public interface IMultimodalModel
+    public interface IMultimodalModel : IFullModel<double, Dictionary<string, object>, Vector<double>>
     {
         /// <summary>
         /// Gets the supported modalities

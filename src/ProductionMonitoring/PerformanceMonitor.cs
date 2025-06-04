@@ -1,4 +1,5 @@
 using AiDotNet.Interfaces;
+using AiDotNet.LinearAlgebra;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,8 @@ namespace AiDotNet.ProductionMonitoring
     /// <summary>
     /// Monitors and tracks model performance metrics over time
     /// </summary>
-    public class PerformanceMonitor : ProductionMonitorBase
+    /// <typeparam name="T">The numeric type used for calculations</typeparam>
+    public class PerformanceMonitor<T> : ProductionMonitorBase<T>
     {
         private readonly TimeSpan _aggregationInterval;
         private readonly Dictionary<string, List<double>> _customMetrics;
@@ -60,7 +62,16 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Logs a prediction with additional metadata
         /// </summary>
-        public override async Task LogPredictionAsync(double[] features, double prediction, double? actual = null, DateTime? timestamp = null)
+        public override async Task LogPredictionAsync(Vector<T> features, T prediction, DateTime? timestamp = null)
+        {
+            await base.LogPredictionAsync(features, prediction, timestamp);
+            await CheckAggregationAsync();
+        }
+        
+        /// <summary>
+        /// Logs a prediction with actual value and additional metadata
+        /// </summary>
+        public override async Task LogPredictionAsync(Vector<T> features, T prediction, T actual, DateTime? timestamp = null)
         {
             await base.LogPredictionAsync(features, prediction, actual, timestamp);
             await CheckAggregationAsync();
@@ -160,7 +171,7 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Detects data drift
         /// </summary>
-        public override async Task<DriftDetectionResult> DetectDataDriftAsync(double[,] productionData, double[,] referenceData = null)
+        public override async Task<DriftDetectionResult> DetectDataDriftAsync(Matrix<T> productionData, Matrix<T>? referenceData = null)
         {
             // Performance monitor focuses on metrics, not data drift
             return new DriftDetectionResult
@@ -176,7 +187,7 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Detects concept drift based on performance degradation
         /// </summary>
-        public override async Task<DriftDetectionResult> DetectConceptDriftAsync(double[] predictions, double[] actuals)
+        public override async Task<DriftDetectionResult> DetectConceptDriftAsync(Vector<T> predictions, Vector<T> actuals)
         {
             // Simple performance-based concept drift detection
             var currentMetrics = CalculatePerformanceMetrics(

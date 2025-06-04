@@ -1,4 +1,5 @@
 using AiDotNet.Interfaces;
+using AiDotNet.LinearAlgebra;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,14 +10,15 @@ namespace AiDotNet.ProductionMonitoring
     /// <summary>
     /// Calculates comprehensive model health scores based on multiple factors
     /// </summary>
-    public class ModelHealthScorer : ProductionMonitorBase
+    /// <typeparam name="T">The numeric type used for calculations</typeparam>
+    public class ModelHealthScorer<T> : ProductionMonitorBase<T>
     {
         private readonly HealthScoringConfiguration _configuration;
         private readonly Dictionary<string, HealthComponent> _healthComponents;
         private readonly List<HealthCheckResult> _healthHistory;
         private readonly Dictionary<string, Func<Task<double>>> _customHealthChecks;
 
-        public ModelHealthScorer(HealthScoringConfiguration configuration = null)
+        public ModelHealthScorer(HealthScoringConfiguration? configuration = null)
         {
             _configuration = configuration ?? new HealthScoringConfiguration();
             _healthComponents = new Dictionary<string, HealthComponent>();
@@ -193,7 +195,7 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Detects data drift (delegates to DataDriftDetector)
         /// </summary>
-        public override async Task<DriftDetectionResult> DetectDataDriftAsync(double[,] productionData, double[,] referenceData = null)
+        public override async Task<DriftDetectionResult> DetectDataDriftAsync(Matrix<T> productionData, Matrix<T>? referenceData = null)
         {
             return new DriftDetectionResult
             {
@@ -208,7 +210,7 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Detects concept drift (delegates to ConceptDriftDetector)
         /// </summary>
-        public override async Task<DriftDetectionResult> DetectConceptDriftAsync(double[] predictions, double[] actuals)
+        public override async Task<DriftDetectionResult> DetectConceptDriftAsync(Vector<T> predictions, Vector<T> actuals)
         {
             return new DriftDetectionResult
             {

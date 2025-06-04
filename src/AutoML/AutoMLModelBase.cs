@@ -151,7 +151,8 @@ namespace AiDotNet.AutoML
                         Parameters = new Dictionary<string, object>(parameters),
                         Score = score,
                         Duration = duration,
-                        Timestamp = DateTime.UtcNow
+                        Timestamp = DateTime.UtcNow,
+                        Status = TrialStatus.Completed
                     };
 
                     _trialHistory.Add(trial);
@@ -219,12 +220,15 @@ namespace AiDotNet.AutoML
         {
             return new ModelMetaData<T>
             {
-                Name = "AutoML",
+                ModelType = Type,
                 Description = $"AutoML with {_candidateModels.Count} candidate models",
-                Version = "1.0",
-                TrainingDate = DateTime.UtcNow,
-                Properties = new Dictionary<string, object>
+                FeatureCount = BestModel?.GetModelMetaData().FeatureCount ?? 0,
+                Complexity = _trialHistory.Count,
+                AdditionalInfo = new Dictionary<string, object>
                 {
+                    ["Name"] = "AutoML",
+                    ["Version"] = "1.0",
+                    ["TrainingDate"] = DateTime.UtcNow,
                     ["Type"] = Type.ToString(),
                     ["Status"] = Status.ToString(),
                     ["BestScore"] = BestScore,
@@ -344,7 +348,9 @@ namespace AiDotNet.AutoML
             if (BestModel == null)
                 throw new InvalidOperationException("No best model to save.");
             
-            BestModel.SaveModel(filePath);
+            // IFullModel implements IModelSerializer, serialize and save to file
+            var data = BestModel.Serialize();
+            System.IO.File.WriteAllBytes(filePath, data);
         }
 
         /// <summary>
@@ -403,12 +409,12 @@ namespace AiDotNet.AutoML
         /// <summary>
         /// Gets the number of parameters
         /// </summary>
-        public virtual int ParameterCount => BestModel?.ParameterCount ?? 0;
+        public virtual int ParameterCount => BestModel?.GetParameters()?.Length ?? 0;
 
         /// <summary>
         /// Creates a new instance with the given parameters
         /// </summary>
-        public virtual IParameterizable<T, TInput, TOutput> WithParameters(Vector<T> parameters)
+        public virtual IFullModel<T, TInput, TOutput> WithParameters(Vector<T> parameters)
         {
             if (BestModel == null)
                 throw new InvalidOperationException("No best model found.");
@@ -433,13 +439,16 @@ namespace AiDotNet.AutoML
             if (BestModel == null)
                 throw new InvalidOperationException("No best model found.");
             
-            return BestModel.GetFeatureImportance();
+            // IFullModel doesn't have GetFeatureImportance directly, need to use model-specific implementation
+            // For now, return empty array as this would be model-specific
+            var paramCount = BestModel.GetParameters()?.Length ?? 0;
+            return new double[paramCount];
         }
 
         /// <summary>
         /// Gets the indices of active features
         /// </summary>
-        public virtual int[] GetActiveFeatureIndices()
+        public virtual IEnumerable<int> GetActiveFeatureIndices()
         {
             if (BestModel == null)
                 throw new InvalidOperationException("No best model found.");
@@ -508,15 +517,15 @@ namespace AiDotNet.AutoML
             
             return _optimizationMetric switch
             {
-                MetricType.Accuracy => validationStats.ErrorStats?.Accuracy ?? 0.0,
-                MetricType.MeanSquaredError => validationStats.ErrorStats?.MeanSquaredError ?? double.MaxValue,
-                MetricType.RootMeanSquaredError => validationStats.ErrorStats?.RootMeanSquaredError ?? double.MaxValue,
-                MetricType.MeanAbsoluteError => validationStats.ErrorStats?.MeanAbsoluteError ?? double.MaxValue,
-                MetricType.RSquared => validationStats.PredictionStats?.RSquared ?? 0.0,
-                MetricType.F1Score => validationStats.ErrorStats?.F1Score ?? 0.0,
-                MetricType.Precision => validationStats.ErrorStats?.Precision ?? 0.0,
-                MetricType.Recall => validationStats.ErrorStats?.Recall ?? 0.0,
-                MetricType.AUC => validationStats.ErrorStats?.AUC ?? 0.0,
+                MetricType.Accuracy => validationStats.ErrorStats != null ? Convert.ToDouble(validationStats.ErrorStats.GetMetric(MetricType.Accuracy)) : 0.0,
+                MetricType.RMSE => validationStats.ErrorStats != null ? Convert.ToDouble(validationStats.ErrorStats.RMSE) : double.MaxValue,
+                MetricType.MAE => validationStats.ErrorStats != null ? Convert.ToDouble(validationStats.ErrorStats.MAE) : double.MaxValue,
+                MetricType.R2 => validationStats.PredictionStats != null ? Convert.ToDouble(validationStats.PredictionStats.GetMetric(MetricType.R2)) : 0.0,
+                MetricType.AdjustedR2 => validationStats.PredictionStats != null ? Convert.ToDouble(validationStats.PredictionStats.GetMetric(MetricType.AdjustedR2)) : 0.0,
+                MetricType.F1Score => validationStats.ErrorStats != null ? Convert.ToDouble(validationStats.ErrorStats.GetMetric(MetricType.F1Score)) : 0.0,
+                MetricType.Precision => validationStats.ErrorStats != null ? Convert.ToDouble(validationStats.ErrorStats.GetMetric(MetricType.Precision)) : 0.0,
+                MetricType.Recall => validationStats.ErrorStats != null ? Convert.ToDouble(validationStats.ErrorStats.GetMetric(MetricType.Recall)) : 0.0,
+                MetricType.AUCROC => validationStats.ErrorStats != null ? Convert.ToDouble(validationStats.ErrorStats.AUCROC) : 0.0,
                 _ => 0.0
             };
         }

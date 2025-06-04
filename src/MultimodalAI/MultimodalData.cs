@@ -106,7 +106,7 @@ namespace AiDotNet.MultimodalAI
         /// </summary>
         /// <param name="modalityName">Name of the modality</param>
         /// <returns>The type of the modality data</returns>
-        public Type GetModalityType(string modalityName)
+        public Type? GetModalityType(string modalityName)
         {
             return _modalityTypes.ContainsKey(modalityName) ? _modalityTypes[modalityName] : null;
         }

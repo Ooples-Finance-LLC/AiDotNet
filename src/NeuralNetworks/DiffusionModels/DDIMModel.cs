@@ -123,11 +123,5 @@ namespace AiDotNet.NeuralNetworks.DiffusionModels
             return clipped;
         }
         
-        protected override void SaveModelSpecificData(IDictionary<string, object> data)
-        {
-            base.SaveModelSpecificData(data);
-            data["eta"] = eta;
-            data["samplingSteps"] = samplingSteps;
-        }
     }
 }

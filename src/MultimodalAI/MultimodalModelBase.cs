@@ -1,6 +1,7 @@
 using AiDotNet.Interfaces;
 using AiDotNet.LinearAlgebra;
 using AiDotNet.Statistics;
+using AiDotNet.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace AiDotNet.MultimodalAI
     {
         protected readonly Dictionary<string, IModalityEncoder> _modalityEncoders;
         protected readonly string _fusionStrategy;
-        protected Matrix<double> _crossModalityAttention;
+        protected Matrix<double>? _crossModalityAttention;
         protected bool _isTrained;
         protected int _fusedDimension;
 
@@ -131,12 +132,18 @@ namespace AiDotNet.MultimodalAI
         public virtual ModelStats<double, Matrix<double>, Vector<double>> Evaluate(Matrix<double> testInputs, Vector<double> testTargets)
         {
             var predictions = Predict(testInputs);
-            return new ModelStats<double, Matrix<double>, Vector<double>>
+            
+            // Create proper ModelStatsInputs
+            var statsInputs = new ModelStatsInputs<double, Matrix<double>, Vector<double>>
             {
-                Name = Name,
-                Type = "MultimodalModel",
-                Timestamp = DateTime.Now
+                Model = null,  // This model doesn't match the expected interface
+                XMatrix = testInputs,
+                Actual = testTargets,
+                Predicted = predictions,
+                FeatureCount = testInputs.Columns
             };
+            
+            return new ModelStats<double, Matrix<double>, Vector<double>>(statsInputs, ModelType.CustomEnsemble);
         }
 
         /// <summary>
@@ -163,7 +170,7 @@ namespace AiDotNet.MultimodalAI
         /// Gets parameters of the model
         /// </summary>
         /// <returns>Dictionary of parameters</returns>
-        public virtual Dictionary<string, object> GetParameters()
+        public virtual Dictionary<string, object> GetParametersDictionary()
         {
             return new Dictionary<string, object>
             {
@@ -194,7 +201,7 @@ namespace AiDotNet.MultimodalAI
         /// </summary>
         /// <param name="modalityData">Input modality data</param>
         /// <param name="requiredModalities">List of required modalities</param>
-        protected void ValidateModalityData(Dictionary<string, object> modalityData, IEnumerable<string> requiredModalities = null)
+        protected void ValidateModalityData(Dictionary<string, object> modalityData, IEnumerable<string>? requiredModalities = null)
         {
             if (modalityData == null || modalityData.Count == 0)
                 throw new ArgumentException("Modality data cannot be null or empty");
@@ -247,11 +254,11 @@ namespace AiDotNet.MultimodalAI
         /// <returns>Projected vector</returns>
         protected virtual Vector<double> ProjectToTargetDimension(Vector<double> fused, int targetDimension)
         {
-            if (fused.Dimension == targetDimension)
+            if (fused.Length == targetDimension)
                 return fused;
 
             // Simple linear projection (would use learned projection in real implementation)
-            var projectionMatrix = CreateProjectionMatrix(fused.Dimension, targetDimension);
+            var projectionMatrix = CreateProjectionMatrix(fused.Length, targetDimension);
             return projectionMatrix * fused;
         }
 
@@ -284,5 +291,159 @@ namespace AiDotNet.MultimodalAI
         {
             return $"{Name}(fusion={_fusionStrategy}, modalities={_modalityEncoders.Count})";
         }
+
+        #region IFullModel Implementation
+
+        /// <summary>
+        /// Trains the model using Dictionary input
+        /// </summary>
+        public void Train(Dictionary<string, object> inputs, Vector<double> outputs)
+        {
+            // Convert Dictionary to Matrix for compatibility
+            var inputMatrix = ConvertDictionaryToMatrix(inputs);
+            Train(inputMatrix, outputs);
+        }
+
+        /// <summary>
+        /// Predicts using Dictionary input
+        /// </summary>
+        public Vector<double> Predict(Dictionary<string, object> inputs)
+        {
+            return ProcessMultimodal(inputs);
+        }
+
+        /// <summary>
+        /// Gets model metadata
+        /// </summary>
+        public ModelMetaData<double> GetModelMetaData()
+        {
+            return new ModelMetaData<double>
+            {
+                ModelType = Enums.ModelType.CustomEnsemble,
+                FeatureCount = _modalityEncoders.Sum(e => e.Value.OutputDimension),
+                Complexity = _modalityEncoders.Count,
+                Description = $"Multimodal {_fusionStrategy} fusion model",
+                AdditionalInfo = new Dictionary<string, object>
+                {
+                    ["FusionStrategy"] = _fusionStrategy,
+                    ["Modalities"] = _modalityEncoders.Keys.ToList(),
+                    ["FusedDimension"] = _fusedDimension
+                }
+            };
+        }
+
+        /// <summary>
+        /// Serializes the model
+        /// </summary>
+        public virtual byte[] Serialize()
+        {
+            throw new NotImplementedException("Model serialization not implemented");
+        }
+
+        /// <summary>
+        /// Deserializes the model
+        /// </summary>
+        public virtual void Deserialize(byte[] data)
+        {
+            throw new NotImplementedException("Model deserialization not implemented");
+        }
+
+        /// <summary>
+        /// Gets model parameters
+        /// </summary>
+        public virtual Vector<double> GetParameters()
+        {
+            // Return empty vector - derived classes should override
+            return new Vector<double>(0);
+        }
+
+
+        /// <summary>
+        /// Sets model parameters
+        /// </summary>
+        public virtual void SetParameters(Vector<double> parameters)
+        {
+            // Base implementation - derived classes should override
+        }
+
+        /// <summary>
+        /// Creates a new model with the given parameters
+        /// </summary>
+        public virtual IFullModel<double, Dictionary<string, object>, Vector<double>> WithParameters(Vector<double> parameters)
+        {
+            var clone = Clone();
+            clone.SetParameters(parameters);
+            return clone;
+        }
+
+        /// <summary>
+        /// Gets active feature indices
+        /// </summary>
+        public virtual IEnumerable<int> GetActiveFeatureIndices()
+        {
+            var totalFeatures = _modalityEncoders.Sum(e => e.Value.OutputDimension);
+            return Enumerable.Range(0, totalFeatures);
+        }
+
+        /// <summary>
+        /// Checks if a feature is used
+        /// </summary>
+        public virtual bool IsFeatureUsed(int featureIndex)
+        {
+            var totalFeatures = _modalityEncoders.Sum(e => e.Value.OutputDimension);
+            return featureIndex >= 0 && featureIndex < totalFeatures;
+        }
+
+        /// <summary>
+        /// Sets active feature indices
+        /// </summary>
+        public virtual void SetActiveFeatureIndices(IEnumerable<int> indices)
+        {
+            // Base implementation - derived classes should override
+        }
+
+        /// <summary>
+        /// Creates a deep copy of the model
+        /// </summary>
+        public virtual IFullModel<double, Dictionary<string, object>, Vector<double>> DeepCopy()
+        {
+            return Clone();
+        }
+
+
+        /// <summary>
+        /// Converts Dictionary input to Matrix for compatibility
+        /// </summary>
+        private Matrix<double> ConvertDictionaryToMatrix(Dictionary<string, object> inputs)
+        {
+            // This is a simplified conversion - in practice would need proper handling
+            var vectors = new List<Vector<double>>();
+            foreach (var kvp in inputs)
+            {
+                if (kvp.Value is Vector<double> vec)
+                {
+                    vectors.Add(vec);
+                }
+            }
+            
+            if (vectors.Count == 0)
+                return new Matrix<double>(0, 0);
+                
+            var rows = vectors.Count;
+            var cols = vectors[0].Length;
+            var matrix = new Matrix<double>(rows, cols);
+            
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                    matrix[i, j] = vectors[i][j];
+                }
+            }
+            
+            return matrix;
+        }
+
+        #endregion
     }
 }

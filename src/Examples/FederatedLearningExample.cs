@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.IO;
+using System.Linq;
 using AiDotNet.LinearAlgebra;
 using AiDotNet.Models;
 using AiDotNet.FederatedLearning;
@@ -11,6 +13,8 @@ using AiDotNet.FederatedLearning.Privacy;
 using AiDotNet.FederatedLearning.Communication;
 using AiDotNet.FederatedLearning.MetaLearning;
 using AiDotNet.Interfaces;
+using AiDotNet.Enums;
+using AiDotNet.Extensions;
 
 namespace AiDotNet.Examples
 {
@@ -296,12 +300,32 @@ namespace AiDotNet.Examples
     {
         private Vector<double> _weights;
         private Vector<double> _bias;
+        private HashSet<int> _activeFeatures;
         
         public SimpleLinearModel(int inputSize)
         {
             var random = new Random();
             _weights = new Vector<double>(Enumerable.Range(0, inputSize).Select(_ => random.NextGaussian(0, 0.1)).ToArray());
             _bias = new Vector<double>(new[] { random.NextGaussian(0, 0.1) });
+            _activeFeatures = new HashSet<int>(Enumerable.Range(0, inputSize));
+        }
+        
+        // IModel implementation
+        public void Train(Vector<double> input, double expectedOutput)
+        {
+            // Simple gradient descent update
+            var prediction = Predict(input);
+            var error = prediction - expectedOutput;
+            var learningRate = 0.01;
+            
+            // Update weights
+            for (int i = 0; i < _weights.Length; i++)
+            {
+                _weights[i] -= learningRate * error * input[i];
+            }
+            
+            // Update bias
+            _bias[0] -= learningRate * error;
         }
         
         public double Predict(Vector<double> input)
@@ -310,21 +334,141 @@ namespace AiDotNet.Examples
             return 1.0 / (1.0 + Math.Exp(-logit)); // Sigmoid activation
         }
         
-        public Vector<double> Predict(Matrix<double> inputs)
+        public ModelMetaData<double> GetModelMetaData()
         {
-            var predictions = new double[inputs.Rows];
-            for (int i = 0; i < inputs.Rows; i++)
+            return new ModelMetaData<double>
             {
-                predictions[i] = Predict(inputs.GetRow(i));
-            }
-            return new Vector<double>(predictions);
+                ModelType = ModelType.Classification,
+                FeatureCount = _weights.Length,
+                Complexity = _weights.Length + 1, // weights + bias
+                Description = "Simple linear model with sigmoid activation for binary classification",
+                AdditionalInfo = new Dictionary<string, object>
+                {
+                    ["activation"] = "sigmoid",
+                    ["parameters"] = _weights.Length + 1
+                }
+            };
         }
         
+        // IModelSerializer implementation
+        public byte[] Serialize()
+        {
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream))
+            {
+                // Write weights length
+                writer.Write(_weights.Length);
+                
+                // Write weights
+                foreach (var w in _weights)
+                {
+                    writer.Write(w);
+                }
+                
+                // Write bias
+                writer.Write(_bias[0]);
+                
+                // Write active features count
+                writer.Write(_activeFeatures.Count);
+                
+                // Write active features
+                foreach (var feature in _activeFeatures)
+                {
+                    writer.Write(feature);
+                }
+                
+                return stream.ToArray();
+            }
+        }
+        
+        public void Deserialize(byte[] data)
+        {
+            using (var stream = new MemoryStream(data))
+            using (var reader = new BinaryReader(stream))
+            {
+                // Read weights length
+                int weightsLength = reader.ReadInt32();
+                
+                // Read weights
+                var weights = new double[weightsLength];
+                for (int i = 0; i < weightsLength; i++)
+                {
+                    weights[i] = reader.ReadDouble();
+                }
+                _weights = new Vector<double>(weights);
+                
+                // Read bias
+                _bias = new Vector<double>(new[] { reader.ReadDouble() });
+                
+                // Read active features count
+                int activeCount = reader.ReadInt32();
+                
+                // Read active features
+                _activeFeatures = new HashSet<int>();
+                for (int i = 0; i < activeCount; i++)
+                {
+                    _activeFeatures.Add(reader.ReadInt32());
+                }
+            }
+        }
+        
+        // IParameterizable implementation
+        public Vector<double> GetParameters()
+        {
+            // Combine weights and bias into a single vector
+            var parameters = new double[_weights.Length + 1];
+            Array.Copy(_weights.ToArray(), 0, parameters, 0, _weights.Length);
+            parameters[_weights.Length] = _bias[0];
+            return new Vector<double>(parameters);
+        }
+        
+        public void SetParameters(Vector<double> parameters)
+        {
+            if (parameters.Length != _weights.Length + 1)
+            {
+                throw new ArgumentException($"Expected {_weights.Length + 1} parameters, but got {parameters.Length}");
+            }
+            
+            // Extract weights
+            var weights = new double[_weights.Length];
+            Array.Copy(parameters.ToArray(), 0, weights, 0, _weights.Length);
+            _weights = new Vector<double>(weights);
+            
+            // Extract bias
+            _bias = new Vector<double>(new[] { parameters[_weights.Length] });
+        }
+        
+        public IFullModel<double, Vector<double>, double> WithParameters(Vector<double> parameters)
+        {
+            var model = new SimpleLinearModel(_weights.Length);
+            model.SetParameters(parameters);
+            model._activeFeatures = new HashSet<int>(_activeFeatures);
+            return model;
+        }
+        
+        // IFeatureAware implementation
+        public IEnumerable<int> GetActiveFeatureIndices()
+        {
+            return _activeFeatures;
+        }
+        
+        public bool IsFeatureUsed(int featureIndex)
+        {
+            return _activeFeatures.Contains(featureIndex);
+        }
+        
+        public void SetActiveFeatureIndices(IEnumerable<int> featureIndices)
+        {
+            _activeFeatures = new HashSet<int>(featureIndices);
+        }
+        
+        // ICloneable implementation
         public IFullModel<double, Vector<double>, double> DeepCopy()
         {
             var copy = new SimpleLinearModel(_weights.Length);
             copy._weights = new Vector<double>(_weights.ToArray());
             copy._bias = new Vector<double>(_bias.ToArray());
+            copy._activeFeatures = new HashSet<int>(_activeFeatures);
             return copy;
         }
         
@@ -363,7 +507,7 @@ namespace System.Linq
         public static Dictionary<TKey, TValue> ToDictionary<TSource, TKey, TValue>(
             this IEnumerable<TSource> source,
             Func<TSource, TKey> keySelector,
-            Func<TSource, TValue> valueSelector)
+            Func<TSource, TValue> valueSelector) where TKey : notnull
         {
             var dictionary = new Dictionary<TKey, TValue>();
             foreach (var item in source)

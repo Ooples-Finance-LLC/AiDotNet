@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using AiDotNet.Enums;
 
@@ -25,6 +26,9 @@ namespace AiDotNet.Pipeline
         public bool HandleOutliers { get; set; } = false;
         public OutlierDetectionMethod OutlierMethod { get; set; } = OutlierDetectionMethod.IQR;
         public double OutlierThreshold { get; set; } = 3.0;
+        public bool HandleMissingValues { get; set; } = true;
+        public bool RemoveRowsWithMissing { get; set; } = false;
+        public ImputationStrategy ImputationStrategy { get; set; } = ImputationStrategy.Mean;
         public Dictionary<string, object> ColumnConfigs { get; set; } = new Dictionary<string, object>();
     }
     
@@ -39,7 +43,9 @@ namespace AiDotNet.Pipeline
         public bool GenerateInteractionFeatures { get; set; } = false;
         public bool OneHotEncode { get; set; } = true;
         public bool ScaleFeatures { get; set; } = true;
+        public int MaxInteractionFeatures { get; set; } = 10;
         public List<string> DropColumns { get; set; } = new List<string>();
+        public List<Func<double[], double>>? CustomFeatureGenerators { get; set; }
     }
     
     /// <summary>
@@ -51,6 +57,13 @@ namespace AiDotNet.Pipeline
         public bool EnableTextAugmentation { get; set; } = false;
         public bool EnableTabularAugmentation { get; set; } = false;
         public double AugmentationRatio { get; set; } = 1.0;
+        public int AugmentationFactor { get; set; } = 2;
+        public bool AddNoise { get; set; } = true;
+        public double NoiseLevel { get; set; } = 0.01;
+        public bool RandomScaling { get; set; } = true;
+        public double ScalingRange { get; set; } = 0.1;
+        public bool FeatureDropout { get; set; } = false;
+        public double DropoutRate { get; set; } = 0.1;
         public Dictionary<string, object> AugmentationParams { get; set; } = new Dictionary<string, object>();
     }
     
@@ -96,11 +109,12 @@ namespace AiDotNet.Pipeline
     /// </summary>
     public class DeploymentConfig
     {
+        public DeploymentTarget Target { get; set; } = DeploymentTarget.CloudDeployment;
         public CloudPlatform CloudPlatform { get; set; } = CloudPlatform.AWS;
         public bool EnableAutoScaling { get; set; } = true;
         public int MinInstances { get; set; } = 1;
         public int MaxInstances { get; set; } = 10;
-        public string Endpoint { get; set; }
+        public string? Endpoint { get; set; }
         public Dictionary<string, string> SecurityConfig { get; set; } = new Dictionary<string, string>();
     }
     
@@ -114,5 +128,29 @@ namespace AiDotNet.Pipeline
         public double AlertThreshold { get; set; } = 0.05;
         public int MonitoringInterval { get; set; } = 3600; // seconds
         public List<MetricType> MetricsToTrack { get; set; } = new List<MetricType>();
+    }
+    
+    /// <summary>
+    /// Ensemble configuration
+    /// </summary>
+    public class EnsembleConfig
+    {
+        public List<ModelType> Models { get; set; } = new List<ModelType>();
+        public EnsembleStrategy Strategy { get; set; } = EnsembleStrategy.Voting;
+        public bool UseWeightedVoting { get; set; } = false;
+        public Dictionary<ModelType, double> ModelWeights { get; set; } = new Dictionary<ModelType, double>();
+    }
+    
+    /// <summary>
+    /// Imputation strategy for missing values
+    /// </summary>
+    public enum ImputationStrategy
+    {
+        Mean,
+        Median,
+        Mode,
+        Zero,
+        Forward,
+        Backward
     }
 }

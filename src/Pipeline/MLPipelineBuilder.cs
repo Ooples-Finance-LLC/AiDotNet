@@ -20,9 +20,9 @@ namespace AiDotNet.Pipeline
     {
         private readonly PipelineConfiguration configuration;
         private readonly List<IPipelineStep> steps;
-        private DataLoadingStep dataLoadingStep;
-        private ModelTrainingStep modelTrainingStep;
-        private DeploymentStep deploymentStep;
+        private DataLoadingStep? dataLoadingStep;
+        private ModelTrainingStep? modelTrainingStep;
+        private DeploymentStep? deploymentStep;
         
         private MLPipelineBuilder()
         {
@@ -64,7 +64,7 @@ namespace AiDotNet.Pipeline
         /// <summary>
         /// Add data cleaning step
         /// </summary>
-        public MLPipelineBuilder CleanData(Action<DataCleaningConfig> configure = null)
+        public MLPipelineBuilder CleanData(Action<DataCleaningConfig>? configure = null)
         {
             var config = new DataCleaningConfig();
             configure?.Invoke(config);
@@ -75,7 +75,7 @@ namespace AiDotNet.Pipeline
         /// <summary>
         /// Add feature engineering step
         /// </summary>
-        public MLPipelineBuilder FeatureEngineering(Action<FeatureEngineeringConfig> configure = null)
+        public MLPipelineBuilder FeatureEngineering(Action<FeatureEngineeringConfig>? configure = null)
         {
             var config = new FeatureEngineeringConfig();
             configure?.Invoke(config);
@@ -115,7 +115,7 @@ namespace AiDotNet.Pipeline
         /// <summary>
         /// Train a model with specified type
         /// </summary>
-        public MLPipelineBuilder TrainModel(ModelType modelType, Action<ModelTrainingConfig> configure = null)
+        public MLPipelineBuilder TrainModel(ModelType modelType, Action<ModelTrainingConfig>? configure = null)
         {
             var config = new ModelTrainingConfig { ModelType = modelType };
             configure?.Invoke(config);
@@ -127,7 +127,7 @@ namespace AiDotNet.Pipeline
         /// <summary>
         /// Use AutoML to find best model
         /// </summary>
-        public MLPipelineBuilder AutoML(Action<AutoMLConfig> configure = null)
+        public MLPipelineBuilder AutoML(Action<AutoMLConfig>? configure = null)
         {
             var config = new AutoMLConfig();
             configure?.Invoke(config);
@@ -139,7 +139,7 @@ namespace AiDotNet.Pipeline
         /// <summary>
         /// Use Neural Architecture Search
         /// </summary>
-        public MLPipelineBuilder NeuralArchitectureSearch(Action<NASConfig> configure = null)
+        public MLPipelineBuilder NeuralArchitectureSearch(Action<NASConfig>? configure = null)
         {
             var config = new NASConfig();
             configure?.Invoke(config);
@@ -209,7 +209,7 @@ namespace AiDotNet.Pipeline
         /// <summary>
         /// Deploy model to target
         /// </summary>
-        public MLPipelineBuilder Deploy(DeploymentTarget target, Action<DeploymentConfig> configure = null)
+        public MLPipelineBuilder Deploy(Enums.DeploymentTarget target, Action<DeploymentConfig>? configure = null)
         {
             var config = new DeploymentConfig { Target = target };
             configure?.Invoke(config);
@@ -221,7 +221,7 @@ namespace AiDotNet.Pipeline
         /// <summary>
         /// Add production monitoring
         /// </summary>
-        public MLPipelineBuilder Monitor(Action<MonitoringConfig> configure = null)
+        public MLPipelineBuilder Monitor(Action<MonitoringConfig>? configure = null)
         {
             var config = new MonitoringConfig();
             configure?.Invoke(config);
@@ -250,9 +250,9 @@ namespace AiDotNet.Pipeline
         /// <summary>
         /// Configure pipeline options
         /// </summary>
-        public MLPipelineBuilder WithOptions(Action<PipelineOptions> configure)
+        public MLPipelineBuilder WithOptions(Action<PipelineConfiguration> configure)
         {
-            configure(configuration.Options);
+            configure(configuration);
             return this;
         }
         

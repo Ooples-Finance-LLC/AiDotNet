@@ -1,4 +1,5 @@
 using AiDotNet.Interfaces;
+using AiDotNet.LinearAlgebra;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,14 +10,15 @@ namespace AiDotNet.ProductionMonitoring
     /// <summary>
     /// Provides intelligent retraining recommendations based on comprehensive monitoring data
     /// </summary>
-    public class RetrainingRecommender : ProductionMonitorBase
+    /// <typeparam name="T">The numeric type used for calculations</typeparam>
+    public class RetrainingRecommender<T> : ProductionMonitorBase<T>
     {
         private readonly RecommenderConfiguration _configuration;
         private readonly List<RetrainingEvent> _retrainingHistory;
         private readonly Dictionary<string, RetrainingStrategy> _strategies;
         private readonly Dictionary<string, double> _featureImportances;
         
-        public RetrainingRecommender(RecommenderConfiguration configuration = null)
+        public RetrainingRecommender(RecommenderConfiguration? configuration = null)
         {
             _configuration = configuration ?? new RecommenderConfiguration();
             _retrainingHistory = new List<RetrainingEvent>();
@@ -172,7 +174,7 @@ namespace AiDotNet.ProductionMonitoring
 
         // Interface implementations
 
-        public override async Task<DriftDetectionResult> DetectDataDriftAsync(double[,] productionData, double[,] referenceData = null)
+        public override async Task<DriftDetectionResult> DetectDataDriftAsync(Matrix<T> productionData, Matrix<T>? referenceData = null)
         {
             return new DriftDetectionResult
             {
@@ -184,7 +186,7 @@ namespace AiDotNet.ProductionMonitoring
             };
         }
 
-        public override async Task<DriftDetectionResult> DetectConceptDriftAsync(double[] predictions, double[] actuals)
+        public override async Task<DriftDetectionResult> DetectConceptDriftAsync(Vector<T> predictions, Vector<T> actuals)
         {
             return new DriftDetectionResult
             {

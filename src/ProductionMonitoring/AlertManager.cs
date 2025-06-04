@@ -19,7 +19,7 @@ namespace AiDotNet.ProductionMonitoring
         private readonly AlertConfiguration _configuration;
         private readonly object _lockObject = new object();
 
-        public AlertManager(AlertConfiguration configuration = null)
+        public AlertManager(AlertConfiguration? configuration = null)
         {
             _configuration = configuration ?? new AlertConfiguration();
             _alertChannels = new List<IAlertChannel>();
@@ -98,7 +98,7 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Gets alert history
         /// </summary>
-        public List<AlertHistoryEntry> GetAlertHistory(DateTime? startDate = null, DateTime? endDate = null, string severity = null)
+        public List<AlertHistoryEntry> GetAlertHistory(DateTime? startDate = null, DateTime? endDate = null, string? severity = null)
         {
             lock (_lockObject)
             {
@@ -146,7 +146,7 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Acknowledges an alert
         /// </summary>
-        public async Task AcknowledgeAlertAsync(string alertId, string acknowledgedBy, string notes = null)
+        public async Task AcknowledgeAlertAsync(string alertId, string acknowledgedBy, string? notes = null)
         {
             lock (_lockObject)
             {
@@ -171,7 +171,7 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Mutes alerts for a specific rule or type
         /// </summary>
-        public void MuteAlerts(string ruleIdOrType, TimeSpan duration, string reason = null)
+        public void MuteAlerts(string ruleIdOrType, TimeSpan duration, string? reason = null)
         {
             var muteUntil = DateTime.UtcNow.Add(duration);
             

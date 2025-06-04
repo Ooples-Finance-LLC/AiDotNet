@@ -1,11 +1,29 @@
 namespace AiDotNet.Examples;
 
 using AiDotNet.LinearAlgebra;
+using AiDotNet.Interfaces;
+using AiDotNet.AutoML;
+using AiDotNet.Enums;
+using AiDotNet.Models;
+using AiDotNet.Models.Options;
+using AiDotNet.Models.Results;
+using AiDotNet.Regression;
+using AiDotNet.Optimizers;
+using AiDotNet.Statistics;
+using AiDotNet.Models.Inputs;
+using AiDotNet.Examples.Models;
+using AiDotNet.Examples.Pipeline;
+using AiDotNet.NeuralNetworks;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Linq;
 
 /// <summary>
 /// Example demonstrating the modern AI features in PredictionModelBuilder.
 /// </summary>
-public static class ModernAIExample
+public static class 5FK0 
 {
     /// <summary>
     /// Demonstrates using AutoML to automatically find the best model.
@@ -66,13 +84,8 @@ public static class ModernAIExample
         var builder = new PredictionModelBuilder<float, Matrix<string>, Vector<string>>();
         
         // Use a pre-trained foundation model
-        builder.UseFoundationModel(new BERTFoundationModel())
-               .ConfigureFineTuning(new FineTuningConfig
-               {
-                   LearningRate = 2e-5,
-                   Epochs = 3,
-                   BatchSize = 16
-               })
+        builder.UseFoundationModel(new BERTFoundationModel<float>())
+               .ConfigureFineTuning(new FineTuningOptions<double>())
                .WithFewShotExamples(
                    (new Matrix<string>(new[,] { { "Amazing product!" } }), 
                     new Vector<string>(new[] { "positive" })),
@@ -132,9 +145,10 @@ public static class ModernAIExample
         
         // Create builder with interpretability
         var builder = new PredictionModelBuilder<double, Matrix<double>, Vector<double>>();
+        builder.SetModel(new LogisticRegression<double>(new LogisticRegressionOptions<double>()));
         
-        builder.SetModel(new LogisticRegression<double>())
-               .WithInterpretability(new InterpretableModelWrapper<double>())
+        var interpretableWrapper = new InterpretableModelWrapper<double>();
+        builder.WithInterpretability(interpretableWrapper)
                .EnableInterpretationMethods(
                    InterpretationMethod.SHAP,
                    InterpretationMethod.LIME,
@@ -147,12 +161,16 @@ public static class ModernAIExample
         var model = builder.Build(features, approved);
         
         // Get explanations
-        var interpretableModel = model as IInterpretableModel<double, Matrix<double>, Vector<double>>;
-        if (interpretableModel != null)
+        // Note: In production, the builder would wrap the model with interpretability features
+        // For this example, we'll demonstrate how to use the interpretable wrapper
+        if (interpretableWrapper != null)
         {
-            var importance = interpretableModel.GetFeatureImportance();
-            Console.WriteLine("Feature importance: Age={0:F2}, Income={1:F2}, CreditScore={2:F2}",
-                importance[0], importance[1], importance[2]);
+            var importance = interpretableWrapper.GetGlobalFeatureImportanceAsync().Result;
+            if (importance.Count >= 3)
+            {
+                Console.WriteLine("Feature importance: Age={0:F2}, Income={1:F2}, CreditScore={2:F2}",
+                    importance[0], importance[1], importance[2]);
+            }
         }
     }
     
@@ -172,9 +190,10 @@ public static class ModernAIExample
         
         // Create builder with production monitoring
         var builder = new PredictionModelBuilder<double, Matrix<double>, Vector<double>>();
+        builder.SetModel(new SimpleRegression<double>());
         
-        builder.SetModel(new SimpleRegression<double>())
-               .WithProductionMonitoring(new StandardProductionMonitor<double>())
+        var productionMonitor = new StandardProductionMonitor<double>();
+        builder.WithProductionMonitoring(productionMonitor)
                .ConfigureDriftDetection(
                    dataDriftThreshold: 0.1,
                    conceptDriftThreshold: 0.15)
@@ -185,8 +204,9 @@ public static class ModernAIExample
         var model = builder.Build(features, targets);
         
         // Simulate production usage
-        var monitor = model as IProductionMonitor<double, Matrix<double>, Vector<double>>;
-        if (monitor != null)
+        // Note: In production, the builder would integrate monitoring with the model
+        // For this example, we'll demonstrate monitoring separately
+        if (productionMonitor != null)
         {
             // New production data (potentially drifted)
             var newData = new Matrix<double>(new double[,]
@@ -194,10 +214,11 @@ public static class ModernAIExample
                 { 5.0, 6.0 }, { 6.0, 7.0 } // Different distribution
             });
             
-            var driftScore = monitor.CheckDataDrift(newData);
-            Console.WriteLine($"Data drift score: {driftScore:F3}");
+            var driftResult = productionMonitor.DetectDataDriftAsync(newData).Result;
+            Console.WriteLine($"Data drift score: {driftResult.DriftScore:F3}");
             
-            if (monitor.ShouldRetrain())
+            var recommendation = productionMonitor.GetRetrainingRecommendationAsync().Result;
+            if (recommendation.ShouldRetrain)
             {
                 Console.WriteLine("Model retraining recommended!");
             }
@@ -227,21 +248,23 @@ public static class ModernAIExample
         
         // For cloud deployment
         var cloudBuilder = new PredictionModelBuilder<double, Matrix<double>, Vector<double>>();
-        cloudBuilder.SetModel(new NeuralNetworkModel<double>())
-                    .OptimizeForCloud(CloudPlatform.AWS, OptimizationLevel.Aggressive);
+        var cloudArchitecture = new NeuralNetworkArchitecture<double>(NetworkComplexity.Simple);
+        cloudBuilder.SetModel(new NeuralNetworkModel<double>(cloudArchitecture));
+        cloudBuilder.OptimizeForCloud(CloudPlatform.AWS, AiDotNet.Enums.OptimizationLevel.Aggressive);
         
-        var cloudModel = cloudBuilder.Build(features, targets);
+        var cloudOptimizedModel = cloudBuilder.Build(features, targets);
         Console.WriteLine("Model optimized for AWS cloud deployment");
         
         // For edge deployment
         var edgeBuilder = new PredictionModelBuilder<double, Matrix<double>, Vector<double>>();
-        edgeBuilder.SetModel(new NeuralNetworkModel<double>())
-                   .OptimizeForEdge(
-                       EdgeDevice.Mobile,
+        var edgeArchitecture = new NeuralNetworkArchitecture<double>(NetworkComplexity.Simple);
+        edgeBuilder.SetModel(new NeuralNetworkModel<double>(edgeArchitecture));
+        edgeBuilder.OptimizeForEdge(
+                       EdgeDevice.Smartphone,
                        memoryLimit: 50, // 50MB
                        latencyTarget: 10); // 10ms
         
-        var edgeModel = edgeBuilder.Build(features, targets);
+        var edgeOptimizedModel = edgeBuilder.Build(features, targets);
         Console.WriteLine("Model optimized for mobile edge deployment");
     }
     
@@ -261,13 +284,13 @@ public static class ModernAIExample
         
         // Create builder with federated learning
         var builder = new PredictionModelBuilder<double, Matrix<double>, Vector<double>>();
+        builder.SetModel(new SimpleRegression<double>());
         
-        builder.SetModel(new SimpleRegression<double>())
-               .EnableFederatedLearning(
+        builder.EnableFederatedLearning(
                    FederatedAggregationStrategy.SecureAggregation,
                    privacyBudget: 1.0) // Differential privacy budget
                .ConfigureMetaLearning(
-                   MetaLearningAlgorithm.MAML,
+                   Enums.MetaLearningAlgorithm.MAML,
                    innerLoopSteps: 5);
         
         // In real federated learning, this would be distributed
@@ -294,17 +317,19 @@ public static class ModernAIExample
         var builder = new PredictionModelBuilder<double, Matrix<double>, Vector<double>>();
         
         // Add custom pipeline steps
-        builder.AddPipelineStep(new LogTransformStep<double>(), PipelinePosition.BeforeNormalization)
-               .AddPipelineStep(new PolynomialFeaturesStep<double>(degree: 2), PipelinePosition.AfterNormalization)
+        builder.AddPipelineStep(new LogTransformStep<double>(), PipelinePosition.PreProcessing)
+               .AddPipelineStep(new PolynomialFeaturesStep<double>(degree: 2), PipelinePosition.FeatureEngineering)
                
                // Create branches for A/B testing
-               .CreateBranch("modelA", b => b
-                   .SetModel(new SimpleRegression<double>())
-                   .ConfigureOptimizer(new GradientDescentOptimizer<double>()))
+               .CreateBranch("modelA", b => {
+                   b.SetModel(new SimpleRegression<double>());
+                   b.ConfigureOptimizer(new GradientDescentOptimizer<double, Matrix<double>, Vector<double>>(new GradientDescentOptimizerOptions<double, Matrix<double>, Vector<double>>()));
+               })
                
-               .CreateBranch("modelB", b => b
-                   .SetModel(new PolynomialRegression<double>())
-                   .ConfigureOptimizer(new AdamOptimizer<double>()))
+               .CreateBranch("modelB", b => {
+                   b.SetModel(new PolynomialRegression<double>(new PolynomialRegressionOptions<double>()));
+                   b.ConfigureOptimizer(new AdamOptimizer<double, Matrix<double>, Vector<double>>(new AdamOptimizerOptions<double, Matrix<double>, Vector<double>>()));
+               })
                
                // Merge branches with ensemble
                .MergeBranches(BranchMergeStrategy.WeightedAverage, "modelA", "modelB");
@@ -315,222 +340,24 @@ public static class ModernAIExample
     }
 }
 
-// Placeholder classes for the example (would be implemented separately)
-public class SimpleAutoMLModel<T> : IAutoMLModel<T, Matrix<T>, Vector<T>> 
-{
-    public AutoMLStatus Status { get; private set; } = AutoMLStatus.NotStarted;
-    public IFullModel<T, Matrix<T>, Vector<T>>? BestModel { get; private set; }
-    public double BestScore { get; private set; }
-    
-    public void ConfigureSearchSpace(HyperparameterSearchSpace space) { }
-    public void SetTimeLimit(TimeSpan limit) { }
-    public void SetTrialLimit(int limit) { }
-    public void EnableNAS(NeuralArchitectureSearchStrategy strategy) { }
-    
-    public IFullModel<T, Matrix<T>, Vector<T>> SearchBestModel(Matrix<T> x, Vector<T> y) 
-    {
-        throw new NotImplementedException("AutoML implementation pending");
-    }
-    
-    public async Task<IFullModel<T, Matrix<T>, Vector<T>>> SearchAsync(
-        Matrix<T> inputs, 
-        Vector<T> targets,
-        Matrix<T> validationInputs,
-        Vector<T> validationTargets,
-        TimeSpan timeLimit,
-        CancellationToken cancellationToken = default)
-    {
-        Status = AutoMLStatus.Running;
-        // Simplified implementation
-        Status = AutoMLStatus.Completed;
-        return BestModel ?? throw new InvalidOperationException("No model found");
-    }
-    
-    public void SetSearchSpace(Dictionary<string, ParameterRange> searchSpace) { }
-    public void SetCandidateModels(List<ModelType> modelTypes) { }
-    public void SetOptimizationMetric(MetricType metric, bool maximize = true) { }
-    public List<TrialResult> GetTrialHistory() => new();
-    public Task<Dictionary<int, double>> GetFeatureImportanceAsync() => Task.FromResult(new Dictionary<int, double>());
-    public Task<Dictionary<string, object>> SuggestNextTrialAsync() => Task.FromResult(new Dictionary<string, object>());
-    public Task ReportTrialResultAsync(Dictionary<string, object> parameters, double score, TimeSpan duration) => Task.CompletedTask;
-    public void EnableEarlyStopping(int patience, double minDelta = 0.001) { }
-    public void SetConstraints(List<SearchConstraint> constraints) { }
-    
-    // ICloneable implementation
-    public IFullModel<T, Matrix<T>, Vector<T>> DeepCopy() => throw new NotImplementedException();
-    public IFullModel<T, Matrix<T>, Vector<T>> Clone() => DeepCopy();
-}
+// All enums have been moved to the AiDotNet.Enums namespace and are already imported
 
-public class HyperparameterSearchSpace
-{
-    public HyperparameterSearchSpace AddContinuous(string name, double min, double max) => this;
-    public HyperparameterSearchSpace AddInteger(string name, int min, int max) => this;
-    public HyperparameterSearchSpace AddCategorical(string name, string[] values) => this;
-}
+// SimpleAutoMLModel and HyperparameterSearchSpace are now in separate files
 
-public class BERTFoundationModel : IFoundationModel 
-{
-    // IFoundationModel implementation (simplified)
-    public string Architecture => "BERT";
-    public long ParameterCount => 110_000_000;
-    public int VocabularySize => 30522;
-    public int MaxContextLength => 512;
-    
-    public Task<string> GenerateAsync(string prompt, int maxTokens = 100, double temperature = 1.0, double topP = 1.0, CancellationToken cancellationToken = default) 
-        => Task.FromResult("Generated text");
-    
-    public Task<double[]> GetEmbeddingAsync(string text) => Task.FromResult(new double[768]);
-    public Task<int[]> TokenizeAsync(string text) => Task.FromResult(new int[] { 101, 102 });
-    public Task<string> DecodeAsync(int[] tokenIds) => Task.FromResult("Decoded text");
-    
-    public Task<IFoundationModel> FineTuneAsync(List<TrainingExample> trainingData, List<TrainingExample> validationData, 
-        FineTuningConfig config, Action<FineTuningProgress>? progressCallback = null, CancellationToken cancellationToken = default)
-        => Task.FromResult<IFoundationModel>(this);
-    
-    public Task<string> FewShotAsync(List<FewShotExample> examples, string query) => Task.FromResult("Response");
-    public string ApplyPromptTemplate(string template, Dictionary<string, string> variables) => template;
-    public Task<AttentionWeights> GetAttentionWeightsAsync(string text) => Task.FromResult(new AttentionWeights());
-    public Task<ChainOfThoughtResult> ChainOfThoughtAsync(string problem) => Task.FromResult(new ChainOfThoughtResult());
-    public Task<BenchmarkResults> EvaluateBenchmarkAsync(IBenchmarkDataset benchmark) => Task.FromResult(new BenchmarkResults());
-    public void ApplyAdapter(IModelAdapter adapter) { }
-    public List<string> GetAvailableCheckpoints() => new List<string>();
-    public Task LoadCheckpointAsync(string checkpointName) => Task.CompletedTask;
-}
+// These interfaces are no longer needed - the implementations in separate files handle the typing correctly
 
-public class CLIPMultimodalModel : IMultimodalModel 
-{
-    // IMultimodalModel implementation
-    public IReadOnlyList<string> SupportedModalities => new[] { "text", "image" };
-    public string FusionStrategy => "CrossAttention";
-    
-    public Vector<double> ProcessMultimodal(Dictionary<string, object> modalityData)
-    {
-        // Simplified implementation
-        return new Vector<double>(new double[512]);
-    }
-    
-    public void AddModalityEncoder(string modalityName, IModalityEncoder encoder) { }
-    public IModalityEncoder GetModalityEncoder(string modalityName) => throw new NotImplementedException();
-    public void SetCrossModalityAttention(Matrix<double> weights) { }
-    
-    // Custom methods for the example
-    public void AddModality(ModalityType type, object preprocessor) { }
-    public void SetFusionStrategy(ModalityFusionStrategy strategy) { }
-}
 
-public class MultimodalInput<T>
-{
-    public MultimodalInput<T> AddTextData(string[] texts) => this;
-    public MultimodalInput<T> AddImageData(string[] imagePaths) => this;
-}
+// FineTuningOptions already exists in src/Models/Options/FineTuningOptions.cs
 
-// Enums for the example
-public enum ModalityType
-{
-    Text,
-    Image,
-    Audio,
-    Video
-}
-
-public enum ModalityFusionStrategy  
-{
-    EarlyFusion,
-    LateFusion,
-    CrossAttention,
-    Hierarchical
-}
-
-public class TextPreprocessor : IPipelineStep 
-{
-    public string Name => "TextPreprocessor";
-    public bool IsFitted { get; private set; }
-    
-    public async Task FitAsync(double[][] inputs, double[]? targets = null)
-    {
-        IsFitted = true;
-        await Task.CompletedTask;
-    }
-    
-    public async Task<double[][]> TransformAsync(double[][] inputs)
-    {
-        return inputs;
-    }
-    
-    public async Task<double[][]> FitTransformAsync(double[][] inputs, double[]? targets = null)
-    {
-        await FitAsync(inputs, targets);
-        return await TransformAsync(inputs);
-    }
-    
-    public Dictionary<string, object> GetHyperParameters() => new();
-    public void SetHyperParameters(Dictionary<string, object> hyperParameters) { }
-    public IPipelineStep Clone() => new TextPreprocessor();
-}
-
-public class ImagePreprocessor : IPipelineStep 
-{
-    public string Name => "ImagePreprocessor";
-    public bool IsFitted { get; private set; }
-    
-    public async Task FitAsync(double[][] inputs, double[]? targets = null)
-    {
-        IsFitted = true;
-        await Task.CompletedTask;
-    }
-    
-    public async Task<double[][]> TransformAsync(double[][] inputs)
-    {
-        return inputs;
-    }
-    
-    public async Task<double[][]> FitTransformAsync(double[][] inputs, double[]? targets = null)
-    {
-        await FitAsync(inputs, targets);
-        return await TransformAsync(inputs);
-    }
-    
-    public Dictionary<string, object> GetHyperParameters() => new();
-    public void SetHyperParameters(Dictionary<string, object> hyperParameters) { }
-    public IPipelineStep Clone() => new ImagePreprocessor();
-}
-
-public class InterpretableModelWrapper<T> : IInterpretableModel<T, Matrix<T>, Vector<T>> 
-{
-    public void SetBaseModel(IFullModel<T, Matrix<T>, Vector<T>> model) { }
-    public void EnableMethod(InterpretationMethod method) { }
-    public void ConfigureFairness(int[] sensitiveFeatures, FairnessMetric[] metrics) { }
-    public Vector<T> GetFeatureImportance() => new Vector<T>(new T[] { });
-}
-
-public class StandardProductionMonitor<T> : IProductionMonitor<T, Matrix<T>, Vector<T>> 
-{
-    public void ConfigureDriftDetection(T dataThreshold, T conceptThreshold) { }
-    public void ConfigureRetraining(T performanceThreshold, TimeSpan? interval) { }
-    public T CheckDataDrift(Matrix<T> newData) => default(T);
-    public bool ShouldRetrain() => false;
-}
-
-public class LogTransformStep<T> : IPipelineStep<T, Matrix<T>, Vector<T>> 
-{
-    public Matrix<T> Transform(Matrix<T> input) => input;
-    public IPipelineStep<T, Matrix<T>, Vector<T>> Fit(Matrix<T> input, Vector<T> output) => this;
-    public (Matrix<T>, Vector<T>) FitTransform(Matrix<T> input, Vector<T> output) => (input, output);
-    public Dictionary<string, object> GetParameters() => new();
-    public void SetParameters(Dictionary<string, object> parameters) { }
-    public bool Validate(Matrix<T> input) => true;
-    public Dictionary<string, object> GetMetadata() => new();
-}
-
-public class PolynomialFeaturesStep<T> : IPipelineStep<T, Matrix<T>, Vector<T>> 
-{
-    private readonly int _degree;
-    public PolynomialFeaturesStep(int degree) => _degree = degree;
-    public Matrix<T> Transform(Matrix<T> input) => input;
-    public IPipelineStep<T, Matrix<T>, Vector<T>> Fit(Matrix<T> input, Vector<T> output) => this;
-    public (Matrix<T>, Vector<T>) FitTransform(Matrix<T> input, Vector<T> output) => (input, output);
-    public Dictionary<string, object> GetParameters() => new() { ["degree"] = _degree };
-    public void SetParameters(Dictionary<string, object> parameters) { }
-    public bool Validate(Matrix<T> input) => true;
-    public Dictionary<string, object> GetMetadata() => new();
-}
+// BERTFoundationModel<T> is now in src/Examples/Models/BERTFoundationModel.cs
+// The following helper methods demonstrate its usage in examples
+// All example models and pipeline steps have been moved to separate files:
+// - BERTFoundationModel<T> -> src/Examples/Models/BERTFoundationModel.cs
+// - CLIPMultimodalModel<T> -> src/Examples/Models/CLIPMultimodalModel.cs
+// - MultimodalInput<T> -> src/Examples/Models/MultimodalInput.cs
+// - TextPreprocessor<T> -> src/Examples/Pipeline/TextPreprocessor.cs
+// - ImagePreprocessor<T> -> src/Examples/Pipeline/ImagePreprocessor.cs
+// - InterpretableModelWrapper<T> -> src/Examples/Models/InterpretableModelWrapper.cs
+// - StandardProductionMonitor<T> -> src/Examples/Models/StandardProductionMonitor.cs
+// - LogTransformStep<T> -> src/Examples/Pipeline/LogTransformStep.cs
+// - PolynomialFeaturesStep<T> -> src/Examples/Pipeline/PolynomialFeaturesStep.cs

@@ -2,6 +2,7 @@ using AiDotNet.Compression.Quantization;
 using AiDotNet.Compression.Pruning;
 using AiDotNet.Interfaces;
 using AiDotNet.Enums;
+using AiDotNet.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -84,7 +85,7 @@ public class InferenceOptimizer<TModel, TInput, TOutput>
         })
     {
         _capabilities = DetectHardwareCapabilities();
-        _hasSIMD = System.Numerics.Vector<double>.IsHardwareAccelerated;
+        _hasSIMD = MathHelper.IsHardwareAccelerated;
     }
     
     /// <summary>
@@ -356,7 +357,7 @@ public class InferenceOptimizer<TModel, TInput, TOutput>
         var capabilities = new HardwareCapabilities();
         
         // CPU capabilities detection
-        capabilities.HasSIMD = System.Numerics.Vector<double>.IsHardwareAccelerated;
+        capabilities.HasSIMD = MathHelper.IsHardwareAccelerated;
         
         // Check for AVX2 support
         capabilities.HasAvx2 = IsAvx2Supported();

@@ -65,7 +65,7 @@ public class HodrickPrescottDecomposition<T> : TimeSeriesDecompositionBase<T>
     {
         switch (_algorithm)
         {
-            case HodrickPrescottAlgorithmType.Matrix<double>Method:
+            case HodrickPrescottAlgorithmType.MatrixMethod:
                 DecomposeMatrixMethod();
                 break;
             case HodrickPrescottAlgorithmType.IterativeMethod:

@@ -1,4 +1,6 @@
+using AiDotNet.Helpers;
 using AiDotNet.Interfaces;
+using AiDotNet.LinearAlgebra;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,15 +11,17 @@ namespace AiDotNet.ProductionMonitoring
     /// <summary>
     /// Base class for production monitoring implementations
     /// </summary>
-    public abstract class ProductionMonitorBase : IProductionMonitor<double, Matrix<double>, Vector<double>>
+    /// <typeparam name="T">The numeric type used for calculations</typeparam>
+    public abstract class ProductionMonitorBase<T> : IProductionMonitor<T>
     {
         protected readonly List<Action<MonitoringAlert>> _alertHandlers;
         protected readonly List<PredictionRecord> _predictionHistory;
         protected readonly List<PerformanceMetrics> _performanceHistory;
         protected readonly List<DriftDetectionResult> _driftHistory;
         protected MonitoringThresholds _thresholds;
-        protected double[,] _referenceData;
+        protected Matrix<T>? _referenceData;
         protected readonly object _lockObject = new object();
+        protected static readonly INumericOperations<T> _ops = MathHelper.GetNumericOperations<T>();
 
         protected ProductionMonitorBase()
         {
@@ -31,7 +35,7 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Sets reference data for drift detection
         /// </summary>
-        public virtual void SetReferenceData(double[,] referenceData)
+        public virtual void SetReferenceData(Matrix<T> referenceData)
         {
             _referenceData = referenceData;
         }
@@ -61,13 +65,35 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Logs a prediction for monitoring
         /// </summary>
-        public virtual async Task LogPredictionAsync(double[] features, double prediction, double? actual = null, DateTime? timestamp = null)
+        public virtual async Task LogPredictionAsync(Vector<T> features, T prediction, DateTime? timestamp = null)
+        {
+            var record = new PredictionRecord
+            {
+                Features = features,
+                Prediction = prediction,
+                HasActual = false,
+                Timestamp = timestamp ?? DateTime.UtcNow
+            };
+
+            lock (_lockObject)
+            {
+                _predictionHistory.Add(record);
+            }
+
+            await Task.CompletedTask;
+        }
+        
+        /// <summary>
+        /// Logs a prediction with actual value for monitoring
+        /// </summary>
+        public virtual async Task LogPredictionAsync(Vector<T> features, T prediction, T actual, DateTime? timestamp = null)
         {
             var record = new PredictionRecord
             {
                 Features = features,
                 Prediction = prediction,
                 Actual = actual,
+                HasActual = true,
                 Timestamp = timestamp ?? DateTime.UtcNow
             };
 
@@ -77,7 +103,7 @@ namespace AiDotNet.ProductionMonitoring
             }
 
             // Check if we should calculate performance metrics
-            if (actual.HasValue && _predictionHistory.Count % 100 == 0)
+            if (_predictionHistory.Count % 100 == 0)
             {
                 await UpdatePerformanceMetricsAsync();
             }
@@ -88,12 +114,12 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Detects data drift
         /// </summary>
-        public abstract Task<DriftDetectionResult> DetectDataDriftAsync(double[,] productionData, double[,] referenceData = null);
+        public abstract Task<DriftDetectionResult> DetectDataDriftAsync(Matrix<T> productionData, Matrix<T>? referenceData = null);
 
         /// <summary>
         /// Detects concept drift
         /// </summary>
-        public abstract Task<DriftDetectionResult> DetectConceptDriftAsync(double[] predictions, double[] actuals);
+        public abstract Task<DriftDetectionResult> DetectConceptDriftAsync(Vector<T> predictions, Vector<T> actuals);
 
         /// <summary>
         /// Gets performance metrics
@@ -105,7 +131,7 @@ namespace AiDotNet.ProductionMonitoring
             lock (_lockObject)
             {
                 relevantRecords = _predictionHistory
-                    .Where(r => r.Actual.HasValue)
+                    .Where(r => r.HasActual)
                     .Where(r => (!startDate.HasValue || r.Timestamp >= startDate.Value) &&
                                (!endDate.HasValue || r.Timestamp <= endDate.Value))
                     .ToList();
@@ -234,7 +260,7 @@ namespace AiDotNet.ProductionMonitoring
         protected virtual PerformanceMetrics CalculatePerformanceMetrics(List<PredictionRecord> records)
         {
             var predictions = records.Select(r => r.Prediction).ToArray();
-            var actuals = records.Select(r => r.Actual.Value).ToArray();
+            var actuals = records.Select(r => r.Actual).ToArray();
             
             // For classification (assuming binary for simplicity)
             var threshold = 0.5;
@@ -301,9 +327,10 @@ namespace AiDotNet.ProductionMonitoring
         /// </summary>
         protected class PredictionRecord
         {
-            public double[] Features { get; set; }
-            public double Prediction { get; set; }
-            public double? Actual { get; set; }
+            public Vector<T> Features { get; set; }
+            public T Prediction { get; set; }
+            public T Actual { get; set; }
+            public bool HasActual { get; set; }
             public DateTime Timestamp { get; set; }
         }
     }

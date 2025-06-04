@@ -347,7 +347,7 @@ namespace AiDotNet.Deployment.EdgeOptimizers
                 // Save as C array for microcontrollers
                 modelPath = Path.Combine(modelsDir, "model_data.h");
                 var cArray = GenerateCArrayModel();
-                await File.WriteAllTextAsync(modelPath, cArray);
+                await Task.Run(() => File.WriteAllText(modelPath, cArray));
             }
             else if (profile.SupportedFormats.Contains("Tensor<double>RT"))
             {
@@ -369,19 +369,19 @@ namespace AiDotNet.Deployment.EdgeOptimizers
         {
             // Create installation script
             var installScript = GenerateInstallScript(profile);
-            await File.WriteAllTextAsync(Path.Combine(scriptsDir, "install.sh"), installScript);
+            await Task.Run(() => File.WriteAllText(Path.Combine(scriptsDir, "install.sh"), installScript));
 
             // Create deployment script
             var deployScript = GenerateDeploymentScript(profile);
-            await File.WriteAllTextAsync(Path.Combine(scriptsDir, "deploy.sh"), deployScript);
+            await Task.Run(() => File.WriteAllText(Path.Combine(scriptsDir, "deploy.sh"), deployScript));
 
             // Create monitoring script
             var monitorScript = GenerateMonitoringScript(profile);
-            await File.WriteAllTextAsync(Path.Combine(scriptsDir, "monitor.py"), monitorScript);
+            await Task.Run(() => File.WriteAllText(Path.Combine(scriptsDir, "monitor.py"), monitorScript));
 
             // Create update script
             var updateScript = GenerateUpdateScript(profile);
-            await File.WriteAllTextAsync(Path.Combine(scriptsDir, "update.sh"), updateScript);
+            await Task.Run(() => File.WriteAllText(Path.Combine(scriptsDir, "update.sh"), updateScript));
         }
 
         private async Task CreateFirmwareAsync(string firmwareDir, IoTDeviceProfile profile)
@@ -389,15 +389,15 @@ namespace AiDotNet.Deployment.EdgeOptimizers
             if (profile.DeviceName == "Arduino")
             {
                 var arduinoSketch = GenerateArduinoSketch();
-                await File.WriteAllTextAsync(Path.Combine(firmwareDir, "inference.ino"), arduinoSketch);
+                await Task.Run(() => File.WriteAllText(Path.Combine(firmwareDir, "inference.ino"), arduinoSketch));
             }
             else if (profile.DeviceName == "ESP32")
             {
                 var esp32Code = GenerateESP32Firmware();
-                await File.WriteAllTextAsync(Path.Combine(firmwareDir, "main.cpp"), esp32Code);
+                await Task.Run(() => File.WriteAllText(Path.Combine(firmwareDir, "main.cpp"), esp32Code));
                 
                 var platformioConfig = GeneratePlatformIOConfig();
-                await File.WriteAllTextAsync(Path.Combine(firmwareDir, "platformio.ini"), platformioConfig);
+                await Task.Run(() => File.WriteAllText(Path.Combine(firmwareDir, "platformio.ini"), platformioConfig));
             }
         }
 
@@ -405,38 +405,38 @@ namespace AiDotNet.Deployment.EdgeOptimizers
         {
             // Device configuration
             var deviceConfig = GenerateDeviceConfig(profile);
-            await File.WriteAllTextAsync(Path.Combine(configDir, "device_config.json"), deviceConfig);
+            await Task.Run(() => File.WriteAllText(Path.Combine(configDir, "device_config.json"), deviceConfig));
 
             // Network configuration
             var networkConfig = GenerateNetworkConfig();
-            await File.WriteAllTextAsync(Path.Combine(configDir, "network_config.json"), networkConfig);
+            await Task.Run(() => File.WriteAllText(Path.Combine(configDir, "network_config.json"), networkConfig));
 
             // Security configuration
             var securityConfig = GenerateSecurityConfig();
-            await File.WriteAllTextAsync(Path.Combine(configDir, "security_config.json"), securityConfig);
+            await Task.Run(() => File.WriteAllText(Path.Combine(configDir, "security_config.json"), securityConfig));
 
             // Power management configuration
             var powerConfig = GeneratePowerConfig();
-            await File.WriteAllTextAsync(Path.Combine(configDir, "power_config.json"), powerConfig);
+            await Task.Run(() => File.WriteAllText(Path.Combine(configDir, "power_config.json"), powerConfig));
         }
 
         private async Task CreateDocumentationAsync(string docsDir, IoTDeviceProfile profile)
         {
             // Deployment guide
             var deploymentGuide = GenerateDeploymentGuide(profile);
-            await File.WriteAllTextAsync(Path.Combine(docsDir, "deployment_guide.md"), deploymentGuide);
+            await Task.Run(() => File.WriteAllText(Path.Combine(docsDir, "deployment_guide.md"), deploymentGuide));
 
             // Hardware requirements
             var hardwareReqs = GenerateHardwareRequirements(profile);
-            await File.WriteAllTextAsync(Path.Combine(docsDir, "hardware_requirements.md"), hardwareReqs);
+            await Task.Run(() => File.WriteAllText(Path.Combine(docsDir, "hardware_requirements.md"), hardwareReqs));
 
             // API documentation
             var apiDocs = GenerateAPIDocs(profile);
-            await File.WriteAllTextAsync(Path.Combine(docsDir, "api_documentation.md"), apiDocs);
+            await Task.Run(() => File.WriteAllText(Path.Combine(docsDir, "api_documentation.md"), apiDocs));
 
             // Troubleshooting guide
             var troubleshooting = GenerateTroubleshootingGuide(profile);
-            await File.WriteAllTextAsync(Path.Combine(docsDir, "troubleshooting.md"), troubleshooting);
+            await Task.Run(() => File.WriteAllText(Path.Combine(docsDir, "troubleshooting.md"), troubleshooting));
         }
 
         private string GenerateCArrayModel()

@@ -1,16 +1,28 @@
 using AiDotNet.Interfaces;
 using AiDotNet.LinearAlgebra;
 using AiDotNet.NeuralNetworks;
+using AiDotNet.NeuralNetworks.Layers;
+using AiDotNet.ActivationFunctions;
+using AiDotNet.Extensions;
+using AiDotNet.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
+using System.Threading.Tasks;
 
 namespace AiDotNet.MultimodalAI
 {
     /// <summary>
     /// Cross-attention multimodal model that uses attention mechanisms to fuse modalities
     /// </summary>
-    public class CrossAttentionMultimodal : MultimodalModelBase
+    /// <remarks>
+    /// This model implements cross-attention fusion where different modalities
+    /// attend to each other through learned attention mechanisms. This allows
+    /// for dynamic, context-aware fusion of multimodal information.
+    /// </remarks>
+    [Serializable]
+    public class CrossAttentionMultimodal : MultimodalModelBase, IDisposable
     {
         private readonly int _numAttentionHeads;
         private readonly int _attentionDimension;
@@ -19,8 +31,11 @@ namespace AiDotNet.MultimodalAI
         private readonly Dictionary<string, Matrix<double>> _queryProjections;
         private readonly Dictionary<string, Matrix<double>> _keyProjections;
         private readonly Dictionary<string, Matrix<double>> _valueProjections;
-        private Matrix<double> _outputProjection;
-        private FeedForwardNeuralNetwork<double> _feedForwardNetwork;
+        private Matrix<double>? _outputProjection;
+        private NeuralNetwork<double>? _feedForwardNetwork;
+        private readonly Random _random;
+        private bool _disposed;
+        private readonly object _lockObject = new object();
 
         /// <summary>
         /// Initializes a new instance of CrossAttentionMultimodal
@@ -32,9 +47,20 @@ namespace AiDotNet.MultimodalAI
         /// <param name="dropoutRate">Dropout rate for regularization</param>
         public CrossAttentionMultimodal(int fusedDimension, int numAttentionHeads = 8,
                                       int attentionDimension = 64, double learningRate = 0.001,
-                                      double dropoutRate = 0.1)
+                                      double dropoutRate = 0.1, int? randomSeed = null)
             : base("cross_attention", fusedDimension)
         {
+            if (fusedDimension <= 0)
+                throw new ArgumentException("Fused dimension must be positive", nameof(fusedDimension));
+            if (numAttentionHeads <= 0)
+                throw new ArgumentException("Number of attention heads must be positive", nameof(numAttentionHeads));
+            if (attentionDimension <= 0)
+                throw new ArgumentException("Attention dimension must be positive", nameof(attentionDimension));
+            if (learningRate <= 0 || learningRate > 1)
+                throw new ArgumentException("Learning rate must be in (0, 1]", nameof(learningRate));
+            if (dropoutRate < 0 || dropoutRate >= 1)
+                throw new ArgumentException("Dropout rate must be in [0, 1)", nameof(dropoutRate));
+
             _numAttentionHeads = numAttentionHeads;
             _attentionDimension = attentionDimension;
             _learningRate = learningRate;
@@ -42,6 +68,7 @@ namespace AiDotNet.MultimodalAI
             _queryProjections = new Dictionary<string, Matrix<double>>();
             _keyProjections = new Dictionary<string, Matrix<double>>();
             _valueProjections = new Dictionary<string, Matrix<double>>();
+            _random = randomSeed.HasValue ? new Random(randomSeed.Value) : new Random();
         }
 
         /// <summary>
@@ -94,7 +121,7 @@ namespace AiDotNet.MultimodalAI
             // Initialize output projection if needed
             if (_outputProjection == null)
             {
-                _outputProjection = InitializeProjectionMatrix(combined.Dimension, _fusedDimension);
+                _outputProjection = InitializeProjectionMatrix(combined.Length, _fusedDimension);
             }
 
             // Apply output projection
@@ -106,7 +133,17 @@ namespace AiDotNet.MultimodalAI
                 InitializeFeedForwardNetwork(_fusedDimension);
             }
             
-            var output = _feedForwardNetwork.Forward(projected);
+            // Process through neural network
+            var inputTensor = new Tensor<double>(new[] { projected.Length }, projected);
+            var outputTensor = _feedForwardNetwork!.Predict(inputTensor);
+            
+            // Extract output vector
+            var outputArray = outputTensor.ToArray();
+            var output = new Vector<double>(outputArray.Length);
+            for (int i = 0; i < outputArray.Length; i++)
+            {
+                output[i] = outputArray[i];
+            }
 
             return NormalizeFused(output);
         }
@@ -167,10 +204,10 @@ namespace AiDotNet.MultimodalAI
             var weights = Softmax(scores);
 
             // Weighted sum of values
-            var attended = new Vector<double>(values[0].Dimension);
+            var attended = new Vector<double>(values[0].Length);
             for (int i = 0; i < values.Count; i++)
             {
-                for (int j = 0; j < attended.Dimension; j++)
+                for (int j = 0; j < attended.Length; j++)
                 {
                     attended[j] += weights[i] * values[i][j];
                 }
@@ -186,7 +223,7 @@ namespace AiDotNet.MultimodalAI
         {
             // Scaled dot-product attention
             double dotProduct = 0;
-            for (int i = 0; i < query.Dimension; i++)
+            for (int i = 0; i < query.Length; i++)
             {
                 dotProduct += query[i] * key[i];
             }
@@ -198,19 +235,19 @@ namespace AiDotNet.MultimodalAI
         /// </summary>
         private Vector<double> Softmax(Vector<double> scores)
         {
-            var exp = new Vector<double>(scores.Dimension);
+            var exp = new Vector<double>(scores.Length);
             double maxScore = scores.Max();
             double sum = 0;
 
             // Compute exp(score - max) for numerical stability
-            for (int i = 0; i < scores.Dimension; i++)
+            for (int i = 0; i < scores.Length; i++)
             {
                 exp[i] = Math.Exp(scores[i] - maxScore);
                 sum += exp[i];
             }
 
             // Normalize
-            for (int i = 0; i < exp.Dimension; i++)
+            for (int i = 0; i < exp.Length; i++)
             {
                 exp[i] /= sum;
             }
@@ -231,7 +268,7 @@ namespace AiDotNet.MultimodalAI
                 for (int i = 0; i < headDim; i++)
                 {
                     int idx = head * headDim + i;
-                    if (idx < features.Dimension)
+                    if (idx < features.Length)
                     {
                         multiHead[head, i] = features[idx];
                     }
@@ -259,17 +296,17 @@ namespace AiDotNet.MultimodalAI
         /// </summary>
         private Vector<double> ConcatenateHeads(List<Vector<double>> heads)
         {
-            int totalDim = heads.Sum(h => h.Dimension);
+            int totalDim = heads.Sum(h => h.Length);
             var concatenated = new Vector<double>(totalDim);
             
             int offset = 0;
             foreach (var head in heads)
             {
-                for (int i = 0; i < head.Dimension; i++)
+                for (int i = 0; i < head.Length; i++)
                 {
                     concatenated[offset + i] = head[i];
                 }
-                offset += head.Dimension;
+                offset += head.Length;
             }
             
             return concatenated;
@@ -288,17 +325,17 @@ namespace AiDotNet.MultimodalAI
 
             // Default: concatenate all attended features
             var features = attendedFeatures.Values.ToList();
-            int totalDim = features.Sum(f => f.Dimension);
+            int totalDim = features.Sum(f => f.Length);
             var combined = new Vector<double>(totalDim);
             
             int offset = 0;
             foreach (var feature in features)
             {
-                for (int i = 0; i < feature.Dimension; i++)
+                for (int i = 0; i < feature.Length; i++)
                 {
                     combined[offset + i] = feature[i];
                 }
-                offset += feature.Dimension;
+                offset += feature.Length;
             }
             
             return combined;
@@ -311,14 +348,14 @@ namespace AiDotNet.MultimodalAI
         {
             var modalityList = features.Keys.ToList();
             var firstFeature = features.Values.First();
-            var combined = new Vector<double>(firstFeature.Dimension);
+            var combined = new Vector<double>(firstFeature.Length);
 
             for (int i = 0; i < modalityList.Count; i++)
             {
                 var modality = modalityList[i];
                 var feature = features[modality];
                 
-                for (int j = 0; j < feature.Dimension; j++)
+                for (int j = 0; j < feature.Length; j++)
                 {
                     // Use diagonal weights for simplicity
                     double weight = (i < weights.Rows && i < weights.Columns) ? weights[i, i] : 1.0 / modalityList.Count;
@@ -354,12 +391,24 @@ namespace AiDotNet.MultimodalAI
         /// </summary>
         private void InitializeFeedForwardNetwork(int dimension)
         {
-            _feedForwardNetwork = new FeedForwardNeuralNetwork<double>(new[]
+            // Create layers explicitly
+            var layers = new List<ILayer<double>>
             {
-                dimension,
-                dimension * 2,
-                dimension
-            });
+                new FullyConnectedLayer<double>(dimension, dimension * 2, null as IActivationFunction<double>),
+                new ActivationLayer<double>(new[] { dimension * 2 }, new ReLUActivation<double>() as IActivationFunction<double>),
+                new DropoutLayer<double>(_dropoutRate),
+                new FullyConnectedLayer<double>(dimension * 2, dimension, null as IActivationFunction<double>),
+                new ActivationLayer<double>(new[] { dimension }, new ReLUActivation<double>() as IActivationFunction<double>)
+            };
+
+            var architecture = new NeuralNetworkArchitecture<double>(
+                complexity: NetworkComplexity.Medium,
+                taskType: NeuralNetworkTaskType.Regression,
+                shouldReturnFullSequence: false,
+                layers: layers,
+                isDynamicSampleCount: true,
+                isPlaceholder: false);
+            _feedForwardNetwork = new NeuralNetwork<double>(architecture);
         }
 
         /// <summary>
@@ -400,14 +449,70 @@ namespace AiDotNet.MultimodalAI
         /// <summary>
         /// Gets parameters of the model
         /// </summary>
-        public override Dictionary<string, object> GetParameters()
+        public override Dictionary<string, object> GetParametersDictionary()
         {
-            var parameters = base.GetParameters();
+            var parameters = base.GetParametersDictionary();
             parameters["NumAttentionHeads"] = _numAttentionHeads;
             parameters["AttentionDimension"] = _attentionDimension;
             parameters["LearningRate"] = _learningRate;
             parameters["DropoutRate"] = _dropoutRate;
             return parameters;
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    lock (_lockObject)
+                    {
+                        // Dispose feed-forward network
+                        if (_feedForwardNetwork is IDisposable disposableNetwork)
+                        {
+                            disposableNetwork.Dispose();
+                        }
+                        
+                        // Clear projection matrices
+                        _queryProjections.Clear();
+                        _keyProjections.Clear();
+                        _valueProjections.Clear();
+                        
+                        // Dispose encoders if they implement IDisposable
+                        foreach (var encoder in _modalityEncoders.Values)
+                        {
+                            if (encoder is IDisposable disposableEncoder)
+                            {
+                                disposableEncoder.Dispose();
+                            }
+                        }
+                        _modalityEncoders.Clear();
+                    }
+                }
+
+                _disposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Finalizer
+        /// </summary>
+        ~CrossAttentionMultimodal()
+        {
+            Dispose(false);
         }
     }
 }

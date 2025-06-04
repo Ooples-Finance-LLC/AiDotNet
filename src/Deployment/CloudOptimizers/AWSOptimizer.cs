@@ -20,44 +20,42 @@ namespace AiDotNet.Deployment.CloudOptimizers
 
         public AWSOptimizer()
         {
+            _serviceConfigs = new Dictionary<string, AWSServiceConfig>();
             InitializeServiceConfigs();
             ConfigureForAWS();
         }
 
         private void InitializeServiceConfigs()
         {
-            _serviceConfigs = new Dictionary<string, AWSServiceConfig>
-            {
-                ["SageMaker"] = new AWSServiceConfig
+            _serviceConfigs["SageMaker"] = new AWSServiceConfig
                 {
                     ServiceName = "Amazon SageMaker",
                     MaxModelSize = 10000, // 10 GB
                     SupportedFormats = new[] { "Tensor<double>Flow", "PyTorch", "MXNet", "XGBoost" },
                     InstanceTypes = new[] { "ml.t2.medium", "ml.m5.xlarge", "ml.p3.2xlarge", "ml.inf1.xlarge" }
-                },
-                ["Lambda"] = new AWSServiceConfig
+                };
+            _serviceConfigs["Lambda"] = new AWSServiceConfig
                 {
                     ServiceName = "AWS Lambda",
                     MaxModelSize = 250, // 250 MB unzipped
                     MaxMemory = 10240, // 10 GB
                     MaxTimeout = 900, // 15 minutes
                     SupportedFormats = new[] { "Tensor<double>Flow Lite", "ONNX" }
-                },
-                ["EC2"] = new AWSServiceConfig
+                };
+            _serviceConfigs["EC2"] = new AWSServiceConfig
                 {
                     ServiceName = "Amazon EC2",
                     MaxModelSize = double.MaxValue,
                     SupportedFormats = new[] { "Any" },
                     InstanceTypes = new[] { "t3.micro", "c5.xlarge", "g4dn.xlarge", "inf1.2xlarge" }
-                },
-                ["Batch"] = new AWSServiceConfig
+                };
+            _serviceConfigs["Batch"] = new AWSServiceConfig
                 {
                     ServiceName = "AWS Batch",
                     MaxModelSize = double.MaxValue,
                     SupportedFormats = new[] { "Any" },
                     ComputeEnvironments = new[] { "EC2", "Fargate" }
-                }
-            };
+                };
         }
 
         private void ConfigureForAWS()
@@ -190,19 +188,19 @@ namespace AiDotNet.Deployment.CloudOptimizers
             // Create CloudFormation template
             var cfTemplate = GenerateCloudFormationTemplate(model);
             var cfPath = Path.Combine(configDir, "cloudformation.yaml");
-            await File.WriteAllTextAsync(cfPath, cfTemplate);
+            await Task.Run(() => File.WriteAllText(cfPath, cfTemplate));
             package.Artifacts["CloudFormation"] = cfPath;
 
             // Create SageMaker inference script
             var inferenceScript = GenerateSageMakerInferenceScript();
             var scriptPath = Path.Combine(scriptsDir, "inference.py");
-            await File.WriteAllTextAsync(scriptPath, inferenceScript);
+            await Task.Run(() => File.WriteAllText(scriptPath, inferenceScript));
             package.Artifacts["InferenceScript"] = scriptPath;
 
             // Create deployment configuration
             var deployConfig = GenerateDeploymentConfig(model);
             package.ConfigPath = Path.Combine(configDir, "deploy_config.json");
-            await File.WriteAllTextAsync(package.ConfigPath, deployConfig);
+            await Task.Run(() => File.WriteAllText(package.ConfigPath, deployConfig));
 
             // Calculate package size
             var allFiles = Directory.GetFiles(targetPath, "*", SearchOption.AllDirectories);

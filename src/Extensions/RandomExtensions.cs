@@ -55,4 +55,16 @@ public static class RandomExtensions
 
         return Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
     }
+
+    /// <summary>
+    /// Generates a random number from a Gaussian (normal) distribution with specified mean and standard deviation.
+    /// </summary>
+    /// <param name="random">The Random object to extend.</param>
+    /// <param name="mean">The mean of the distribution.</param>
+    /// <param name="standardDeviation">The standard deviation of the distribution.</param>
+    /// <returns>A random double value from the specified normal distribution.</returns>
+    public static double NextGaussian(this Random random, double mean, double standardDeviation)
+    {
+        return mean + standardDeviation * random.NextGaussian();
+    }
 }

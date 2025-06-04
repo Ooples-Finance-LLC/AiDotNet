@@ -838,7 +838,7 @@ public class ErrorStats<T> : StatisticsBase<T>
         var result = new Dictionary<string, object>
         {
             ["ModelType"] = ModelType.ToString(),
-            ["Metrics"] = _metrics.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
+            ["Metrics"] = System.Linq.Enumerable.ToDictionary(_metrics, kv => kv.Key.ToString(), kv => kv.Value),
             ["ValidMetrics"] = _validMetrics.Select(m => m.ToString()).ToArray(),
             ["CalculatedMetrics"] = _calculatedMetrics.Select(m => m.ToString()).ToArray()
         };

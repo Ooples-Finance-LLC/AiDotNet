@@ -20,44 +20,42 @@ namespace AiDotNet.Deployment.CloudOptimizers
 
         public AzureOptimizer()
         {
+            _serviceConfigs = new Dictionary<string, AzureServiceConfig>();
             InitializeServiceConfigs();
             ConfigureForAzure();
         }
 
         private void InitializeServiceConfigs()
         {
-            _serviceConfigs = new Dictionary<string, AzureServiceConfig>
-            {
-                ["MachineLearning"] = new AzureServiceConfig
+            _serviceConfigs["MachineLearning"] = new AzureServiceConfig
                 {
                     ServiceName = "Azure Machine Learning",
                     MaxModelSize = double.MaxValue,
                     SupportedFormats = new[] { "Tensor<double>Flow", "PyTorch", "ONNX", "Scikit-learn" },
                     ComputeTargets = new[] { "AmlCompute", "ComputeInstance", "Kubernetes" }
-                },
-                ["Functions"] = new AzureServiceConfig
+                };
+            _serviceConfigs["Functions"] = new AzureServiceConfig
                 {
                     ServiceName = "Azure Functions",
                     MaxModelSize = 1000, // 1 GB for consumption plan
                     MaxMemory = 1536, // 1.5 GB
                     MaxTimeout = 600, // 10 minutes
                     SupportedFormats = new[] { "ONNX", "Tensor<double>Flow Lite" }
-                },
-                ["ContainerInstances"] = new AzureServiceConfig
+                };
+            _serviceConfigs["ContainerInstances"] = new AzureServiceConfig
                 {
                     ServiceName = "Azure Container Instances",
                     MaxModelSize = 15000, // 15 GB
                     MaxMemory = 16384, // 16 GB
                     SupportedFormats = new[] { "Any" }
-                },
-                ["CognitiveServices"] = new AzureServiceConfig
+                };
+            _serviceConfigs["CognitiveServices"] = new AzureServiceConfig
                 {
                     ServiceName = "Azure Cognitive Services",
                     MaxModelSize = 4000, // 4 GB
                     SupportedFormats = new[] { "ONNX", "Custom Vision" },
                     Capabilities = new[] { "AutoScale", "MultiRegion", "EdgeDeployment" }
-                }
-            };
+                };
         }
 
         private void ConfigureForAzure()
@@ -210,19 +208,19 @@ namespace AiDotNet.Deployment.CloudOptimizers
             // Create ARM template
             var armTemplate = GenerateARMTemplate(model);
             var armPath = Path.Combine(configDir, "azuredeploy.json");
-            await File.WriteAllTextAsync(armPath, armTemplate);
+            await Task.Run(() => File.WriteAllText(armPath, armTemplate));
             package.Artifacts["ARMTemplate"] = armPath;
 
             // Create Azure ML scoring script
             var scoringScript = GenerateAzureMLScoringScript();
             var scriptPath = Path.Combine(scriptsDir, "score.py");
-            await File.WriteAllTextAsync(scriptPath, scoringScript);
+            await Task.Run(() => File.WriteAllText(scriptPath, scoringScript));
             package.Artifacts["ScoringScript"] = scriptPath;
 
             // Create deployment configuration
             var deployConfig = GenerateDeploymentConfig(model);
             package.ConfigPath = Path.Combine(configDir, "deploy_config.json");
-            await File.WriteAllTextAsync(package.ConfigPath, deployConfig);
+            await Task.Run(() => File.WriteAllText(package.ConfigPath, deployConfig));
 
             // Create Azure Functions project if applicable
             if (DetermineTargetService(model, new OptimizationOptions()) == "Functions")
@@ -376,7 +374,7 @@ def run(raw_data):
         }
     }
 }";
-            await File.WriteAllTextAsync(Path.Combine(functionsPath, "host.json"), hostJson);
+            await Task.Run(() => File.WriteAllText(Path.Combine(functionsPath, "host.json"), hostJson));
 
             // Create function.json
             var functionJson = @"{
@@ -397,13 +395,13 @@ def run(raw_data):
 }";
             var predictDir = Path.Combine(functionsPath, "Predict");
             Directory.CreateDirectory(predictDir);
-            await File.WriteAllTextAsync(Path.Combine(predictDir, "function.json"), functionJson);
+            await Task.Run(() => File.WriteAllText(Path.Combine(predictDir, "function.json"), functionJson));
 
             // Create requirements.txt
             var requirements = @"azure-functions
 onnxruntime
 numpy";
-            await File.WriteAllTextAsync(Path.Combine(functionsPath, "requirements.txt"), requirements);
+            await Task.Run(() => File.WriteAllText(Path.Combine(functionsPath, "requirements.txt"), requirements));
         }
 
         protected override double EstimateLatency(IModel<TInput, TOutput, TMetadata> model)
