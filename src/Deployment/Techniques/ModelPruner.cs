@@ -39,6 +39,14 @@ namespace AiDotNet.Deployment.Techniques
         }
 
         /// <summary>
+        /// Prunes a model synchronously using the specified strategy.
+        /// </summary>
+        public IFullModel<T, TInput, TOutput> Prune(IFullModel<T, TInput, TOutput> model, string strategy = "magnitude", float sparsity = 0.5f)
+        {
+            return PruneModelAsync(model, strategy, sparsity).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
         /// Prunes a model using the specified strategy.
         /// </summary>
         public async Task<IFullModel<T, TInput, TOutput>> PruneModelAsync(IFullModel<T, TInput, TOutput> model, string strategy = "magnitude", float sparsity = 0.5f)
@@ -116,7 +124,7 @@ namespace AiDotNet.Deployment.Techniques
                 LayerAnalysis = new List<LayerPruningInfo>()
             };
 
-            if (model is INeuralNetworkModel nnModel)
+            if (model is INeuralNetworkModel<T> nnModel)
             {
                 var architecture = nnModel.GetArchitecture();
                 
@@ -142,7 +150,7 @@ namespace AiDotNet.Deployment.Techniques
         {
             var sensitivities = new Dictionary<string, float>();
 
-            if (!(model is INeuralNetworkModel nnModel))
+            if (!(model is INeuralNetworkModel<T> nnModel))
             {
                 return sensitivities;
             }
@@ -177,7 +185,7 @@ namespace AiDotNet.Deployment.Techniques
                 SparsityInfo = new Dictionary<string, float>()
             };
 
-            if (prunedModel is INeuralNetworkModel nnModel)
+            if (prunedModel is INeuralNetworkModel<T> nnModel)
             {
                 var architecture = nnModel.GetArchitecture();
                 
@@ -244,7 +252,7 @@ namespace AiDotNet.Deployment.Techniques
 
         private long CalculateTotalParameters(IFullModel<T, TInput, TOutput> model)
         {
-            if (model is INeuralNetworkModel nnModel)
+            if (model is INeuralNetworkModel<T> nnModel)
             {
                 var architecture = nnModel.GetArchitecture();
                 return architecture.Layers.Sum(l => (long)(l.InputSize * l.OutputSize + l.OutputSize));
@@ -406,7 +414,7 @@ namespace AiDotNet.Deployment.Techniques
         public float EstimatedRedundancy { get; set; }
         public float RecommendedSparsity { get; set; }
         public float ExpectedSpeedup { get; set; }
-        public List<LayerPruningInfo> LayerAnalysis { get; set; }
+        public List<LayerPruningInfo> LayerAnalysis { get; set; } = new();
         public Dictionary<string, float> LayerSensitivities { get; set; } = new Dictionary<string, float>();
     }
 
@@ -415,7 +423,7 @@ namespace AiDotNet.Deployment.Techniques
     /// </summary>
     public class LayerPruningInfo
     {
-        public string LayerName { get; set; }
+        public string LayerName { get; set; } = string.Empty;
         public long Parameters { get; set; }
         public float Importance { get; set; }
         public float MaxSparsity { get; set; }
@@ -438,9 +446,9 @@ namespace AiDotNet.Deployment.Techniques
     /// </summary>
     public class SparseModel<T, TInput, TOutput>
     {
-        public IFullModel<T, TInput, TOutput> OriginalModel { get; set; }
-        public Dictionary<string, SparseMatrix> SparseWeights { get; set; }
-        public Dictionary<string, float> SparsityInfo { get; set; }
+        public IFullModel<T, TInput, TOutput> OriginalModel { get; set; } = default!;
+        public Dictionary<string, SparseMatrix> SparseWeights { get; set; } = new();
+        public Dictionary<string, float> SparsityInfo { get; set; } = new();
         public float TotalSparsity { get; set; }
         public float CompressionRatio { get; set; }
     }
@@ -452,9 +460,9 @@ namespace AiDotNet.Deployment.Techniques
     {
         public int Rows { get; set; }
         public int Cols { get; set; }
-        public List<float> Values { get; set; }
-        public List<int> RowIndices { get; set; }
-        public List<int> ColIndices { get; set; }
+        public List<float> Values { get; set; } = new();
+        public List<int> RowIndices { get; set; } = new();
+        public List<int> ColIndices { get; set; } = new();
     }
 
     /// <summary>

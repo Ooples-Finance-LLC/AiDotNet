@@ -5,6 +5,8 @@ using AiDotNet.NeuralNetworks.Layers;
 using AiDotNet.ActivationFunctions;
 using AiDotNet.Enums;
 using AiDotNet.Extensions;
+using AiDotNet.NumericOperations;
+using AiDotNet.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,16 +25,17 @@ namespace AiDotNet.MultimodalAI
     /// specialized processing of each input type.
     /// </remarks>
     [Serializable]
-    public class LateFusionMultimodal : MultimodalModelBase, IDisposable
+    public class LateFusionMultimodal<T> : MultimodalModelBase<T>, IDisposable
     {
-        private readonly Dictionary<string, NeuralNetwork<double>> _modalityNetworks;
-        private NeuralNetwork<double>? _fusionNetwork;
+        private readonly INumericOperations<T> _ops;
+        private readonly Dictionary<string, NeuralNetwork<T>> _modalityNetworks;
+        private NeuralNetwork<T>? _fusionNetwork;
         private readonly int _modalityHiddenSize;
         private readonly int _fusionHiddenSize;
-        private readonly double _learningRate;
+        private readonly T _learningRate;
         private readonly string _aggregationMethod;
         private readonly Random _random;
-        private readonly Dictionary<string, double> _modalityWeights;
+        private readonly Dictionary<string, T> _modalityWeights;
         private bool _disposed;
         private readonly object _lockObject = new object();
 
@@ -46,8 +49,9 @@ namespace AiDotNet.MultimodalAI
         /// <param name="aggregationMethod">Method for aggregating modality outputs (mean, max, weighted)</param>
         public LateFusionMultimodal(int fusedDimension, int modalityHiddenSize = 128,
                                   int fusionHiddenSize = 256, double learningRate = 0.001,
-                                  string aggregationMethod = "weighted", int? randomSeed = null)
-            : base("late_fusion", fusedDimension)
+                                  string aggregationMethod = "weighted", int? randomSeed = null,
+                                  INumericOperations<T>? ops = null)
+            : base("late_fusion", fusedDimension, ops ?? MathHelper.GetNumericOperations<T>())
         {
             if (fusedDimension <= 0)
                 throw new ArgumentException("Fused dimension must be positive", nameof(fusedDimension));
@@ -60,37 +64,38 @@ namespace AiDotNet.MultimodalAI
             if (!new[] { "mean", "max", "weighted", "concat" }.Contains(aggregationMethod.ToLowerInvariant()))
                 throw new ArgumentException("Invalid aggregation method. Use 'mean', 'max', 'weighted', or 'concat'", nameof(aggregationMethod));
 
-            _modalityNetworks = new Dictionary<string, NeuralNetwork<double>>();
+            _ops = ops ?? throw new ArgumentNullException(nameof(ops));
+            _modalityNetworks = new Dictionary<string, NeuralNetwork<T>>();
             _modalityHiddenSize = modalityHiddenSize;
             _fusionHiddenSize = fusionHiddenSize;
-            _learningRate = learningRate;
+            _learningRate = _ops.FromDouble(learningRate);
             _aggregationMethod = aggregationMethod.ToLowerInvariant();
             _random = randomSeed.HasValue ? new Random(randomSeed.Value) : new Random();
-            _modalityWeights = new Dictionary<string, double>();
+            _modalityWeights = new Dictionary<string, T>();
         }
 
         /// <summary>
         /// Adds a modality encoder and creates a corresponding network
         /// </summary>
-        public override void AddModalityEncoder(string modalityName, IModalityEncoder encoder)
+        public override void AddModalityEncoder(string modalityName, IModalityEncoder<T> encoder)
         {
             if (_disposed)
-                throw new ObjectDisposedException(nameof(LateFusionMultimodal));
+                throw new ObjectDisposedException(nameof(LateFusionMultimodal<T>));
 
             base.AddModalityEncoder(modalityName, encoder);
             
             lock (_lockObject)
             {
                 // Create a modality-specific network with explicit layers
-                var layers = new List<ILayer<double>>
+                var layers = new List<ILayer<T>>
                 {
-                    new FullyConnectedLayer<double>(encoder.OutputDimension, _modalityHiddenSize, null as IActivationFunction<double>),
-                    new ActivationLayer<double>(new[] { _modalityHiddenSize }, new ReLUActivation<double>() as IActivationFunction<double>),
-                    new FullyConnectedLayer<double>(_modalityHiddenSize, _modalityHiddenSize / 2, null as IActivationFunction<double>),
-                    new ActivationLayer<double>(new[] { _modalityHiddenSize / 2 }, new ReLUActivation<double>() as IActivationFunction<double>)
+                    new FullyConnectedLayer<T>(encoder.OutputDimension, _modalityHiddenSize, null as IActivationFunction<T>),
+                    new ActivationLayer<T>(new[] { _modalityHiddenSize }, new ReLUActivation<T>() as IActivationFunction<T>),
+                    new FullyConnectedLayer<T>(_modalityHiddenSize, _modalityHiddenSize / 2, null as IActivationFunction<T>),
+                    new ActivationLayer<T>(new[] { _modalityHiddenSize / 2 }, new ReLUActivation<T>() as IActivationFunction<T>)
                 };
                 
-                var architecture = new NeuralNetworkArchitecture<double>(
+                var architecture = new NeuralNetworkArchitecture<T>(
                     complexity: NetworkComplexity.Medium,
                     taskType: NeuralNetworkTaskType.Regression,
                     shouldReturnFullSequence: false,
@@ -98,17 +103,21 @@ namespace AiDotNet.MultimodalAI
                     isDynamicSampleCount: true,
                     isPlaceholder: false);
                 
-                var network = new NeuralNetwork<double>(architecture);
+                var network = new NeuralNetwork<T>(architecture);
                 _modalityNetworks[modalityName] = network;
                 
                 // Initialize weight for weighted aggregation
-                _modalityWeights[modalityName] = 1.0 / (_modalityWeights.Count + 1);
+                _modalityWeights[modalityName] = _ops.FromDouble(1.0 / (_modalityWeights.Count + 1));
                 
                 // Normalize weights
-                var totalWeight = _modalityWeights.Values.Sum();
+                var totalWeight = _ops.Zero;
+                foreach (var weight in _modalityWeights.Values)
+                {
+                    totalWeight = _ops.Add(totalWeight, weight);
+                }
                 foreach (var key in _modalityWeights.Keys.ToList())
                 {
-                    _modalityWeights[key] /= totalWeight;
+                    _modalityWeights[key] = _ops.Divide(_modalityWeights[key], totalWeight);
                 }
             }
         }
@@ -118,10 +127,10 @@ namespace AiDotNet.MultimodalAI
         /// </summary>
         /// <param name="modalityData">Dictionary mapping modality names to their data</param>
         /// <returns>Fused representation</returns>
-        public override Vector<double> ProcessMultimodal(Dictionary<string, object> modalityData)
+        public override Vector<T> ProcessMultimodal(Dictionary<string, object> modalityData)
         {
             if (_disposed)
-                throw new ObjectDisposedException(nameof(LateFusionMultimodal));
+                throw new ObjectDisposedException(nameof(LateFusionMultimodal<T>));
 
             ValidateModalityData(modalityData);
 
@@ -129,8 +138,8 @@ namespace AiDotNet.MultimodalAI
             {
                 try
                 {
-                    var modalityOutputs = new Dictionary<string, Vector<double>>();
-                    var processingTasks = new List<Task<(string, Vector<double>)>>();
+                    var modalityOutputs = new Dictionary<string, Vector<T>>();
+                    var processingTasks = new List<Task<(string, Vector<T>)>>();
 
                     // Process each modality independently in parallel
                     foreach (var kvp in modalityData)
@@ -146,12 +155,12 @@ namespace AiDotNet.MultimodalAI
                                 var encoded = EncodeModality(modalityName, data);
                                 
                                 // Process through modality-specific network
-                                var inputTensor = new Tensor<double>(new[] { encoded.Length }, encoded);
+                                var inputTensor = new Tensor<T>(new[] { encoded.Length }, encoded);
                                 var outputTensor = _modalityNetworks[modalityName].Predict(inputTensor);
                                 
                                 // Extract output vector
                                 var outputArray = outputTensor.ToArray();
-                                var output = new Vector<double>(outputArray.Length);
+                                var output = new Vector<T>(outputArray.Length);
                                 for (int i = 0; i < outputArray.Length; i++)
                                 {
                                     output[i] = outputArray[i];
@@ -187,12 +196,12 @@ namespace AiDotNet.MultimodalAI
                     }
 
                     // Final fusion processing
-                    var fusionInputTensor = new Tensor<double>(new[] { aggregated.Length }, aggregated);
+                    var fusionInputTensor = new Tensor<T>(new[] { aggregated.Length }, aggregated);
                     var fusedTensor = _fusionNetwork!.Predict(fusionInputTensor);
                     
                     // Extract fused vector
                     var fusedArray = fusedTensor.ToArray();
-                    var fused = new Vector<double>(fusedArray.Length);
+                    var fused = new Vector<T>(fusedArray.Length);
                     for (int i = 0; i < fusedArray.Length; i++)
                     {
                         fused[i] = fusedArray[i];
@@ -216,10 +225,10 @@ namespace AiDotNet.MultimodalAI
         /// <summary>
         /// Trains the late fusion model
         /// </summary>
-        public override void Train(Matrix<double> inputs, Vector<double> targets)
+        public override void Train(Matrix<T> inputs, Vector<T> targets)
         {
             if (_disposed)
-                throw new ObjectDisposedException(nameof(LateFusionMultimodal));
+                throw new ObjectDisposedException(nameof(LateFusionMultimodal<T>));
 
             if (inputs == null)
                 throw new ArgumentNullException(nameof(inputs));
@@ -248,7 +257,7 @@ namespace AiDotNet.MultimodalAI
                             Console.WriteLine($"Training {kvp.Key} modality network...");
                             
                             // Create target matrix for this modality
-                            var modalityTargets = new Matrix<double>(targets.Length, _modalityHiddenSize / 2);
+                            var modalityTargets = new Matrix<T>(targets.Length, _modalityHiddenSize / 2);
                             
                             // For simplicity, we'll use the same targets transformed
                             // In practice, you'd have modality-specific intermediate targets
@@ -256,12 +265,13 @@ namespace AiDotNet.MultimodalAI
                             {
                                 for (int j = 0; j < modalityTargets.Columns; j++)
                                 {
-                                    modalityTargets[i, j] = targets[i] * (j + 1) / modalityTargets.Columns;
+                                    var factor = _ops.FromDouble((double)(j + 1) / modalityTargets.Columns);
+                                    modalityTargets[i, j] = _ops.Multiply(targets[i], factor);
                                 }
                             }
                             
-                            var inputTensor = new Tensor<double>(new[] { kvp.Value.Rows, kvp.Value.Columns }, kvp.Value.ToColumnVector());
-                            var targetTensor = new Tensor<double>(new[] { modalityTargets.Rows, modalityTargets.Columns }, modalityTargets.ToColumnVector());
+                            var inputTensor = new Tensor<T>(new[] { kvp.Value.Rows, kvp.Value.Columns }, kvp.Value.ToColumnVector());
+                            var targetTensor = new Tensor<T>(new[] { modalityTargets.Rows, modalityTargets.Columns }, modalityTargets.ToColumnVector());
                             _modalityNetworks[kvp.Key].Train(inputTensor, targetTensor);
                         }
                     }
@@ -270,26 +280,26 @@ namespace AiDotNet.MultimodalAI
                     Console.WriteLine("Training fusion network...");
                     
                     // Process all inputs through modality networks to get fusion inputs
-                    var fusionInputs = new Matrix<double>(inputs.Rows, 0);
+                    var fusionInputs = new Matrix<T>(inputs.Rows, 0);
                     
                     for (int i = 0; i < inputs.Rows; i++)
                     {
-                        var modalityOutputs = new Dictionary<string, Vector<double>>();
+                        var modalityOutputs = new Dictionary<string, Vector<T>>();
                         
                         foreach (var kvp in modalityInputs)
                         {
                             if (_modalityNetworks.ContainsKey(kvp.Key))
                             {
-                                var modalityInput = new Vector<double>(kvp.Value.Columns);
+                                var modalityInput = new Vector<T>(kvp.Value.Columns);
                                 for (int j = 0; j < kvp.Value.Columns; j++)
                                 {
                                     modalityInput[j] = kvp.Value[i, j];
                                 }
                                 
-                                var inputTensor = new Tensor<double>(new[] { modalityInput.Length }, modalityInput);
+                                var inputTensor = new Tensor<T>(new[] { modalityInput.Length }, modalityInput);
                                 var modalityOutput = _modalityNetworks[kvp.Key].Predict(inputTensor);
                                 var outputArray = modalityOutput.ToArray();
-                                var outputVector = new Vector<double>(outputArray.Length);
+                                var outputVector = new Vector<T>(outputArray.Length);
                                 for (int j = 0; j < outputArray.Length; j++)
                                 {
                                     outputVector[j] = outputArray[j];
@@ -303,7 +313,7 @@ namespace AiDotNet.MultimodalAI
                         
                         if (i == 0)
                         {
-                            fusionInputs = new Matrix<double>(inputs.Rows, aggregated.Length);
+                            fusionInputs = new Matrix<T>(inputs.Rows, aggregated.Length);
                             if (_fusionNetwork == null)
                             {
                                 InitializeFusionNetwork(aggregated.Length);
@@ -317,14 +327,14 @@ namespace AiDotNet.MultimodalAI
                     }
                     
                     // Convert targets to matrix format
-                    var targetMatrix = new Matrix<double>(targets.Length, 1);
+                    var targetMatrix = new Matrix<T>(targets.Length, 1);
                     for (int i = 0; i < targets.Length; i++)
                     {
                         targetMatrix[i, 0] = targets[i];
                     }
                     
-                    var fusionInputTensor = new Tensor<double>(new[] { fusionInputs.Rows, fusionInputs.Columns }, fusionInputs.ToColumnVector());
-                    var fusionTargetTensor = new Tensor<double>(new[] { targetMatrix.Rows, targetMatrix.Columns }, targetMatrix.ToColumnVector());
+                    var fusionInputTensor = new Tensor<T>(new[] { fusionInputs.Rows, fusionInputs.Columns }, fusionInputs.ToColumnVector());
+                    var fusionTargetTensor = new Tensor<T>(new[] { targetMatrix.Rows, targetMatrix.Columns }, targetMatrix.ToColumnVector());
                     _fusionNetwork!.Train(fusionInputTensor, fusionTargetTensor);
                     
                     _isTrained = true;
@@ -340,10 +350,10 @@ namespace AiDotNet.MultimodalAI
         /// <summary>
         /// Creates a copy of the model
         /// </summary>
-        public override IFullModel<double, Dictionary<string, object>, Vector<double>> Clone()
+        public override IFullModel<T, Dictionary<string, object>, Vector<T>> Clone()
         {
-            var clone = new LateFusionMultimodal(_fusedDimension, _modalityHiddenSize,
-                                               _fusionHiddenSize, _learningRate, _aggregationMethod);
+            var clone = new LateFusionMultimodal<T>(_fusedDimension, _modalityHiddenSize,
+                                               _fusionHiddenSize, Convert.ToDouble(_learningRate), _aggregationMethod, null, _ops);
 
             // Copy encoders and networks
             foreach (var kvp in _modalityEncoders)
@@ -360,13 +370,13 @@ namespace AiDotNet.MultimodalAI
         /// <summary>
         /// Aggregates modality outputs based on the specified method
         /// </summary>
-        private Vector<double> AggregateModalityOutputs(Dictionary<string, Vector<double>> outputs, Dictionary<string, double>? weights = null)
+        private Vector<T> AggregateModalityOutputs(Dictionary<string, Vector<T>> outputs, Dictionary<string, T>? weights = null)
         {
             if (outputs.Count == 0)
                 throw new ArgumentException("No modality outputs to aggregate");
 
             int dimension = outputs.First().Value.Length;
-            var aggregated = new Vector<double>(dimension);
+            var aggregated = new Vector<T>(dimension);
 
             switch (_aggregationMethod.ToLower())
             {
@@ -376,17 +386,27 @@ namespace AiDotNet.MultimodalAI
                     {
                         for (int i = 0; i < dimension; i++)
                         {
-                            aggregated[i] += output[i];
+                            aggregated[i] = _ops.Add(aggregated[i], output[i]);
                         }
                     }
-                    aggregated = aggregated / outputs.Count;
+                    var divisor = _ops.FromDouble(outputs.Count);
+                    for (int i = 0; i < dimension; i++)
+                    {
+                        aggregated[i] = _ops.Divide(aggregated[i], divisor);
+                    }
                     break;
 
                 case "max":
                     // Max pooling aggregation
                     for (int i = 0; i < dimension; i++)
                     {
-                        aggregated[i] = outputs.Values.Max(v => v[i]);
+                        var maxVal = outputs.Values.First()[i];
+                        foreach (var output in outputs.Values)
+                        {
+                            if (_ops.GreaterThan(output[i], maxVal))
+                                maxVal = output[i];
+                        }
+                        aggregated[i] = maxVal;
                     }
                     break;
 
@@ -395,26 +415,41 @@ namespace AiDotNet.MultimodalAI
                     if (weights == null || weights.Count == 0)
                     {
                         // Use stored modality weights or equal weights
-                        weights = _modalityWeights.Count > 0 ? _modalityWeights : 
-                                  System.Linq.Enumerable.ToDictionary(outputs.Keys, k => k, k => 1.0 / outputs.Count);
+                        if (_modalityWeights.Count > 0)
+                        {
+                            weights = _modalityWeights;
+                        }
+                        else
+                        {
+                            weights = new Dictionary<string, T>();
+                            var defaultWeight = _ops.FromDouble(1.0 / outputs.Count);
+                            foreach (var key in outputs.Keys)
+                            {
+                                weights[key] = defaultWeight;
+                            }
+                        }
                     }
 
                     // Normalize weights
-                    double totalWeight = weights.Values.Sum();
+                    var totalWeight = _ops.Zero;
+                    foreach (var weight in weights.Values)
+                    {
+                        totalWeight = _ops.Add(totalWeight, weight);
+                    }
                     
                     foreach (var kvp in outputs)
                     {
-                        double weight = weights.ContainsKey(kvp.Key) ? weights[kvp.Key] / totalWeight : 0;
+                        var weight = weights.ContainsKey(kvp.Key) ? _ops.Divide(weights[kvp.Key], totalWeight) : _ops.Zero;
                         for (int i = 0; i < dimension; i++)
                         {
-                            aggregated[i] += weight * kvp.Value[i];
+                            aggregated[i] = _ops.Add(aggregated[i], _ops.Multiply(weight, kvp.Value[i]));
                         }
                     }
                     break;
 
                 case "concat":
                     // Concatenation (results in larger dimension)
-                    var allValues = new List<double>();
+                    var allValues = new List<T>();
                     foreach (var output in outputs.Values)
                     {
                         for (int i = 0; i < output.Length; i++)
@@ -422,7 +457,7 @@ namespace AiDotNet.MultimodalAI
                             allValues.Add(output[i]);
                         }
                     }
-                    aggregated = new Vector<double>(allValues.ToArray());
+                    aggregated = new Vector<T>(allValues.ToArray());
                     break;
 
                 default:
@@ -435,7 +470,7 @@ namespace AiDotNet.MultimodalAI
         /// <summary>
         /// Calculates weight/confidence for a modality output
         /// </summary>
-        private double CalculateModalityWeight(Vector<double> output)
+        private T CalculateModalityWeight(Vector<T> output)
         {
             // Simple confidence based on output magnitude
             // In practice, could use learned attention weights
@@ -451,16 +486,16 @@ namespace AiDotNet.MultimodalAI
                 throw new ArgumentException("Input dimension must be positive", nameof(inputDimension));
 
             // Create layers explicitly
-            var layers = new List<ILayer<double>>
+            var layers = new List<ILayer<T>>
             {
-                new FullyConnectedLayer<double>(inputDimension, _fusionHiddenSize, null as IActivationFunction<double>),
-                new ActivationLayer<double>(new[] { _fusionHiddenSize }, new ReLUActivation<double>() as IActivationFunction<double>),
-                new FullyConnectedLayer<double>(_fusionHiddenSize, _fusionHiddenSize / 2, null as IActivationFunction<double>),
-                new ActivationLayer<double>(new[] { _fusionHiddenSize / 2 }, new ReLUActivation<double>() as IActivationFunction<double>),
-                new FullyConnectedLayer<double>(_fusionHiddenSize / 2, _fusedDimension, null as IActivationFunction<double>)
+                new FullyConnectedLayer<T>(inputDimension, _fusionHiddenSize, null as IActivationFunction<T>),
+                new ActivationLayer<T>(new[] { _fusionHiddenSize }, new ReLUActivation<T>() as IActivationFunction<T>),
+                new FullyConnectedLayer<T>(_fusionHiddenSize, _fusionHiddenSize / 2, null as IActivationFunction<T>),
+                new ActivationLayer<T>(new[] { _fusionHiddenSize / 2 }, new ReLUActivation<T>() as IActivationFunction<T>),
+                new FullyConnectedLayer<T>(_fusionHiddenSize / 2, _fusedDimension, null as IActivationFunction<T>)
             };
 
-            var architecture = new NeuralNetworkArchitecture<double>(
+            var architecture = new NeuralNetworkArchitecture<T>(
                 complexity: NetworkComplexity.Medium,
                 taskType: NeuralNetworkTaskType.Regression,
                 shouldReturnFullSequence: false,
@@ -468,15 +503,15 @@ namespace AiDotNet.MultimodalAI
                 isDynamicSampleCount: true,
                 isPlaceholder: false);
             
-            _fusionNetwork = new NeuralNetwork<double>(architecture);
+            _fusionNetwork = new NeuralNetwork<T>(architecture);
         }
 
         /// <summary>
         /// Splits input matrix by modality
         /// </summary>
-        private Dictionary<string, Matrix<double>> SplitInputsByModality(Matrix<double> inputs)
+        private Dictionary<string, Matrix<T>> SplitInputsByModality(Matrix<T> inputs)
         {
-            var result = new Dictionary<string, Matrix<double>>();
+            var result = new Dictionary<string, Matrix<T>>();
             var modalities = _modalityEncoders.Keys.OrderBy(k => k).ToList();
             
             if (modalities.Count == 0 || inputs.Columns == 0)
@@ -489,7 +524,7 @@ namespace AiDotNet.MultimodalAI
             for (int i = 0; i < modalities.Count; i++)
             {
                 int modalityCols = colsPerModality + (i < remainder ? 1 : 0);
-                var modalityData = new Matrix<double>(inputs.Rows, modalityCols);
+                var modalityData = new Matrix<T>(inputs.Rows, modalityCols);
                 
                 for (int row = 0; row < inputs.Rows; row++)
                 {
@@ -509,9 +544,9 @@ namespace AiDotNet.MultimodalAI
         /// <summary>
         /// Splits input vector by modality (simplified)
         /// </summary>
-        private Dictionary<string, Vector<double>> SplitInputByModality(Vector<double> input)
+        private Dictionary<string, Vector<T>> SplitInputByModality(Vector<T> input)
         {
-            var result = new Dictionary<string, Vector<double>>();
+            var result = new Dictionary<string, Vector<T>>();
             var modalities = _modalityEncoders.Keys.ToList();
             
             if (modalities.Count == 0)
@@ -524,7 +559,7 @@ namespace AiDotNet.MultimodalAI
                 int start = i * dimensionPerModality;
                 int end = (i == modalities.Count - 1) ? input.Length : (i + 1) * dimensionPerModality;
                 
-                var modalityInput = new Vector<double>(end - start);
+                var modalityInput = new Vector<T>(end - start);
                 for (int j = 0; j < modalityInput.Length; j++)
                 {
                     modalityInput[j] = input[start + j];
@@ -545,14 +580,19 @@ namespace AiDotNet.MultimodalAI
             var parameters = base.GetParametersDictionary();
             parameters["ModalityHiddenSize"] = _modalityHiddenSize;
             parameters["FusionHiddenSize"] = _fusionHiddenSize;
-            parameters["LearningRate"] = _learningRate;
+            parameters["LearningRate"] = Convert.ToDouble(_learningRate);
             parameters["AggregationMethod"] = _aggregationMethod;
             parameters["NumModalityNetworks"] = _modalityNetworks.Count;
             parameters["IsTrained"] = _isTrained;
             
             if (_modalityWeights.Count > 0)
             {
-                parameters["ModalityWeights"] = new Dictionary<string, double>(_modalityWeights);
+                var doubleWeights = new Dictionary<string, double>();
+                foreach (var kvp in _modalityWeights)
+                {
+                    doubleWeights[kvp.Key] = Convert.ToDouble(kvp.Value);
+                }
+                parameters["ModalityWeights"] = doubleWeights;
             }
             
             return parameters;

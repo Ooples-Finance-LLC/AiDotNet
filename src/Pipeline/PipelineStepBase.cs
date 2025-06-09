@@ -1,6 +1,6 @@
 using AiDotNet.Enums;
 using AiDotNet.Interfaces;
-using AiDotNet.Models;
+using AiDotNet.LinearAlgebra;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,13 +9,15 @@ using System.Threading.Tasks;
 namespace AiDotNet.Pipeline
 {
     /// <summary>
-    /// Base class for all pipeline steps providing common functionality
+    /// Generic base class for all pipeline steps providing common functionality
     /// </summary>
-    public abstract class PipelineStepBase : IPipelineStep
+    /// <typeparam name="T">The numeric type for computations</typeparam>
+    public abstract class PipelineStepBase<T> : IPipelineStep<T>
     {
         private bool _isFitted;
         private readonly Dictionary<string, object> _parameters;
         private readonly Dictionary<string, string> _metadata;
+        protected readonly INumericOperations<T> NumOps;
 
         /// <summary>
         /// Gets the name of this pipeline step
@@ -51,24 +53,27 @@ namespace AiDotNet.Pipeline
         /// Initializes a new instance of the PipelineStepBase class
         /// </summary>
         /// <param name="name">The name of this pipeline step</param>
-        protected PipelineStepBase(string name)
+        /// <param name="numOps">Numeric operations provider</param>
+        protected PipelineStepBase(string name, INumericOperations<T> numOps)
         {
             Name = name ?? GetType().Name;
+            NumOps = numOps ?? throw new ArgumentNullException(nameof(numOps));
             _parameters = new Dictionary<string, object>();
             _metadata = new Dictionary<string, string>
             {
                 ["CreatedAt"] = DateTime.UtcNow.ToString("O"),
-                ["Version"] = "1.0.0"
+                ["Version"] = "1.0.0",
+                ["NumericType"] = typeof(T).Name
             };
         }
 
         /// <summary>
         /// Fits/trains this pipeline step on the provided data
         /// </summary>
-        /// <param name="inputs">Input data</param>
-        /// <param name="targets">Target data (optional for unsupervised steps)</param>
+        /// <param name="inputs">Input data as a matrix</param>
+        /// <param name="targets">Target data as a vector (optional for unsupervised steps)</param>
         /// <returns>Task representing the asynchronous operation</returns>
-        public virtual async Task FitAsync(double[][] inputs, double[]? targets = null)
+        public virtual async Task FitAsync(Matrix<T> inputs, Vector<T>? targets = null)
         {
             ValidateInputsForFit(inputs, targets);
             
@@ -85,7 +90,7 @@ namespace AiDotNet.Pipeline
         /// </summary>
         /// <param name="inputs">Input data to transform</param>
         /// <returns>Transformed data</returns>
-        public virtual async Task<double[][]> TransformAsync(double[][] inputs)
+        public virtual async Task<Matrix<T>> TransformAsync(Matrix<T> inputs)
         {
             if (!_isFitted && RequiresFitting())
             {
@@ -103,7 +108,7 @@ namespace AiDotNet.Pipeline
         /// <param name="inputs">Input data</param>
         /// <param name="targets">Target data (optional)</param>
         /// <returns>Transformed data</returns>
-        public virtual async Task<double[][]> FitTransformAsync(double[][] inputs, double[]? targets = null)
+        public virtual async Task<Matrix<T>> FitTransformAsync(Matrix<T> inputs, Vector<T>? targets = null)
         {
             await FitAsync(inputs, targets).ConfigureAwait(false);
             return await TransformAsync(inputs).ConfigureAwait(false);
@@ -140,21 +145,9 @@ namespace AiDotNet.Pipeline
         /// </summary>
         /// <param name="inputs">Input data to validate</param>
         /// <returns>True if valid, false otherwise</returns>
-        public virtual bool ValidateInput(double[][] inputs)
+        public virtual bool ValidateInput(Matrix<T> inputs)
         {
-            if (inputs == null || inputs.Length == 0)
-            {
-                return false;
-            }
-
-            if (inputs.Any(row => row == null))
-            {
-                return false;
-            }
-
-            // Check for consistent dimensions
-            var firstRowLength = inputs[0].Length;
-            if (inputs.Any(row => row.Length != firstRowLength))
+            if (inputs == null || inputs.Rows == 0 || inputs.Columns == 0)
             {
                 return false;
             }
@@ -184,21 +177,21 @@ namespace AiDotNet.Pipeline
         /// </summary>
         /// <param name="inputs">Input data</param>
         /// <param name="targets">Target data (optional)</param>
-        protected abstract void FitCore(double[][] inputs, double[]? targets);
+        protected abstract void FitCore(Matrix<T> inputs, Vector<T>? targets);
 
         /// <summary>
         /// Core transformation logic to be implemented by derived classes
         /// </summary>
         /// <param name="inputs">Input data</param>
         /// <returns>Transformed data</returns>
-        protected abstract double[][] TransformCore(double[][] inputs);
+        protected abstract Matrix<T> TransformCore(Matrix<T> inputs);
 
         /// <summary>
         /// Additional input validation logic to be optionally overridden by derived classes
         /// </summary>
         /// <param name="inputs">Input data</param>
         /// <returns>True if valid, false otherwise</returns>
-        protected virtual bool ValidateInputCore(double[][] inputs)
+        protected virtual bool ValidateInputCore(Matrix<T> inputs)
         {
             return true;
         }
@@ -243,16 +236,16 @@ namespace AiDotNet.Pipeline
         /// </summary>
         /// <param name="inputs">Input data</param>
         /// <param name="targets">Target data</param>
-        private void ValidateInputsForFit(double[][] inputs, double[]? targets)
+        private void ValidateInputsForFit(Matrix<T> inputs, Vector<T>? targets)
         {
             if (!ValidateInput(inputs))
             {
                 throw new ArgumentException($"Invalid input data for pipeline step '{Name}'", nameof(inputs));
             }
 
-            if (targets != null && targets.Length != inputs.Length)
+            if (targets != null && targets.Length != inputs.Rows)
             {
-                throw new ArgumentException($"Number of targets ({targets.Length}) must match number of input samples ({inputs.Length})", nameof(targets));
+                throw new ArgumentException($"Number of targets ({targets.Length}) must match number of input samples ({inputs.Rows})", nameof(targets));
             }
         }
 
@@ -260,7 +253,7 @@ namespace AiDotNet.Pipeline
         /// Validates inputs for the transform operation
         /// </summary>
         /// <param name="inputs">Input data</param>
-        private void ValidateInputsForTransform(double[][] inputs)
+        private void ValidateInputsForTransform(Matrix<T> inputs)
         {
             if (!ValidateInput(inputs))
             {
@@ -285,6 +278,51 @@ namespace AiDotNet.Pipeline
         {
             _isFitted = false;
             _metadata.Remove("LastFittedAt");
+        }
+
+        /// <summary>
+        /// Converts a Matrix to double[][] for compatibility with non-generic code
+        /// </summary>
+        /// <param name="matrix">Matrix to convert</param>
+        /// <returns>Jagged array representation</returns>
+        protected double[][] MatrixToArray(Matrix<T> matrix)
+        {
+            var result = new double[matrix.Rows][];
+            for (int i = 0; i < matrix.Rows; i++)
+            {
+                result[i] = new double[matrix.Columns];
+                for (int j = 0; j < matrix.Columns; j++)
+                {
+                    result[i][j] = Convert.ToDouble(matrix[i, j]);
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Converts double[][] to Matrix for compatibility with non-generic code
+        /// </summary>
+        /// <param name="array">Jagged array to convert</param>
+        /// <returns>Matrix representation</returns>
+        protected Matrix<T> ArrayToMatrix(double[][] array)
+        {
+            if (array == null || array.Length == 0)
+            {
+                return new Matrix<T>(0, 0);
+            }
+
+            var rows = array.Length;
+            var cols = array[0].Length;
+            var result = new Matrix<T>(rows, cols);
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                    result[i, j] = (T)Convert.ChangeType(array[i][j], typeof(T));
+                }
+            }
+            return result;
         }
     }
 }

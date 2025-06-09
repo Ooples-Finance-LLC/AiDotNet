@@ -245,4 +245,42 @@ public class ModelMetaData<T>
     /// </para>
     /// </remarks>
     public Dictionary<string, T> FeatureImportance { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the hyperparameters used to configure the model.
+    /// </summary>
+    /// <value>A dictionary mapping hyperparameter names to their values.</value>
+    /// <remarks>
+    /// <para>
+    /// This property stores the hyperparameters that were used to configure the model. Hyperparameters are parameters whose 
+    /// values are set before the learning process begins, as opposed to model parameters which are learned during training. 
+    /// Examples include learning rate, regularization strength, number of layers in a neural network, or the depth of a 
+    /// decision tree. Storing hyperparameters is essential for model reproducibility and for understanding how the model 
+    /// was configured.
+    /// </para>
+    /// <para><b>For Beginners:</b> This stores the configuration settings used when creating the model.
+    /// 
+    /// Hyperparameters are settings that control how the model learns:
+    /// - They are set before training begins
+    /// - They affect how the model learns from data
+    /// - They are different from model parameters, which are learned during training
+    /// 
+    /// Common hyperparameters include:
+    /// - Learning rate: How quickly the model adjusts during training
+    /// - Number of layers: How deep a neural network is
+    /// - Tree depth: How complex a decision tree can be
+    /// - Regularization strength: How much to prevent overfitting
+    /// 
+    /// This information is important for:
+    /// - Reproducing the model (creating an identical model later)
+    /// - Understanding why the model performs the way it does
+    /// - Tuning the model to improve performance
+    /// - Comparing different model configurations
+    /// 
+    /// For example, you might see that a neural network was trained with
+    /// a learning rate of 0.01 and 3 hidden layers, which helps explain
+    /// its behavior and performance characteristics.
+    /// </para>
+    /// </remarks>
+    public Dictionary<string, object> Hyperparameters { get; set; } = [];
 }

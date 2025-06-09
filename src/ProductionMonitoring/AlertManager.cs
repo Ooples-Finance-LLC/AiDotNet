@@ -384,7 +384,7 @@ namespace AiDotNet.ProductionMonitoring
             };
         }
 
-        private string GetRuleIdForAlert(MonitoringAlert alert)
+        private string? GetRuleIdForAlert(MonitoringAlert alert)
         {
             if (alert.Context != null && alert.Context.ContainsKey("RuleId"))
             {
@@ -444,54 +444,54 @@ namespace AiDotNet.ProductionMonitoring
 
         public class AlertRule
         {
-            public string RuleId { get; set; }
-            public string Name { get; set; }
-            public string Description { get; set; }
-            public string MetricName { get; set; }
-            public string Operator { get; set; } // >, >=, <, <=, ==, !=
+            public string RuleId { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+            public string Description { get; set; } = string.Empty;
+            public string MetricName { get; set; } = string.Empty;
+            public string Operator { get; set; } = string.Empty; // >, >=, <, <=, ==, !=
             public double Threshold { get; set; }
             public int ConsecutiveMatches { get; set; } = 1;
-            public string AlertType { get; set; }
-            public string Severity { get; set; }
-            public string MessageTemplate { get; set; }
+            public string AlertType { get; set; } = string.Empty;
+            public string Severity { get; set; } = string.Empty;
+            public string MessageTemplate { get; set; } = string.Empty;
             public bool IsEnabled { get; set; } = true;
-            public Dictionary<string, object> Metadata { get; set; }
+            public Dictionary<string, object> Metadata { get; set; } = new();
         }
 
         public class AlertState
         {
-            public string RuleId { get; set; }
+            public string RuleId { get; set; } = string.Empty;
             public int ConsecutiveMatches { get; set; }
             public DateTime? LastAlertTime { get; set; }
             public DateTime? MutedUntil { get; set; }
-            public string MuteReason { get; set; }
+            public string? MuteReason { get; set; }
             public Dictionary<string, DateTime> TypeMutes { get; set; } = new Dictionary<string, DateTime>();
             public List<AlertHistoryEntry> History { get; set; } = new List<AlertHistoryEntry>();
         }
 
         public class AlertHistoryEntry
         {
-            public string AlertId { get; set; }
+            public string AlertId { get; set; } = string.Empty;
             public DateTime Timestamp { get; set; }
-            public string AlertType { get; set; }
-            public string Severity { get; set; }
-            public string Message { get; set; }
-            public Dictionary<string, object> Context { get; set; }
-            public string RuleId { get; set; }
+            public string AlertType { get; set; } = string.Empty;
+            public string Severity { get; set; } = string.Empty;
+            public string Message { get; set; } = string.Empty;
+            public Dictionary<string, object> Context { get; set; } = new();
+            public string? RuleId { get; set; }
             public bool IsAcknowledged { get; set; }
-            public string AcknowledgedBy { get; set; }
+            public string? AcknowledgedBy { get; set; }
             public DateTime? AcknowledgedAt { get; set; }
             public TimeSpan? ResponseTime { get; set; }
-            public string Notes { get; set; }
+            public string? Notes { get; set; }
         }
 
         public class AlertStatistics
         {
             public int TotalAlerts { get; set; }
-            public Dictionary<string, int> AlertsBySeverity { get; set; }
-            public Dictionary<string, int> AlertsByType { get; set; }
+            public Dictionary<string, int> AlertsBySeverity { get; set; } = new();
+            public Dictionary<string, int> AlertsByType { get; set; } = new();
             public double AverageResponseTime { get; set; }
-            public Dictionary<string, int> TopAlertingRules { get; set; }
+            public Dictionary<string, int> TopAlertingRules { get; set; } = new();
             public DateTime StartDate { get; set; }
             public DateTime EndDate { get; set; }
         }

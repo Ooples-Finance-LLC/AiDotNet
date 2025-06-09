@@ -1,13 +1,16 @@
 using System;
 using System.Linq;
 using AiDotNet.LinearAlgebra;
+using AiDotNet.Interfaces;
+using AiDotNet.Helpers;
 
 namespace AiDotNet.MultimodalAI.Encoders
 {
     /// <summary>
     /// Image-specific modality encoder for processing image data
     /// </summary>
-    public class ImageModalityEncoder : ModalityEncoderBase
+    /// <typeparam name="T">The numeric type used for calculations</typeparam>
+    public class ImageModalityEncoder<T> : ModalityEncoderBase<T>
     {
         private readonly int _patchSize;
         private readonly bool _useColorHistogram;
@@ -20,9 +23,11 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <param name="patchSize">Size of patches for feature extraction (default: 16)</param>
         /// <param name="useColorHistogram">Whether to extract color histogram features (default: true)</param>
         /// <param name="useTextureFeatures">Whether to extract texture features (default: true)</param>
+        /// <param name="encoder">Optional custom neural network encoder. If null, a default encoder will be created when needed.</param>
         public ImageModalityEncoder(int outputDimension = 512, int patchSize = 16,
-            bool useColorHistogram = true, bool useTextureFeatures = true) 
-            : base("Image", outputDimension)
+            bool useColorHistogram = true, bool useTextureFeatures = true,
+            INeuralNetworkModel<T>? encoder = null) 
+            : base("Image", outputDimension, encoder)
         {
             _patchSize = patchSize;
             _useColorHistogram = useColorHistogram;
@@ -34,7 +39,7 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// </summary>
         /// <param name="input">Image data as 2D/3D array or Tensor</param>
         /// <returns>Encoded vector representation</returns>
-        public override Vector<double> Encode(object input)
+        public override Vector<T> Encode(object input)
         {
             if (!ValidateInput(input))
             {
@@ -67,47 +72,27 @@ namespace AiDotNet.MultimodalAI.Encoders
 
             switch (input)
             {
-                case double[,] gray2D:
+                case Array array2D when array2D.Rank == 2:
                     imageData = new ImageData
                     {
-                        Width = gray2D.GetLength(1),
-                        Height = gray2D.GetLength(0),
+                        Width = array2D.GetLength(1),
+                        Height = array2D.GetLength(0),
                         Channels = 1,
-                        Data = Flatten2DArray(gray2D)
+                        Data = Flatten2DArray(array2D)
                     };
                     break;
                     
-                case float[,] grayFloat2D:
+                case Array array3D when array3D.Rank == 3:
                     imageData = new ImageData
                     {
-                        Width = grayFloat2D.GetLength(1),
-                        Height = grayFloat2D.GetLength(0),
-                        Channels = 1,
-                        Data = Flatten2DArray(grayFloat2D).Select(f => (double)f).ToArray()
+                        Width = array3D.GetLength(2),
+                        Height = array3D.GetLength(1),
+                        Channels = array3D.GetLength(0),
+                        Data = Flatten3DArray(array3D)
                     };
                     break;
                     
-                case double[,,] rgb3D:
-                    imageData = new ImageData
-                    {
-                        Width = rgb3D.GetLength(2),
-                        Height = rgb3D.GetLength(1),
-                        Channels = rgb3D.GetLength(0),
-                        Data = Flatten3DArray(rgb3D)
-                    };
-                    break;
-                    
-                case float[,,] rgbFloat3D:
-                    imageData = new ImageData
-                    {
-                        Width = rgbFloat3D.GetLength(2),
-                        Height = rgbFloat3D.GetLength(1),
-                        Channels = rgbFloat3D.GetLength(0),
-                        Data = Flatten3DArray(rgbFloat3D).Select(f => (double)f).ToArray()
-                    };
-                    break;
-                    
-                case Tensor<double> tensor:
+                case Tensor<T> tensor:
                     // Assume tensor shape is [C, H, W] or [H, W]
                     if (tensor.Rank == 2)
                     {
@@ -150,17 +135,16 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// </summary>
         protected override bool ValidateInput(object input)
         {
-            return input is double[,] || input is float[,] ||
-                   input is double[,,] || input is float[,,] ||
-                   input is Tensor<double> || input is Tensor<float>;
+            return input is Array array && (array.Rank == 2 || array.Rank == 3) ||
+                   input is Tensor<T>;
         }
 
         /// <summary>
         /// Extracts image features from preprocessed data
         /// </summary>
-        private Vector<double> ExtractImageFeatures(ImageData imageData)
+        private Vector<T> ExtractImageFeatures(ImageData imageData)
         {
-            var features = new System.Collections.Generic.List<double>();
+            var features = new System.Collections.Generic.List<T>();
 
             // Global statistics
             features.AddRange(ExtractGlobalStatistics(imageData));
@@ -180,31 +164,31 @@ namespace AiDotNet.MultimodalAI.Encoders
             // Spatial features
             features.AddRange(ExtractSpatialFeatures(imageData));
 
-            return new Vector<double>(features.ToArray());
+            return new Vector<T>(features.ToArray());
         }
 
         /// <summary>
         /// Extracts global image statistics
         /// </summary>
-        private double[] ExtractGlobalStatistics(ImageData imageData)
+        private T[] ExtractGlobalStatistics(ImageData imageData)
         {
-            var features = new System.Collections.Generic.List<double>();
+            var features = new System.Collections.Generic.List<T>();
 
             for (int c = 0; c < imageData.Channels; c++)
             {
                 var channelData = GetChannelData(imageData, c);
                 
                 // Mean
-                double mean = channelData.Average();
+                T mean = ComputeMean(channelData);
                 features.Add(mean);
 
                 // Standard deviation
-                double stdDev = Math.Sqrt(channelData.Select(x => Math.Pow(x - mean, 2)).Average());
+                T stdDev = ComputeStandardDeviation(channelData, mean);
                 features.Add(stdDev);
 
                 // Min and Max
-                features.Add(channelData.Min());
-                features.Add(channelData.Max());
+                features.Add(ComputeMin(channelData));
+                features.Add(ComputeMax(channelData));
             }
 
             return features.ToArray();
@@ -213,10 +197,10 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Extracts color histogram features
         /// </summary>
-        private double[] ExtractColorHistogram(ImageData imageData)
+        private T[] ExtractColorHistogram(ImageData imageData)
         {
             int numBins = 16; // Reduced for efficiency
-            var histogram = new double[numBins * imageData.Channels];
+            var histogram = new T[numBins * imageData.Channels];
 
             for (int c = 0; c < imageData.Channels; c++)
             {
@@ -230,12 +214,12 @@ namespace AiDotNet.MultimodalAI.Encoders
             }
 
             // Normalize histogram
-            double sum = histogram.Sum();
-            if (sum > 0)
+            T sum = ComputeSum(histogram);
+            if (_numericOps.GreaterThan(sum, _numericOps.Zero))
             {
                 for (int i = 0; i < histogram.Length; i++)
                 {
-                    histogram[i] /= sum;
+                    histogram[i] = _numericOps.Divide(histogram[i], sum);
                 }
             }
 
@@ -245,9 +229,9 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Extracts texture features using simple edge detection
         /// </summary>
-        private double[] ExtractTextureFeatures(ImageData imageData)
+        private T[] ExtractTextureFeatures(ImageData imageData)
         {
-            var features = new System.Collections.Generic.List<double>();
+            var features = new System.Collections.Generic.List<T>();
 
             // Convert to grayscale if needed
             var grayData = imageData.Channels == 1 ? imageData.Data : ConvertToGrayscale(imageData);
@@ -256,19 +240,22 @@ namespace AiDotNet.MultimodalAI.Encoders
             var (gradX, gradY) = ComputeGradients(grayData, imageData.Width, imageData.Height);
 
             // Gradient magnitude statistics
-            var magnitudes = new double[gradX.Length];
+            var magnitudes = new T[gradX.Length];
             for (int i = 0; i < gradX.Length; i++)
             {
-                magnitudes[i] = Math.Sqrt(gradX[i] * gradX[i] + gradY[i] * gradY[i]);
+                var sqrX = _numericOps.Multiply(gradX[i], gradX[i]);
+                var sqrY = _numericOps.Multiply(gradY[i], gradY[i]);
+                magnitudes[i] = _numericOps.Sqrt(_numericOps.Add(sqrX, sqrY));
             }
 
-            features.Add(magnitudes.Average());
-            features.Add(Math.Sqrt(magnitudes.Select(x => x * x).Average()));
-            features.Add(magnitudes.Max());
+            features.Add(ComputeMean(magnitudes));
+            features.Add(ComputeRMS(magnitudes));
+            features.Add(ComputeMax(magnitudes));
 
             // Edge density
-            double edgeThreshold = 0.1;
-            double edgeDensity = magnitudes.Count(m => m > edgeThreshold) / (double)magnitudes.Length;
+            T edgeThreshold = _numericOps.FromDouble(0.1);
+            int edgeCount = magnitudes.Count(m => _numericOps.GreaterThan(m, edgeThreshold));
+            T edgeDensity = _numericOps.Divide(_numericOps.FromDouble(edgeCount), _numericOps.FromDouble(magnitudes.Length));
             features.Add(edgeDensity);
 
             return features.ToArray();
@@ -277,9 +264,9 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Extracts spatial features by dividing image into patches
         /// </summary>
-        private double[] ExtractSpatialFeatures(ImageData imageData)
+        private T[] ExtractSpatialFeatures(ImageData imageData)
         {
-            var features = new System.Collections.Generic.List<double>();
+            var features = new System.Collections.Generic.List<T>();
 
             int patchesX = Math.Max(1, imageData.Width / _patchSize);
             int patchesY = Math.Max(1, imageData.Height / _patchSize);
@@ -299,9 +286,9 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Extracts features from a single patch
         /// </summary>
-        private double[] ExtractPatchFeatures(ImageData imageData, int patchX, int patchY, int patchesX, int patchesY)
+        private T[] ExtractPatchFeatures(ImageData imageData, int patchX, int patchY, int patchesX, int patchesY)
         {
-            var features = new System.Collections.Generic.List<double>();
+            var features = new System.Collections.Generic.List<T>();
 
             int startX = patchX * imageData.Width / patchesX;
             int endX = (patchX + 1) * imageData.Width / patchesX;
@@ -310,7 +297,7 @@ namespace AiDotNet.MultimodalAI.Encoders
 
             for (int c = 0; c < imageData.Channels; c++)
             {
-                double sum = 0;
+                T sum = _numericOps.Zero;
                 int count = 0;
 
                 for (int y = startY; y < endY; y++)
@@ -318,12 +305,12 @@ namespace AiDotNet.MultimodalAI.Encoders
                     for (int x = startX; x < endX; x++)
                     {
                         int idx = (c * imageData.Height + y) * imageData.Width + x;
-                        sum += imageData.Data[idx];
+                        sum = _numericOps.Add(sum, imageData.Data[idx]);
                         count++;
                     }
                 }
 
-                features.Add(sum / count);
+                features.Add(_numericOps.Divide(sum, _numericOps.FromDouble(count)));
             }
 
             return features.ToArray();
@@ -332,12 +319,12 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Projects features to the desired output dimension
         /// </summary>
-        private Vector<double> ProjectToOutputDimension(Vector<double> features)
+        private Vector<T> ProjectToOutputDimension(Vector<T> features)
         {
             if (features.Length == OutputDimension)
                 return features;
 
-            var result = new double[OutputDimension];
+            var result = new T[OutputDimension];
 
             if (features.Length > OutputDimension)
             {
@@ -358,35 +345,36 @@ namespace AiDotNet.MultimodalAI.Encoders
                 }
             }
 
-            return new Vector<double>(result);
+            return new Vector<T>(result);
         }
 
         /// <summary>
         /// Helper methods
         /// </summary>
-        private double[] Flatten2DArray<T>(T[,] array) where T : IConvertible
+        private T[] Flatten2DArray(Array array)
         {
             int height = array.GetLength(0);
             int width = array.GetLength(1);
-            var result = new double[height * width];
+            var result = new T[height * width];
             
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
-                    result[y * width + x] = Convert.ToDouble(array[y, x]);
+                    var value = array.GetValue(y, x);
+                    result[y * width + x] = ConvertToT(value);
                 }
             }
             
             return result;
         }
 
-        private double[] Flatten3DArray<T>(T[,,] array) where T : IConvertible
+        private T[] Flatten3DArray(Array array)
         {
             int channels = array.GetLength(0);
             int height = array.GetLength(1);
             int width = array.GetLength(2);
-            var result = new double[channels * height * width];
+            var result = new T[channels * height * width];
             
             for (int c = 0; c < channels; c++)
             {
@@ -394,7 +382,8 @@ namespace AiDotNet.MultimodalAI.Encoders
                 {
                     for (int x = 0; x < width; x++)
                     {
-                        result[(c * height + y) * width + x] = Convert.ToDouble(array[c, y, x]);
+                        var value = array.GetValue(c, y, x);
+                        result[(c * height + y) * width + x] = ConvertToT(value);
                     }
                 }
             }
@@ -402,23 +391,23 @@ namespace AiDotNet.MultimodalAI.Encoders
             return result;
         }
 
-        private double[] NormalizePixelValues(double[] pixels)
+        private T[] NormalizePixelValues(T[] pixels)
         {
-            double min = pixels.Min();
-            double max = pixels.Max();
-            double range = max - min;
+            T min = ComputeMin(pixels);
+            T max = ComputeMax(pixels);
+            T range = _numericOps.Subtract(max, min);
 
-            if (range > 0)
+            if (_numericOps.GreaterThan(range, _numericOps.Zero))
             {
-                return pixels.Select(p => (p - min) / range).ToArray();
+                return pixels.Select(p => _numericOps.Divide(_numericOps.Subtract(p, min), range)).ToArray();
             }
             return pixels;
         }
 
-        private double[] GetChannelData(ImageData imageData, int channel)
+        private T[] GetChannelData(ImageData imageData, int channel)
         {
             int pixelsPerChannel = imageData.Width * imageData.Height;
-            var channelData = new double[pixelsPerChannel];
+            var channelData = new T[pixelsPerChannel];
             
             int offset = channel * pixelsPerChannel;
             Array.Copy(imageData.Data, offset, channelData, 0, pixelsPerChannel);
@@ -426,41 +415,55 @@ namespace AiDotNet.MultimodalAI.Encoders
             return channelData;
         }
 
-        private double[] ConvertToGrayscale(ImageData imageData)
+        private T[] ConvertToGrayscale(ImageData imageData)
         {
             int numPixels = imageData.Width * imageData.Height;
-            var grayscale = new double[numPixels];
+            var grayscale = new T[numPixels];
 
             for (int i = 0; i < numPixels; i++)
             {
-                double gray = 0;
+                T gray = _numericOps.Zero;
                 for (int c = 0; c < imageData.Channels; c++)
                 {
-                    gray += imageData.Data[c * numPixels + i];
+                    gray = _numericOps.Add(gray, imageData.Data[c * numPixels + i]);
                 }
-                grayscale[i] = gray / imageData.Channels;
+                grayscale[i] = _numericOps.Divide(gray, _numericOps.FromDouble(imageData.Channels));
             }
 
             return grayscale;
         }
 
-        private double[] ComputeHistogram(double[] data, int numBins)
+        private T[] ComputeHistogram(T[] data, int numBins)
         {
-            var histogram = new double[numBins];
+            var histogram = new T[numBins];
+            for (int i = 0; i < numBins; i++)
+            {
+                histogram[i] = _numericOps.Zero;
+            }
             
             foreach (var value in data)
             {
-                int bin = Math.Min((int)(value * numBins), numBins - 1);
-                histogram[bin]++;
+                // Convert value to [0, 1] range then to bin index
+                var normalized = value; // Assume already normalized
+                var binFloat = _numericOps.Multiply(normalized, _numericOps.FromDouble(numBins));
+                int bin = Math.Min(_numericOps.ToInt32(binFloat), numBins - 1);
+                histogram[bin] = _numericOps.Add(histogram[bin], _numericOps.One);
             }
 
             return histogram;
         }
 
-        private (double[], double[]) ComputeGradients(double[] data, int width, int height)
+        private (T[], T[]) ComputeGradients(T[] data, int width, int height)
         {
-            var gradX = new double[data.Length];
-            var gradY = new double[data.Length];
+            var gradX = new T[data.Length];
+            var gradY = new T[data.Length];
+            
+            // Initialize with zeros
+            for (int i = 0; i < data.Length; i++)
+            {
+                gradX[i] = _numericOps.Zero;
+                gradY[i] = _numericOps.Zero;
+            }
 
             for (int y = 0; y < height; y++)
             {
@@ -471,18 +474,136 @@ namespace AiDotNet.MultimodalAI.Encoders
                     // Compute X gradient (Sobel-like)
                     if (x > 0 && x < width - 1)
                     {
-                        gradX[idx] = data[y * width + (x + 1)] - data[y * width + (x - 1)];
+                        gradX[idx] = _numericOps.Subtract(data[y * width + (x + 1)], data[y * width + (x - 1)]);
                     }
 
                     // Compute Y gradient
                     if (y > 0 && y < height - 1)
                     {
-                        gradY[idx] = data[(y + 1) * width + x] - data[(y - 1) * width + x];
+                        gradY[idx] = _numericOps.Subtract(data[(y + 1) * width + x], data[(y - 1) * width + x]);
                     }
                 }
             }
 
             return (gradX, gradY);
+        }
+
+        /// <summary>
+        /// Converts a value to type T
+        /// </summary>
+        private T ConvertToT(object value)
+        {
+            if (value is T tValue)
+                return tValue;
+            
+            // Use numeric operations to convert
+            if (value is IConvertible convertible)
+            {
+                double doubleValue = Convert.ToDouble(convertible);
+                return _numericOps.FromDouble(doubleValue);
+            }
+            
+            throw new ArgumentException($"Cannot convert {value?.GetType()?.Name ?? "null"} to {typeof(T).Name}");
+        }
+
+        /// <summary>
+        /// Computes the mean of an array
+        /// </summary>
+        private T ComputeMean(T[] values)
+        {
+            if (values.Length == 0)
+                return _numericOps.Zero;
+                
+            T sum = _numericOps.Zero;
+            foreach (var value in values)
+            {
+                sum = _numericOps.Add(sum, value);
+            }
+            return _numericOps.Divide(sum, _numericOps.FromDouble(values.Length));
+        }
+
+        /// <summary>
+        /// Computes the standard deviation of an array
+        /// </summary>
+        private T ComputeStandardDeviation(T[] values, T mean)
+        {
+            if (values.Length == 0)
+                return _numericOps.Zero;
+                
+            T sumSquaredDiff = _numericOps.Zero;
+            foreach (var value in values)
+            {
+                T diff = _numericOps.Subtract(value, mean);
+                sumSquaredDiff = _numericOps.Add(sumSquaredDiff, _numericOps.Multiply(diff, diff));
+            }
+            
+            T variance = _numericOps.Divide(sumSquaredDiff, _numericOps.FromDouble(values.Length));
+            return _numericOps.Sqrt(variance);
+        }
+
+        /// <summary>
+        /// Computes the minimum value in an array
+        /// </summary>
+        private T ComputeMin(T[] values)
+        {
+            if (values.Length == 0)
+                return _numericOps.Zero;
+                
+            T min = values[0];
+            for (int i = 1; i < values.Length; i++)
+            {
+                if (_numericOps.LessThan(values[i], min))
+                    min = values[i];
+            }
+            return min;
+        }
+
+        /// <summary>
+        /// Computes the maximum value in an array
+        /// </summary>
+        private T ComputeMax(T[] values)
+        {
+            if (values.Length == 0)
+                return _numericOps.Zero;
+                
+            T max = values[0];
+            for (int i = 1; i < values.Length; i++)
+            {
+                if (_numericOps.GreaterThan(values[i], max))
+                    max = values[i];
+            }
+            return max;
+        }
+
+        /// <summary>
+        /// Computes the sum of an array
+        /// </summary>
+        private T ComputeSum(T[] values)
+        {
+            T sum = _numericOps.Zero;
+            foreach (var value in values)
+            {
+                sum = _numericOps.Add(sum, value);
+            }
+            return sum;
+        }
+
+        /// <summary>
+        /// Computes the RMS (root mean square) of an array
+        /// </summary>
+        private T ComputeRMS(T[] values)
+        {
+            if (values.Length == 0)
+                return _numericOps.Zero;
+                
+            T sumSquared = _numericOps.Zero;
+            foreach (var value in values)
+            {
+                sumSquared = _numericOps.Add(sumSquared, _numericOps.Multiply(value, value));
+            }
+            
+            T meanSquared = _numericOps.Divide(sumSquared, _numericOps.FromDouble(values.Length));
+            return _numericOps.Sqrt(meanSquared);
         }
 
         /// <summary>
@@ -493,7 +614,7 @@ namespace AiDotNet.MultimodalAI.Encoders
             public int Width { get; set; }
             public int Height { get; set; }
             public int Channels { get; set; }
-            public double[] Data { get; set; } = Array.Empty<double>();
+            public T[] Data { get; set; } = Array.Empty<T>();
         }
     }
 }

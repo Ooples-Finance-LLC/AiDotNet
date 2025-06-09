@@ -6,6 +6,11 @@ namespace AiDotNet.Enums
     public enum QuantizationType
     {
         /// <summary>
+        /// No quantization applied
+        /// </summary>
+        None,
+        
+        /// <summary>
         /// 8-bit integer quantization
         /// </summary>
         Int8,

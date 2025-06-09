@@ -6,6 +6,7 @@ using AiDotNet.ActivationFunctions;
 using AiDotNet.Statistics;
 using AiDotNet.Extensions;
 using AiDotNet.Enums;
+using AiDotNet.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,26 +18,28 @@ namespace AiDotNet.MultimodalAI
     /// <summary>
     /// Early fusion multimodal model that concatenates modality features before processing
     /// </summary>
+    /// <typeparam name="T">The numeric type used for calculations</typeparam>
     /// <remarks>
     /// This model implements early fusion strategy where features from different modalities
     /// are concatenated at the input level before being processed by a shared neural network.
     /// This approach allows the model to learn cross-modal interactions from the beginning.
     /// </remarks>
     [Serializable]
-    public class EarlyFusionMultimodal : MultimodalModelBase, IDisposable
+    public class EarlyFusionMultimodal<T> : MultimodalModelBase<T>, IDisposable
     {
-        private NeuralNetwork<double>? _fusionNetwork;
+        private NeuralNetwork<T>? _fusionNetwork;
         private readonly int _hiddenLayerSize;
         private readonly int _numHiddenLayers;
-        private readonly double _learningRate;
-        private readonly double _dropoutRate;
+        private readonly T _learningRate;
+        private readonly T _dropoutRate;
         private readonly Random _random;
         private bool _disposed;
         private readonly object _lockObject = new object();
+        private readonly INumericOperations<T> _ops;
         
         // Training history
-        private readonly List<double> _trainingLosses = new List<double>();
-        private readonly List<double> _validationLosses = new List<double>();
+        private readonly List<T> _trainingLosses = new List<T>();
+        private readonly List<T> _validationLosses = new List<T>();
 
         /// <summary>
         /// Initializes a new instance of EarlyFusionMultimodal
@@ -46,10 +49,13 @@ namespace AiDotNet.MultimodalAI
         /// <param name="numHiddenLayers">Number of hidden layers</param>
         /// <param name="learningRate">Learning rate for training</param>
         /// <param name="dropoutRate">Dropout rate for regularization</param>
+        /// <param name="randomSeed">Random seed for reproducibility</param>
+        /// <param name="numericOps">Numeric operations for type T</param>
         public EarlyFusionMultimodal(int fusedDimension, int hiddenLayerSize = 256, 
                                     int numHiddenLayers = 2, double learningRate = 0.001,
-                                    double dropoutRate = 0.2, int? randomSeed = null)
-            : base("early_fusion", fusedDimension)
+                                    double dropoutRate = 0.2, int? randomSeed = null,
+                                    INumericOperations<T>? numericOps = null)
+            : base("early_fusion", fusedDimension, numericOps ?? MathHelper.GetNumericOperations<T>())
         {
             if (fusedDimension <= 0)
                 throw new ArgumentException("Fused dimension must be positive", nameof(fusedDimension));
@@ -62,10 +68,11 @@ namespace AiDotNet.MultimodalAI
             if (dropoutRate < 0 || dropoutRate >= 1)
                 throw new ArgumentException("Dropout rate must be in [0, 1)", nameof(dropoutRate));
 
+            _ops = numericOps ?? MathHelper.GetNumericOperations<T>();
             _hiddenLayerSize = hiddenLayerSize;
             _numHiddenLayers = numHiddenLayers;
-            _learningRate = learningRate;
-            _dropoutRate = dropoutRate;
+            _learningRate = _ops.FromDouble(learningRate);
+            _dropoutRate = _ops.FromDouble(dropoutRate);
             _random = randomSeed.HasValue ? new Random(randomSeed.Value) : new Random();
         }
 
@@ -74,10 +81,10 @@ namespace AiDotNet.MultimodalAI
         /// </summary>
         /// <param name="modalityData">Dictionary mapping modality names to their data</param>
         /// <returns>Fused representation</returns>
-        public override Vector<double> ProcessMultimodal(Dictionary<string, object> modalityData)
+        public override Vector<T> ProcessMultimodal(Dictionary<string, object> modalityData)
         {
             if (_disposed)
-                throw new ObjectDisposedException(nameof(EarlyFusionMultimodal));
+                throw new ObjectDisposedException(nameof(EarlyFusionMultimodal<T>));
 
             ValidateModalityData(modalityData);
 
@@ -86,8 +93,8 @@ namespace AiDotNet.MultimodalAI
                 try
                 {
                     // Encode each modality
-                    var encodedModalities = new List<Vector<double>>();
-                    var encodingTasks = new List<Task<(string, Vector<double>)>>();
+                    var encodedModalities = new List<Vector<T>>();
+                    var encodingTasks = new List<Task<(string, Vector<T>)>>();
 
                     // Parallel encoding for better performance
                     foreach (var kvp in modalityData)
@@ -112,7 +119,7 @@ namespace AiDotNet.MultimodalAI
 
                     // Collect results in consistent order
                     var orderedModalities = modalityData.Keys.OrderBy(k => k).ToList();
-                    var encodingResults = new Dictionary<string, Vector<double>>();
+                    var encodingResults = new Dictionary<string, Vector<T>>();
                     foreach (var task in encodingTasks)
                     {
                         var result = task.Result;
@@ -163,18 +170,18 @@ namespace AiDotNet.MultimodalAI
         /// </summary>
         /// <param name="input">Input vector</param>
         /// <returns>Output vector</returns>
-        private Vector<double> ProcessThroughNetwork(Vector<double> input)
+        private Vector<T> ProcessThroughNetwork(Vector<T> input)
         {
             if (_fusionNetwork == null)
                 throw new InvalidOperationException("Fusion network not initialized");
 
             // Convert to tensor for neural network
-            var inputTensor = new Tensor<double>(new[] { input.Length }, input);
+            var inputTensor = new Tensor<T>(new[] { input.Length }, input);
             var outputTensor = _fusionNetwork.Predict(inputTensor);
             
             // Extract the vector from the output tensor
             var outputArray = outputTensor.ToArray();
-            var output = new Vector<double>(outputArray.Length);
+            var output = new Vector<T>(outputArray.Length);
             for (int i = 0; i < outputArray.Length; i++)
             {
                 output[i] = outputArray[i];
@@ -188,10 +195,10 @@ namespace AiDotNet.MultimodalAI
         /// </summary>
         /// <param name="inputs">Training inputs (each row is a concatenated feature vector)</param>
         /// <param name="targets">Target outputs</param>
-        public override void Train(Matrix<double> inputs, Vector<double> targets)
+        public override void Train(Matrix<T> inputs, Vector<T> targets)
         {
             if (_disposed)
-                throw new ObjectDisposedException(nameof(EarlyFusionMultimodal));
+                throw new ObjectDisposedException(nameof(EarlyFusionMultimodal<T>));
 
             if (inputs == null)
                 throw new ArgumentNullException(nameof(inputs));
@@ -212,8 +219,8 @@ namespace AiDotNet.MultimodalAI
                     }
 
                     // Convert to tensors for neural network
-                    var inputTensor = new Tensor<double>(new[] { inputs.Rows, inputs.Columns }, inputs.ToColumnVector());
-                    var targetTensor = new Tensor<double>(new[] { targets.Length }, targets);
+                    var inputTensor = new Tensor<T>(new[] { inputs.Rows, inputs.Columns }, inputs.ToColumnVector());
+                    var targetTensor = new Tensor<T>(new[] { targets.Length }, targets);
 
                     // Train the neural network
                     _fusionNetwork!.Train(inputTensor, targetTensor);
@@ -235,10 +242,10 @@ namespace AiDotNet.MultimodalAI
         /// </summary>
         /// <param name="inputs">Input data</param>
         /// <returns>Predictions</returns>
-        public override Vector<double> Predict(Matrix<double> inputs)
+        public override Vector<T> Predict(Matrix<T> inputs)
         {
             if (_disposed)
-                throw new ObjectDisposedException(nameof(EarlyFusionMultimodal));
+                throw new ObjectDisposedException(nameof(EarlyFusionMultimodal<T>));
 
             if (!_isTrained || _fusionNetwork == null)
                 throw new InvalidOperationException("Model must be trained before making predictions");
@@ -247,19 +254,19 @@ namespace AiDotNet.MultimodalAI
                 throw new ArgumentNullException(nameof(inputs));
 
             if (inputs.Rows == 0)
-                return new Vector<double>(0);
+                return new Vector<T>(0);
 
             lock (_lockObject)
             {
                 try
                 {
                     // Convert to tensor and predict
-                    var inputTensor = new Tensor<double>(new[] { inputs.Rows, inputs.Columns }, inputs.ToColumnVector());
+                    var inputTensor = new Tensor<T>(new[] { inputs.Rows, inputs.Columns }, inputs.ToColumnVector());
                     var outputTensor = _fusionNetwork.Predict(inputTensor);
 
                     // Convert output tensor to vector
                     var outputArray = outputTensor.ToArray();
-                    var predictions = new Vector<double>(outputArray.Length);
+                    var predictions = new Vector<T>(outputArray.Length);
                     for (int i = 0; i < outputArray.Length; i++)
                     {
                         predictions[i] = outputArray[i];
@@ -278,15 +285,16 @@ namespace AiDotNet.MultimodalAI
         /// Creates a copy of the model
         /// </summary>
         /// <returns>A copy of the model</returns>
-        public override IFullModel<double, Dictionary<string, object>, Vector<double>> Clone()
+        public override IFullModel<T, Dictionary<string, object>, Vector<T>> Clone()
         {
             if (_disposed)
-                throw new ObjectDisposedException(nameof(EarlyFusionMultimodal));
+                throw new ObjectDisposedException(nameof(EarlyFusionMultimodal<T>));
 
             lock (_lockObject)
             {
-                var clone = new EarlyFusionMultimodal(_fusedDimension, _hiddenLayerSize, 
-                                                     _numHiddenLayers, _learningRate, _dropoutRate);
+                var clone = new EarlyFusionMultimodal<T>(_fusedDimension, _hiddenLayerSize, 
+                                                     _numHiddenLayers, Convert.ToDouble(_learningRate), 
+                                                     Convert.ToDouble(_dropoutRate), null, _ops);
 
                 // Copy encoders
                 foreach (var kvp in _modalityEncoders)
@@ -326,10 +334,10 @@ namespace AiDotNet.MultimodalAI
         /// <summary>
         /// Concatenates multiple vectors into one
         /// </summary>
-        private Vector<double> ConcatenateVectors(List<Vector<double>> vectors)
+        private Vector<T> ConcatenateVectors(List<Vector<T>> vectors)
         {
             int totalDimension = vectors.Sum(v => v.Length);
-            var concatenated = new Vector<double>(totalDimension);
+            var concatenated = new Vector<T>(totalDimension);
 
             int offset = 0;
             foreach (var vector in vectors)
@@ -353,24 +361,24 @@ namespace AiDotNet.MultimodalAI
                 throw new ArgumentException("Input dimension must be positive", nameof(inputDimension));
 
             // Create layers explicitly
-            var layerList = new List<ILayer<double>>();
+            var layerList = new List<ILayer<T>>();
             
             // Input to first hidden layer
-            layerList.Add(new FullyConnectedLayer<double>(inputDimension, _hiddenLayerSize, null as IActivationFunction<double>));
-            layerList.Add(new ActivationLayer<double>(new[] { _hiddenLayerSize }, new ReLUActivation<double>() as IActivationFunction<double>));
+            layerList.Add(new FullyConnectedLayer<T>(inputDimension, _hiddenLayerSize, null as IActivationFunction<T>));
+            layerList.Add(new ActivationLayer<T>(new[] { _hiddenLayerSize }, new ReLUActivation<T>() as IActivationFunction<T>));
             
             // Add additional hidden layers
             for (int i = 1; i < _numHiddenLayers; i++)
             {
-                layerList.Add(new FullyConnectedLayer<double>(_hiddenLayerSize, _hiddenLayerSize, null as IActivationFunction<double>));
-                layerList.Add(new ActivationLayer<double>(new[] { _hiddenLayerSize }, new ReLUActivation<double>() as IActivationFunction<double>));
+                layerList.Add(new FullyConnectedLayer<T>(_hiddenLayerSize, _hiddenLayerSize, null as IActivationFunction<T>));
+                layerList.Add(new ActivationLayer<T>(new[] { _hiddenLayerSize }, new ReLUActivation<T>() as IActivationFunction<T>));
             }
             
             // Output layer
-            layerList.Add(new FullyConnectedLayer<double>(_hiddenLayerSize, _fusedDimension, null as IActivationFunction<double>));
+            layerList.Add(new FullyConnectedLayer<T>(_hiddenLayerSize, _fusedDimension, null as IActivationFunction<T>));
 
             // Create neural network architecture with explicit layers
-            var architecture = new NeuralNetworkArchitecture<double>(
+            var architecture = new NeuralNetworkArchitecture<T>(
                 complexity: NetworkComplexity.Medium,
                 taskType: Enums.NeuralNetworkTaskType.Regression,
                 shouldReturnFullSequence: false,
@@ -378,18 +386,18 @@ namespace AiDotNet.MultimodalAI
                 isDynamicSampleCount: true,
                 isPlaceholder: false);
 
-            _fusionNetwork = new NeuralNetwork<double>(architecture);
+            _fusionNetwork = new NeuralNetwork<T>(architecture);
         }
 
         /// <summary>
         /// Gets training losses
         /// </summary>
-        public IReadOnlyList<double> TrainingLosses => _trainingLosses.AsReadOnly();
+        public IReadOnlyList<T> TrainingLosses => _trainingLosses.AsReadOnly();
 
         /// <summary>
         /// Gets validation losses
         /// </summary>
-        public IReadOnlyList<double> ValidationLosses => _validationLosses.AsReadOnly();
+        public IReadOnlyList<T> ValidationLosses => _validationLosses.AsReadOnly();
 
         /// <summary>
         /// Gets parameters of the model
@@ -399,8 +407,8 @@ namespace AiDotNet.MultimodalAI
             var parameters = base.GetParametersDictionary();
             parameters["HiddenLayerSize"] = _hiddenLayerSize;
             parameters["NumHiddenLayers"] = _numHiddenLayers;
-            parameters["LearningRate"] = _learningRate;
-            parameters["DropoutRate"] = _dropoutRate;
+            parameters["LearningRate"] = Convert.ToDouble(_learningRate);
+            parameters["DropoutRate"] = Convert.ToDouble(_dropoutRate);
             parameters["IsTrained"] = _isTrained;
             
             if (_fusionNetwork != null)

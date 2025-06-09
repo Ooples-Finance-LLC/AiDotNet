@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AiDotNet.Interfaces;
+using AiDotNet.Interpretability;
 using AiDotNet.LinearAlgebra;
 using AiDotNet.Helpers;
 using AiDotNet.Compression;
+using AiDotNet.Models;
 
 namespace AiDotNet.Deployment
 {
@@ -87,7 +89,7 @@ namespace AiDotNet.Deployment
     /// <summary>
     /// Cached model wrapper for cloud deployment
     /// </summary>
-    internal class CachedModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
+    internal class CachedModel<T> : InterpretableModelBase<T, Tensor<T>, Tensor<T>>, IFullModel<T, Tensor<T>, Tensor<T>>
         where T : struct, IComparable<T>, IConvertible, IEquatable<T>
     {
         private readonly IFullModel<T, Tensor<T>, Tensor<T>> baseModel;
@@ -106,7 +108,7 @@ namespace AiDotNet.Deployment
             set { /* Setting model metadata not supported on base model */ }
         }
         
-        public Tensor<T> Predict(Tensor<T> inputs)
+        public override Tensor<T> Predict(Tensor<T> inputs)
         {
             var key = ComputeCacheKey(inputs);
             
@@ -137,10 +139,35 @@ namespace AiDotNet.Deployment
             return hash.ToString();
         }
         
-        public void Train(Tensor<T> inputs, Tensor<T> outputs)
+        public override void Train(Tensor<T> inputs, Tensor<T> outputs)
         {
             baseModel.Train(inputs, outputs);
             cache.Clear(); // Invalidate cache after training
+        }
+        
+        public override async Task TrainAsync(Tensor<T> inputs, Tensor<T> outputs)
+        {
+            await baseModel.TrainAsync(inputs, outputs);
+            cache.Clear(); // Invalidate cache after training
+        }
+        
+        public override async Task<Tensor<T>> PredictAsync(Tensor<T> inputs)
+        {
+            var key = ComputeCacheKey(inputs);
+            
+            if (cache.TryGetValue(key, out var cachedResult))
+            {
+                return cachedResult;
+            }
+            
+            var result = await baseModel.PredictAsync(inputs);
+            
+            if (cache.Count < maxCacheSize)
+            {
+                cache[key] = result;
+            }
+            
+            return result;
         }
         
         public byte[] Serialize()
@@ -154,7 +181,7 @@ namespace AiDotNet.Deployment
             cache.Clear();
         }
         
-        public void Dispose()
+        public override void Dispose()
         {
             if (baseModel is IDisposable disposable)
             {
@@ -164,9 +191,25 @@ namespace AiDotNet.Deployment
         }
         
         // IModel interface implementation
-        public ModelMetaData<T> GetModelMetaData()
+        public override ModelMetaData<T> GetModelMetaData()
         {
             return baseModel.GetModelMetaData();
+        }
+        
+        public override void SetModelMetaData(ModelMetaData<T> metadata)
+        {
+            // Setting model metadata not supported on base model
+        }
+        
+        public override void Save(string filepath)
+        {
+            baseModel.Save(filepath);
+        }
+        
+        public override void Load(string filepath)
+        {
+            baseModel.Load(filepath);
+            cache.Clear();
         }
         
         // IModelSerializer implementation is above
@@ -215,6 +258,77 @@ namespace AiDotNet.Deployment
         public IFullModel<T, Tensor<T>, Tensor<T>> Clone()
         {
             return DeepCopy();
+        }
+        
+        // Override interpretability methods to delegate to base model
+        public override async Task<Dictionary<int, T>> GetGlobalFeatureImportanceAsync()
+        {
+            return await baseModel.GetGlobalFeatureImportanceAsync();
+        }
+        
+        public override async Task<Dictionary<int, T>> GetLocalFeatureImportanceAsync(Tensor<T> input)
+        {
+            return await baseModel.GetLocalFeatureImportanceAsync(input);
+        }
+        
+        public override async Task<Matrix<T>> GetShapValuesAsync(Tensor<T> inputs)
+        {
+            return await baseModel.GetShapValuesAsync(inputs);
+        }
+        
+        public override async Task<LimeExplanation<T>> GetLimeExplanationAsync(Tensor<T> input, int numFeatures = 10)
+        {
+            return await baseModel.GetLimeExplanationAsync(input, numFeatures);
+        }
+        
+        public override async Task<PartialDependenceData<T>> GetPartialDependenceAsync(Vector<int> featureIndices, int gridResolution = 20)
+        {
+            return await baseModel.GetPartialDependenceAsync(featureIndices, gridResolution);
+        }
+        
+        public override async Task<CounterfactualExplanation<T>> GetCounterfactualAsync(Tensor<T> input, Tensor<T> desiredOutput, int maxChanges = 5)
+        {
+            return await baseModel.GetCounterfactualAsync(input, desiredOutput, maxChanges);
+        }
+        
+        public override async Task<Dictionary<string, object>> GetModelSpecificInterpretabilityAsync()
+        {
+            return await baseModel.GetModelSpecificInterpretabilityAsync();
+        }
+        
+        public override async Task<string> GenerateTextExplanationAsync(Tensor<T> input, Tensor<T> prediction)
+        {
+            return await baseModel.GenerateTextExplanationAsync(input, prediction);
+        }
+        
+        public override async Task<T> GetFeatureInteractionAsync(int feature1Index, int feature2Index)
+        {
+            return await baseModel.GetFeatureInteractionAsync(feature1Index, feature2Index);
+        }
+        
+        public override async Task<FairnessMetrics<T>> ValidateFairnessAsync(Tensor<T> inputs, int sensitiveFeatureIndex)
+        {
+            return await baseModel.ValidateFairnessAsync(inputs, sensitiveFeatureIndex);
+        }
+        
+        public override async Task<AnchorExplanation<T>> GetAnchorExplanationAsync(Tensor<T> input, T threshold)
+        {
+            return await baseModel.GetAnchorExplanationAsync(input, threshold);
+        }
+        
+        public override void SetBaseModel(IModel<Tensor<T>, Tensor<T>, ModelMetaData<T>> model)
+        {
+            baseModel.SetBaseModel(model);
+        }
+        
+        public override void EnableMethod(params Enums.InterpretationMethod[] methods)
+        {
+            baseModel.EnableMethod(methods);
+        }
+        
+        public override void ConfigureFairness(Vector<int> sensitiveFeatures, params Enums.FairnessMetric[] fairnessMetrics)
+        {
+            baseModel.ConfigureFairness(sensitiveFeatures, fairnessMetrics);
         }
     }
 }

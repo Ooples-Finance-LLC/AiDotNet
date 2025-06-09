@@ -10,7 +10,7 @@ namespace AiDotNet.Interfaces
     /// Interface for production monitoring of deployed models
     /// </summary>
     /// <typeparam name="T">The numeric type used for calculations</typeparam>
-    public interface IProductionMonitor<T>
+    public interface IProductionMonitor<T> : IProductionMonitor
     {
         /// <summary>
         /// Monitors data drift between training and production data
@@ -70,10 +70,10 @@ namespace AiDotNet.Interfaces
     {
         public bool IsDriftDetected { get; set; }
         public double DriftScore { get; set; }
-        public string DriftType { get; set; }
-        public Dictionary<string, double> FeatureDrifts { get; set; }
+        public string DriftType { get; set; } = string.Empty;
+        public Dictionary<string, double> FeatureDrifts { get; set; } = new();
         public DateTime DetectionTimestamp { get; set; }
-        public string Details { get; set; }
+        public string Details { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -87,7 +87,7 @@ namespace AiDotNet.Interfaces
         public double F1Score { get; set; }
         public double MAE { get; set; }
         public double RMSE { get; set; }
-        public Dictionary<string, double> CustomMetrics { get; set; }
+        public Dictionary<string, double> CustomMetrics { get; set; } = new();
         public DateTime Timestamp { get; set; }
         public int PredictionCount { get; set; }
     }
@@ -102,8 +102,8 @@ namespace AiDotNet.Interfaces
         public double PerformanceScore { get; set; }
         public double StabilityScore { get; set; }
         public double DriftScore { get; set; }
-        public string HealthStatus { get; set; }
-        public List<string> Issues { get; set; }
+        public string HealthStatus { get; set; } = string.Empty;
+        public List<string> Issues { get; set; } = new();
         public DateTime EvaluationTimestamp { get; set; }
     }
 
@@ -113,11 +113,11 @@ namespace AiDotNet.Interfaces
     public class RetrainingRecommendation
     {
         public bool ShouldRetrain { get; set; }
-        public string Urgency { get; set; } // Low, Medium, High, Critical
-        public List<string> Reasons { get; set; }
+        public string Urgency { get; set; } = string.Empty; // Low, Medium, High, Critical
+        public List<string> Reasons { get; set; } = new();
         public DateTime RecommendationTimestamp { get; set; }
         public double ConfidenceScore { get; set; }
-        public Dictionary<string, object> SuggestedActions { get; set; }
+        public Dictionary<string, object> SuggestedActions { get; set; } = new();
     }
 
     /// <summary>
@@ -125,11 +125,11 @@ namespace AiDotNet.Interfaces
     /// </summary>
     public class MonitoringAlert
     {
-        public string AlertType { get; set; }
-        public string Severity { get; set; } // Info, Warning, Error, Critical
-        public string Message { get; set; }
+        public string AlertType { get; set; } = string.Empty;
+        public string Severity { get; set; } = string.Empty; // Info, Warning, Error, Critical
+        public string Message { get; set; } = string.Empty;
         public DateTime Timestamp { get; set; }
-        public Dictionary<string, object> Context { get; set; }
+        public Dictionary<string, object> Context { get; set; } = new();
     }
 
     /// <summary>
@@ -137,9 +137,9 @@ namespace AiDotNet.Interfaces
     /// </summary>
     public class MonitoringMetricsCollection
     {
-        public List<PerformanceMetrics> PerformanceHistory { get; set; }
-        public List<DriftDetectionResult> DriftHistory { get; set; }
-        public Dictionary<string, List<double>> FeatureStatistics { get; set; }
+        public List<PerformanceMetrics> PerformanceHistory { get; set; } = new();
+        public List<DriftDetectionResult> DriftHistory { get; set; } = new();
+        public Dictionary<string, List<double>> FeatureStatistics { get; set; } = new();
         public int TotalPredictions { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }

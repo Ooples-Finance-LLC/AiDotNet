@@ -16,16 +16,16 @@ namespace AiDotNet.FoundationModels.Models
     /// GPT-2 model implementation for text generation.
     /// Implements autoregressive transformer architecture.
     /// </summary>
-    public class GPT2Model : FoundationModelBase
+    public class GPT2Model<T> : FoundationModelBase<T>
     {
         private readonly string _modelPath;
         private readonly FoundationModelConfig _config;
         private TransformerBlock[]? _transformerBlocks;
-        private Matrix<double>? _tokenEmbeddings;
-        private Matrix<double>? _positionEmbeddings;
-        private Vector<double>? _layerNormGamma;
-        private Vector<double>? _layerNormBeta;
-        private Matrix<double>? _outputProjection;
+        private Matrix<T>? _tokenEmbeddings;
+        private Matrix<T>? _positionEmbeddings;
+        private Vector<T>? _layerNormGamma;
+        private Vector<T>? _layerNormBeta;
+        private Matrix<T>? _outputProjection;
         
         // Model configuration
         private readonly int _numLayers = 12;
@@ -109,9 +109,10 @@ namespace AiDotNet.FoundationModels.Models
                 // Apply temperature
                 if (temperature != 1.0)
                 {
+                    var tempT = NumOps.FromDouble(temperature);
                     for (int i = 0; i < nextTokenLogits.Length; i++)
                     {
-                        nextTokenLogits[i] /= temperature;
+                        nextTokenLogits[i] = NumOps.Divide(nextTokenLogits[i], tempT);
                     }
                 }
                 
@@ -140,7 +141,7 @@ namespace AiDotNet.FoundationModels.Models
         }
 
         /// <inheritdoc/>
-        protected override async Task<Tensor<double>> ComputeEmbeddingsAsync(
+        protected override async Task<Tensor<T>> ComputeEmbeddingsAsync(
             TokenizerOutput tokenizedInput,
             CancellationToken cancellationToken)
         {
@@ -150,7 +151,7 @@ namespace AiDotNet.FoundationModels.Models
             var seqLength = inputIds.Columns;
             
             // Get embeddings through forward pass
-            var hiddenStates = new Tensor<double>(new[] { batchSize, seqLength, _embeddingDim });
+            var hiddenStates = new Tensor<T>(new[] { batchSize, seqLength, _embeddingDim });
             
             for (int b = 0; b < batchSize; b++)
             {
@@ -224,20 +225,20 @@ namespace AiDotNet.FoundationModels.Models
             var random = new Random(42);
             
             // Token embeddings
-            _tokenEmbeddings = new Matrix<double>(_vocabSize, _embeddingDim);
+            _tokenEmbeddings = new Matrix<T>(_vocabSize, _embeddingDim);
             InitializeMatrix(_tokenEmbeddings, random, 0.02);
             
             // Position embeddings
-            _positionEmbeddings = new Matrix<double>(_maxPositions, _embeddingDim);
+            _positionEmbeddings = new Matrix<T>(_maxPositions, _embeddingDim);
             InitializeMatrix(_positionEmbeddings, random, 0.02);
             
             // Final layer norm
-            _layerNormGamma = new Vector<double>(_embeddingDim);
-            _layerNormBeta = new Vector<double>(_embeddingDim);
+            _layerNormGamma = new Vector<T>(_embeddingDim);
+            _layerNormBeta = new Vector<T>(_embeddingDim);
             for (int i = 0; i < _embeddingDim; i++)
             {
-                _layerNormGamma[i] = 1.0;
-                _layerNormBeta[i] = 0.0;
+                _layerNormGamma[i] = NumOps.One;
+                _layerNormBeta[i] = NumOps.Zero;
             }
             
             // Output projection (can share weights with token embeddings)
@@ -247,13 +248,13 @@ namespace AiDotNet.FoundationModels.Models
         /// <summary>
         /// Initializes a matrix with random values
         /// </summary>
-        private void InitializeMatrix(Matrix<double> matrix, Random random, double stdDev)
+        private void InitializeMatrix(Matrix<T> matrix, Random random, double stdDev)
         {
             for (int i = 0; i < matrix.Rows; i++)
             {
                 for (int j = 0; j < matrix.Columns; j++)
                 {
-                    matrix[i, j] = NormalRandom(random) * stdDev;
+                    matrix[i, j] = NumOps.FromDouble(NormalRandom(random) * stdDev);
                 }
             }
         }
@@ -272,10 +273,10 @@ namespace AiDotNet.FoundationModels.Models
         /// <summary>
         /// Prepares input tensor from token sequence
         /// </summary>
-        private Tensor<double> PrepareInputTensor(List<int> tokenIds)
+        private Tensor<T> PrepareInputTensor(List<int> tokenIds)
         {
             var seqLength = tokenIds.Count;
-            var inputTensor = new Tensor<double>(new[] { seqLength, _embeddingDim });
+            var inputTensor = new Tensor<T>(new[] { seqLength, _embeddingDim });
             
             // Embed tokens
             for (int i = 0; i < seqLength; i++)
@@ -293,7 +294,7 @@ namespace AiDotNet.FoundationModels.Models
                 {
                     for (int j = 0; j < _embeddingDim; j++)
                     {
-                        inputTensor[i, j] += _positionEmbeddings![i, j];
+                        inputTensor[i, j] = NumOps.Add(inputTensor[i, j], _positionEmbeddings![i, j]);
                     }
                 }
             }
@@ -304,7 +305,7 @@ namespace AiDotNet.FoundationModels.Models
         /// <summary>
         /// Performs forward pass through the model
         /// </summary>
-        private async Task<Tensor<double>> ForwardPassAsync(Tensor<double> input, CancellationToken cancellationToken)
+        private async Task<Tensor<T>> ForwardPassAsync(Tensor<T> input, CancellationToken cancellationToken)
         {
             var hiddenStates = input;
             
@@ -319,16 +320,16 @@ namespace AiDotNet.FoundationModels.Models
             
             // Project to vocabulary
             var seqLength = hiddenStates.Shape[0];
-            var logits = new Tensor<double>(new[] { seqLength, _vocabSize });
+            var logits = new Tensor<T>(new[] { seqLength, _vocabSize });
             
             for (int i = 0; i < seqLength; i++)
             {
                 for (int v = 0; v < _vocabSize; v++)
                 {
-                    double sum = 0;
+                    T sum = NumOps.Zero;
                     for (int j = 0; j < _embeddingDim; j++)
                     {
-                        sum += hiddenStates[i, j] * _outputProjection![v, j];
+                        sum = NumOps.Add(sum, NumOps.Multiply(hiddenStates[i, j], _outputProjection![v, j]));
                     }
                     logits[i, v] = sum;
                 }
@@ -340,36 +341,36 @@ namespace AiDotNet.FoundationModels.Models
         /// <summary>
         /// Applies layer normalization
         /// </summary>
-        private Tensor<double> ApplyLayerNorm(Tensor<double> input)
+        private Tensor<T> ApplyLayerNorm(Tensor<T> input)
         {
             var shape = input.Shape;
-            var result = new Tensor<double>(shape);
+            var result = new Tensor<T>(shape);
             var seqLength = shape[0];
             
             for (int i = 0; i < seqLength; i++)
             {
                 // Compute mean and variance
-                double mean = 0;
+                T mean = NumOps.Zero;
                 for (int j = 0; j < _embeddingDim; j++)
                 {
-                    mean += input[i, j];
+                    mean = NumOps.Add(mean, input[i, j]);
                 }
-                mean /= _embeddingDim;
+                mean = NumOps.Divide(mean, NumOps.FromDouble(_embeddingDim));
                 
-                double variance = 0;
+                T variance = NumOps.Zero;
                 for (int j = 0; j < _embeddingDim; j++)
                 {
-                    var diff = input[i, j] - mean;
-                    variance += diff * diff;
+                    var diff = NumOps.Subtract(input[i, j], mean);
+                    variance = NumOps.Add(variance, NumOps.Multiply(diff, diff));
                 }
-                variance /= _embeddingDim;
+                variance = NumOps.Divide(variance, NumOps.FromDouble(_embeddingDim));
                 
                 // Normalize
-                var stdDev = Math.Sqrt(variance + 1e-5);
+                var stdDev = NumOps.Sqrt(NumOps.Add(variance, NumOps.FromDouble(1e-5)));
                 for (int j = 0; j < _embeddingDim; j++)
                 {
-                    var normalized = (input[i, j] - mean) / stdDev;
-                    result[i, j] = _layerNormGamma![j] * normalized + _layerNormBeta![j];
+                    var normalized = NumOps.Divide(NumOps.Subtract(input[i, j], mean), stdDev);
+                    result[i, j] = NumOps.Add(NumOps.Multiply(_layerNormGamma![j], normalized), _layerNormBeta![j]);
                 }
             }
             
@@ -379,10 +380,10 @@ namespace AiDotNet.FoundationModels.Models
         /// <summary>
         /// Gets logits for the last token
         /// </summary>
-        private Vector<double> GetLastTokenLogits(Tensor<double> logits)
+        private Vector<T> GetLastTokenLogits(Tensor<T> logits)
         {
             var lastPosition = logits.Shape[0] - 1;
-            var lastTokenLogits = new Vector<double>(_vocabSize);
+            var lastTokenLogits = new Vector<T>(_vocabSize);
             
             for (int i = 0; i < _vocabSize; i++)
             {
@@ -395,24 +396,31 @@ namespace AiDotNet.FoundationModels.Models
         /// <summary>
         /// Samples a token from logits using top-p sampling
         /// </summary>
-        private int SampleToken(Vector<double> logits, double topP)
+        private int SampleToken(Vector<T> logits, double topP)
         {
             // Apply softmax
             var probabilities = Softmax(logits);
             
+            // Convert to double for sorting and sampling
+            var probsAsDouble = new double[probabilities.Length];
+            for (int i = 0; i < probabilities.Length; i++)
+            {
+                probsAsDouble[i] = Convert.ToDouble(probabilities[i]);
+            }
+            
             // Sort by probability
-            var indexed = probabilities
+            var indexed = probsAsDouble
                 .Select((prob, idx) => new { Probability = prob, Index = idx })
                 .OrderByDescending(x => x.Probability)
                 .ToList();
             
             // Apply top-p filtering
             double cumulativeProb = 0;
-            var filtered = new List<(int Index, double Prob)>();
+            var filtered = new List<Tuple<int, double>>();
             
             foreach (var item in indexed)
             {
-                filtered.Add((item.Index, item.Probability));
+                filtered.Add(Tuple.Create(item.Index, item.Probability));
                 cumulativeProb += item.Probability;
                 
                 if (cumulativeProb >= topP)
@@ -422,8 +430,8 @@ namespace AiDotNet.FoundationModels.Models
             }
             
             // Renormalize
-            var sum = filtered.Sum(x => x.Prob);
-            var normalized = filtered.Select(x => (x.Index, x.Prob / sum)).ToList();
+            var sum = filtered.Sum(x => x.Item2);
+            var normalized = filtered.Select(x => Tuple.Create(x.Item1, x.Item2 / sum)).ToList();
             
             // Sample
             var random = new Random();
@@ -441,27 +449,37 @@ namespace AiDotNet.FoundationModels.Models
                 }
             }
             
-            return normalized.Last().Index;
+            return normalized.Last().Item1;
         }
 
         /// <summary>
         /// Applies softmax to logits
         /// </summary>
-        private Vector<double> Softmax(Vector<double> logits)
+        private Vector<T> Softmax(Vector<T> logits)
         {
-            var maxLogit = logits.Max();
-            var expValues = new Vector<double>(logits.Length);
-            double sum = 0;
+            // Find max logit
+            var maxLogit = logits[0];
+            for (int i = 1; i < logits.Length; i++)
+            {
+                if (NumOps.GreaterThan(logits[i], maxLogit))
+                {
+                    maxLogit = logits[i];
+                }
+            }
+            
+            var expValues = new Vector<T>(logits.Length);
+            T sum = NumOps.Zero;
             
             for (int i = 0; i < logits.Length; i++)
             {
-                expValues[i] = Math.Exp(logits[i] - maxLogit);
-                sum += expValues[i];
+                var shifted = NumOps.Subtract(logits[i], maxLogit);
+                expValues[i] = NumOps.Exp(shifted);
+                sum = NumOps.Add(sum, expValues[i]);
             }
             
             for (int i = 0; i < expValues.Length; i++)
             {
-                expValues[i] /= sum;
+                expValues[i] = NumOps.Divide(expValues[i], sum);
             }
             
             return expValues;
@@ -519,7 +537,7 @@ namespace AiDotNet.FoundationModels.Models
                 _dropoutRate = dropoutRate;
             }
             
-            public async Task<Tensor<double>> ForwardAsync(Tensor<double> input, CancellationToken cancellationToken)
+            public async Task<Tensor<T>> ForwardAsync(Tensor<T> input, CancellationToken cancellationToken)
             {
                 // Simplified forward pass
                 // In a real implementation, this would include:
@@ -540,9 +558,9 @@ namespace AiDotNet.FoundationModels.Models
         /// <summary>
         /// Creates a new instance of the GPT-2 model
         /// </summary>
-        protected override IFullModel<double, string, string> CreateNewInstance()
+        protected override IFullModel<T, string, string> CreateNewInstance()
         {
-            return new GPT2Model(_modelPath, _tokenizer, _config, _logger);
+            return new GPT2Model<T>(_modelPath, _tokenizer, _config, _logger);
         }
 
         #endregion

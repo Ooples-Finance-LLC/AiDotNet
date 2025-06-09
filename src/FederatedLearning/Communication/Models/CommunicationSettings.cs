@@ -38,7 +38,7 @@ namespace AiDotNet.FederatedLearning.Communication.Models
         /// <summary>
         /// Maximum message size in bytes
         /// </summary>
-        public int MaxMessageSize { get; set; } = 10_000_000; // 10MB
+        public int MaxMessageSize { get; set; } = 10000000; // 10MB
 
         /// <summary>
         /// Whether to simulate network failures for testing
@@ -53,17 +53,17 @@ namespace AiDotNet.FederatedLearning.Communication.Models
         /// <summary>
         /// Server endpoint URL
         /// </summary>
-        public string? ServerEndpoint { get; set; }
+        public string ServerEndpoint { get; set; } = string.Empty;
 
         /// <summary>
         /// Client endpoint URL
         /// </summary>
-        public string? ClientEndpoint { get; set; }
+        public string ClientEndpoint { get; set; } = string.Empty;
 
         /// <summary>
         /// Authentication token
         /// </summary>
-        public string? AuthToken { get; set; }
+        public string AuthToken { get; set; } = string.Empty;
 
         /// <summary>
         /// Whether to use SSL/TLS

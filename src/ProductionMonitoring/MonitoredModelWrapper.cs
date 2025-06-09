@@ -72,18 +72,24 @@ namespace AiDotNet.ProductionMonitoring
         
         public void Save(string filePath)
         {
-            wrappedModel.Save(filePath);
+            var data = wrappedModel.Serialize();
+            System.IO.File.WriteAllBytes(filePath, data);
         }
         
         public void Load(string filePath)
         {
-            wrappedModel.Load(filePath);
+            var data = System.IO.File.ReadAllBytes(filePath);
+            wrappedModel.Deserialize(data);
         }
         
         public void Dispose()
         {
-            wrappedModel?.Dispose();
-            monitor?.Dispose();
+            // IFullModel doesn't implement IDisposable
+            // Only dispose monitor if it implements IDisposable
+            if (monitor is IDisposable disposableMonitor)
+            {
+                disposableMonitor.Dispose();
+            }
         }
         
         /// <summary>
@@ -169,6 +175,77 @@ namespace AiDotNet.ProductionMonitoring
         public IFullModel<T, TInput, TOutput> Clone()
         {
             return DeepCopy();
+        }
+        
+        // IInterpretableModel implementation - delegate to wrapped model
+        public async Task<Dictionary<int, T>> GetGlobalFeatureImportanceAsync()
+        {
+            return await wrappedModel.GetGlobalFeatureImportanceAsync();
+        }
+        
+        public async Task<Matrix<T>> GetShapValuesAsync(TInput input)
+        {
+            return await wrappedModel.GetShapValuesAsync(input);
+        }
+        
+        public async Task<LimeExplanation<T>> GetLimeExplanationAsync(TInput input, int numFeatures = 10)
+        {
+            return await wrappedModel.GetLimeExplanationAsync(input, numFeatures);
+        }
+        
+        public async Task<CounterfactualExplanation<T>> GetCounterfactualAsync(TInput input, TOutput desiredOutput, int maxChanges = 5)
+        {
+            return await wrappedModel.GetCounterfactualAsync(input, desiredOutput, maxChanges);
+        }
+        
+        public async Task<PartialDependenceData<T>> GetPartialDependenceAsync(Vector<int> featureIndices, int gridResolution = 20)
+        {
+            return await wrappedModel.GetPartialDependenceAsync(featureIndices, gridResolution);
+        }
+        
+        public async Task<FairnessMetrics<T>> ValidateFairnessAsync(TInput inputs, int sensitiveFeatureIndex)
+        {
+            return await wrappedModel.ValidateFairnessAsync(inputs, sensitiveFeatureIndex);
+        }
+        
+        public async Task<Dictionary<string, object>> GetModelSpecificInterpretabilityAsync()
+        {
+            return await wrappedModel.GetModelSpecificInterpretabilityAsync();
+        }
+        
+        public async Task<string> GenerateTextExplanationAsync(TInput input, TOutput prediction)
+        {
+            return await wrappedModel.GenerateTextExplanationAsync(input, prediction);
+        }
+        
+        public async Task<T> GetFeatureInteractionAsync(int feature1Index, int feature2Index)
+        {
+            return await wrappedModel.GetFeatureInteractionAsync(feature1Index, feature2Index);
+        }
+        
+        public async Task<AnchorExplanation<T>> GetAnchorExplanationAsync(TInput input, T threshold)
+        {
+            return await wrappedModel.GetAnchorExplanationAsync(input, threshold);
+        }
+        
+        public async Task<Dictionary<int, T>> GetLocalFeatureImportanceAsync(TInput input)
+        {
+            return await wrappedModel.GetLocalFeatureImportanceAsync(input);
+        }
+        
+        public void SetBaseModel(IModel<TInput, TOutput, ModelMetaData<T>> model)
+        {
+            wrappedModel.SetBaseModel(model);
+        }
+        
+        public void EnableMethod(params InterpretationMethod[] methods)
+        {
+            wrappedModel.EnableMethod(methods);
+        }
+        
+        public void ConfigureFairness(Vector<int> sensitiveFeatures, params FairnessMetric[] fairnessMetrics)
+        {
+            wrappedModel.ConfigureFairness(sensitiveFeatures, fairnessMetrics);
         }
     }
 }

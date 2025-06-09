@@ -427,13 +427,13 @@ numpy";
 
         private class AzureServiceConfig
         {
-            public string ServiceName { get; set; }
+            public string ServiceName { get; set; } = string.Empty;
             public double MaxModelSize { get; set; }
             public double MaxMemory { get; set; }
             public double MaxTimeout { get; set; }
-            public string[] SupportedFormats { get; set; }
-            public string[] ComputeTargets { get; set; }
-            public string[] Capabilities { get; set; }
+            public string[] SupportedFormats { get; set; } = Array.Empty<string>();
+            public string[] ComputeTargets { get; set; } = Array.Empty<string>();
+            public string[] Capabilities { get; set; } = Array.Empty<string>();
         }
     }
 }

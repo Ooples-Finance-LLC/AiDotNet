@@ -399,9 +399,9 @@ public class GARCHModel<T> : TimeSeriesModelBase<T>
         T convergenceThreshold = NumOps.FromDouble(1e-6);
         T momentumFactor = NumOps.FromDouble(0.9);
 
-        Vector<T> previousOmega = _omega.Clone();
-        Vector<T> previousAlpha = _alpha.Clone();
-        Vector<T> previousBeta = _beta.Clone();
+        Vector<T> previousOmega = (Vector<T>)_omega.Clone();
+        Vector<T> previousAlpha = (Vector<T>)_alpha.Clone();
+        Vector<T> previousBeta = (Vector<T>)_beta.Clone();
 
         Vector<T> velocityOmega = new Vector<T>(_omega.Length);
         Vector<T> velocityAlpha = new Vector<T>(_alpha.Length);
@@ -442,17 +442,17 @@ public class GARCHModel<T> : TimeSeriesModelBase<T>
             if (NumOps.GreaterThan(improvement, NumOps.Zero))
             {
                 currentLearningRate = NumOps.Multiply(currentLearningRate, NumOps.FromDouble(1.05)); // Increase learning rate
-                previousOmega = _omega.Clone();
-                previousAlpha = _alpha.Clone();
-                previousBeta = _beta.Clone();
+                previousOmega = (Vector<T>)_omega.Clone();
+                previousAlpha = (Vector<T>)_alpha.Clone();
+                previousBeta = (Vector<T>)_beta.Clone();
                 previousLogLikelihood = currentLogLikelihood;
             }
             else
             {
                 currentLearningRate = NumOps.Multiply(currentLearningRate, NumOps.FromDouble(0.5)); // Decrease learning rate
-                _omega = previousOmega.Clone();
-                _alpha = previousAlpha.Clone();
-                _beta = previousBeta.Clone();
+                _omega = (Vector<T>)previousOmega.Clone();
+                _alpha = (Vector<T>)previousAlpha.Clone();
+                _beta = (Vector<T>)previousBeta.Clone();
 
                 if (NumOps.LessThan(currentLearningRate, minLearningRate))
                 {

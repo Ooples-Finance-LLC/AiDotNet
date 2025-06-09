@@ -70,7 +70,7 @@ namespace AiDotNet.Deployment
                 MaxAcceptableAccuracyLoss = 0.02
             };
             
-            return await Task.Run(() => quantizer.Quantize(model, options.QuantizationType));
+            return await Task.Run(() => quantizer.Quantize(model, options.QuantizationType.ToString()));
         }
         
         /// <summary>
@@ -81,7 +81,7 @@ namespace AiDotNet.Deployment
         {
             var pruner = new ModelPruner<T, Tensor<T>, Tensor<T>>();
             
-            return await Task.Run(() => pruner.Prune(model, options.PruningThreshold));
+            return await Task.Run(() => pruner.Prune(model, options.PruningThreshold.ToString()));
         }
         
         /// <summary>

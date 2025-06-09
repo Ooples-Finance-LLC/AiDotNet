@@ -1100,4 +1100,22 @@ public abstract class OptimizerBase<T, TInput, TOutput> : IOptimizer<T, TInput, 
     /// </para>
     /// </remarks>
     public abstract OptimizationAlgorithmOptions<T, TInput, TOutput> GetOptions();
+    
+    /// <summary>
+    /// Calculates the parameter updates based on the gradients.
+    /// </summary>
+    /// <param name="gradients">The gradients of the loss function with respect to the parameters.</param>
+    /// <param name="parameters">The current parameter values.</param>
+    /// <returns>The updates to be applied to the parameters.</returns>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This base implementation returns the gradients as-is,
+    /// which represents vanilla gradient descent. Derived classes should override this
+    /// to implement specific optimization algorithms (like Adam, SGD with momentum, etc.).</para>
+    /// </remarks>
+    public virtual Vector<T> CalculateUpdate(Vector<T> gradients, Vector<T> parameters)
+    {
+        // Base implementation: return gradients as-is (vanilla gradient descent)
+        // Derived classes should override this for specific optimization algorithms
+        return gradients;
+    }
 }

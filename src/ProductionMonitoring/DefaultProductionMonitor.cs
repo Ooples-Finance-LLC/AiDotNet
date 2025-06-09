@@ -47,7 +47,10 @@ namespace AiDotNet.ProductionMonitoring
                     inputArray[i] = Convert.ToDouble(inputs[i]);
                 }
                 
-                var driftScores = driftDetector.DetectDrift(inputArray);
+                // Convert input array to Matrix<T>
+                var inputMatrix = new Matrix<T>(new T[] { inputs }, 1, inputs.Length);
+                var driftResult = await driftDetector.DetectDataDriftAsync(inputMatrix);
+                var driftScores = driftResult.FeatureDrifts ?? new Dictionary<string, double>();
                 
                 // Generate alerts for significant drift
                 foreach (var score in driftScores.Where(s => s.Value > 0.1))
@@ -65,7 +68,7 @@ namespace AiDotNet.ProductionMonitoring
                         recentAlerts.Add(alert);
                     }
                     
-                    alertManager.SendAlert(alert);
+                    await alertManager.SendAlertAsync(alert);
                 }
             });
         }
@@ -99,7 +102,7 @@ namespace AiDotNet.ProductionMonitoring
                         recentAlerts.Add(alert);
                     }
                     
-                    alertManager.SendAlert(alert);
+                    await alertManager.SendAlertAsync(alert);
                 }
                 
                 // Update performance metrics
@@ -185,11 +188,14 @@ namespace AiDotNet.ProductionMonitoring
         
         public void Dispose()
         {
-            driftDetector?.Dispose();
-            performanceMonitor?.Dispose();
-            alertManager?.Dispose();
-            healthScorer?.Dispose();
-            retrainingRecommender?.Dispose();
+            // Check if components implement IDisposable before disposing
+            if (driftDetector is IDisposable disposableDrift)
+                disposableDrift.Dispose();
+            if (performanceMonitor is IDisposable disposablePerf)
+                disposablePerf.Dispose();
+            if (alertManager is IDisposable disposableAlert)
+                disposableAlert.Dispose();
+            // healthScorer and retrainingRecommender don't implement IDisposable
         }
     }
 }

@@ -3,39 +3,44 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using AiDotNet.LinearAlgebra;
+using AiDotNet.Interfaces;
 
 namespace AiDotNet.MultimodalAI.Encoders
 {
     /// <summary>
     /// Text-specific modality encoder for processing text data
     /// </summary>
-    public class TextModalityEncoder : ModalityEncoderBase
+    /// <typeparam name="T">The numeric type used for calculations</typeparam>
+    public class TextModalityEncoder<T> : ModalityEncoderBase<T>
     {
         private readonly int _vocabularySize;
         private readonly int _maxSequenceLength;
         private readonly bool _useTfIdf;
         private readonly bool _useCharFeatures;
         private readonly Dictionary<string, int> _vocabulary;
-        private readonly Dictionary<string, double> _idfScores;
+        private readonly Dictionary<string, T> _idfScores;
         
         /// <summary>
         /// Initializes a new instance of TextModalityEncoder
         /// </summary>
-        /// <param name="outputDimension">Output dimension of the encoder (default: 768)</param>
+        /// <param name="outputDimension">Output dimension of the encoder</param>
         /// <param name="vocabularySize">Maximum vocabulary size (default: 10000)</param>
         /// <param name="maxSequenceLength">Maximum sequence length (default: 512)</param>
         /// <param name="useTfIdf">Whether to use TF-IDF weighting (default: true)</param>
         /// <param name="useCharFeatures">Whether to extract character-level features (default: true)</param>
-        public TextModalityEncoder(int outputDimension = 768, int vocabularySize = 10000,
-            int maxSequenceLength = 512, bool useTfIdf = true, bool useCharFeatures = true) 
-            : base("Text", outputDimension)
+        /// <param name="encoder">Optional custom neural network encoder. If null, a default encoder will be created when needed.</param>
+        public TextModalityEncoder(int outputDimension = 768,
+            int vocabularySize = 10000, int maxSequenceLength = 512, 
+            bool useTfIdf = true, bool useCharFeatures = true,
+            INeuralNetworkModel<T>? encoder = null) 
+            : base("Text", outputDimension, encoder)
         {
             _vocabularySize = vocabularySize;
             _maxSequenceLength = maxSequenceLength;
             _useTfIdf = useTfIdf;
             _useCharFeatures = useCharFeatures;
             _vocabulary = new Dictionary<string, int>();
-            _idfScores = new Dictionary<string, double>();
+            _idfScores = new Dictionary<string, T>();
         }
 
         /// <summary>
@@ -43,7 +48,7 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// </summary>
         /// <param name="input">Text data as string, string[], or List<string></param>
         /// <returns>Encoded vector representation</returns>
-        public override Vector<double> Encode(object input)
+        public override Vector<T> Encode(object input)
         {
             if (!ValidateInput(input))
             {
@@ -124,9 +129,9 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Extracts text features from preprocessed data
         /// </summary>
-        private Vector<double> ExtractTextFeatures(TextData textData)
+        private Vector<T> ExtractTextFeatures(TextData textData)
         {
-            var features = new List<double>();
+            var features = new List<T>();
 
             // Bag-of-words or TF-IDF features
             var bowFeatures = ExtractBagOfWordsFeatures(textData);
@@ -147,13 +152,13 @@ namespace AiDotNet.MultimodalAI.Encoders
             var semanticFeatures = ExtractSemanticFeatures(textData);
             features.AddRange(semanticFeatures);
 
-            return new Vector<double>(features.ToArray());
+            return new Vector<T>(features.ToArray());
         }
 
         /// <summary>
         /// Extracts bag-of-words or TF-IDF features
         /// </summary>
-        private double[] ExtractBagOfWordsFeatures(TextData textData)
+        private T[] ExtractBagOfWordsFeatures(TextData textData)
         {
             // Build vocabulary if needed
             if (_vocabulary.Count == 0)
@@ -161,7 +166,7 @@ namespace AiDotNet.MultimodalAI.Encoders
                 BuildVocabulary(textData);
             }
 
-            var features = new double[Math.Min(_vocabulary.Count, _vocabularySize)];
+            var features = new T[Math.Min(_vocabulary.Count, _vocabularySize)];
 
             foreach (var tokens in textData.Tokens)
             {
@@ -184,11 +189,11 @@ namespace AiDotNet.MultimodalAI.Encoders
                     int index = _vocabulary[kvp.Key];
                     if (index < features.Length)
                     {
-                        double tf = kvp.Value / (double)tokens.Count;
-                        double value = _useTfIdf && _idfScores.ContainsKey(kvp.Key) 
-                            ? tf * _idfScores[kvp.Key] 
+                        T tf = _numericOps.FromDouble(kvp.Value / (double)tokens.Count);
+                        T value = _useTfIdf && _idfScores.ContainsKey(kvp.Key) 
+                            ? _numericOps.Multiply(tf, _idfScores[kvp.Key]) 
                             : tf;
-                        features[index] += value;
+                        features[index] = _numericOps.Add(features[index], value);
                     }
                 }
             }
@@ -196,9 +201,10 @@ namespace AiDotNet.MultimodalAI.Encoders
             // Average over all texts
             if (textData.Tokens.Count > 0)
             {
+                T divisor = _numericOps.FromDouble(textData.Tokens.Count);
                 for (int i = 0; i < features.Length; i++)
                 {
-                    features[i] /= textData.Tokens.Count;
+                    features[i] = _numericOps.Divide(features[i], divisor);
                 }
             }
 
@@ -208,54 +214,54 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Extracts statistical features from text
         /// </summary>
-        private double[] ExtractStatisticalFeatures(TextData textData)
+        private T[] ExtractStatisticalFeatures(TextData textData)
         {
-            var features = new List<double>();
+            var features = new List<T>();
 
             foreach (var text in textData.ProcessedTexts)
             {
                 // Text length
-                features.Add(text.Length);
+                features.Add(_numericOps.FromDouble(text.Length));
 
                 // Word count
                 var words = text.Split(new[] { ' ', '\t', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                features.Add(words.Length);
+                features.Add(_numericOps.FromDouble(words.Length));
 
                 // Average word length
-                features.Add(words.Length > 0 ? words.Average(w => w.Length) : 0);
+                features.Add(_numericOps.FromDouble(words.Length > 0 ? words.Average(w => w.Length) : 0));
 
                 // Sentence count (simplified)
                 var sentences = Regex.Split(text, @"[.!?]+").Length - 1;
-                features.Add(Math.Max(1, sentences));
+                features.Add(_numericOps.FromDouble(Math.Max(1, sentences)));
 
                 // Punctuation ratio
                 var punctuationCount = text.Count(c => char.IsPunctuation(c));
-                features.Add(text.Length > 0 ? punctuationCount / (double)text.Length : 0);
+                features.Add(_numericOps.FromDouble(text.Length > 0 ? punctuationCount / (double)text.Length : 0));
 
                 // Digit ratio
                 var digitCount = text.Count(char.IsDigit);
-                features.Add(text.Length > 0 ? digitCount / (double)text.Length : 0);
+                features.Add(_numericOps.FromDouble(text.Length > 0 ? digitCount / (double)text.Length : 0));
 
                 // Upper case ratio
                 var upperCount = text.Count(char.IsUpper);
-                features.Add(text.Length > 0 ? upperCount / (double)text.Length : 0);
+                features.Add(_numericOps.FromDouble(text.Length > 0 ? upperCount / (double)text.Length : 0));
             }
 
             // Average features across all texts
             int numTexts = textData.ProcessedTexts.Count;
             int featuresPerText = 7;
-            var avgFeatures = new double[featuresPerText];
+            var avgFeatures = new T[featuresPerText];
 
             if (numTexts > 0)
             {
                 for (int i = 0; i < featuresPerText; i++)
                 {
-                    double sum = 0;
+                    T sum = _numericOps.Zero;
                     for (int j = 0; j < numTexts; j++)
                     {
-                        sum += features[j * featuresPerText + i];
+                        sum = _numericOps.Add(sum, features[j * featuresPerText + i]);
                     }
-                    avgFeatures[i] = sum / numTexts;
+                    avgFeatures[i] = _numericOps.Divide(sum, _numericOps.FromDouble(numTexts));
                 }
             }
 
@@ -265,10 +271,16 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Extracts character-level features
         /// </summary>
-        private double[] ExtractCharacterFeatures(TextData textData)
+        private T[] ExtractCharacterFeatures(TextData textData)
         {
-            var features = new List<double>();
-            var charHistogram = new double[128]; // ASCII characters
+            var features = new List<T>();
+            var charHistogram = new T[128]; // ASCII characters
+            
+            // Initialize histogram
+            for (int i = 0; i < charHistogram.Length; i++)
+            {
+                charHistogram[i] = _numericOps.Zero;
+            }
 
             foreach (var text in textData.ProcessedTexts)
             {
@@ -276,18 +288,23 @@ namespace AiDotNet.MultimodalAI.Encoders
                 {
                     if (c < 128)
                     {
-                        charHistogram[c]++;
+                        charHistogram[c] = _numericOps.Add(charHistogram[c], _numericOps.One);
                     }
                 }
             }
 
             // Normalize histogram
-            double total = charHistogram.Sum();
-            if (total > 0)
+            T total = _numericOps.Zero;
+            for (int i = 0; i < charHistogram.Length; i++)
+            {
+                total = _numericOps.Add(total, charHistogram[i]);
+            }
+            
+            if (_numericOps.GreaterThan(total, _numericOps.Zero))
             {
                 for (int i = 0; i < charHistogram.Length; i++)
                 {
-                    charHistogram[i] /= total;
+                    charHistogram[i] = _numericOps.Divide(charHistogram[i], total);
                 }
             }
 
@@ -300,9 +317,15 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Extracts semantic features (simplified word embeddings)
         /// </summary>
-        private double[] ExtractSemanticFeatures(TextData textData)
+        private T[] ExtractSemanticFeatures(TextData textData)
         {
-            var features = new double[64]; // Simplified semantic space
+            var features = new T[64]; // Simplified semantic space
+            
+            // Initialize features
+            for (int i = 0; i < features.Length; i++)
+            {
+                features[i] = _numericOps.Zero;
+            }
             var random = new Random(42); // Fixed seed for consistency
 
             foreach (var tokens in textData.Tokens)
@@ -315,7 +338,8 @@ namespace AiDotNet.MultimodalAI.Encoders
                     
                     for (int i = 0; i < features.Length; i++)
                     {
-                        features[i] += (rng.NextDouble() - 0.5) * 2;
+                        features[i] = _numericOps.Add(features[i], 
+                            _numericOps.FromDouble((rng.NextDouble() - 0.5) * 2));
                     }
                 }
             }
@@ -324,9 +348,10 @@ namespace AiDotNet.MultimodalAI.Encoders
             if (textData.Tokens.Sum(t => t.Count) > 0)
             {
                 int totalTokens = textData.Tokens.Sum(t => t.Count);
+                T divisor = _numericOps.FromDouble(totalTokens);
                 for (int i = 0; i < features.Length; i++)
                 {
-                    features[i] /= totalTokens;
+                    features[i] = _numericOps.Divide(features[i], divisor);
                 }
             }
 
@@ -336,12 +361,12 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Projects features to the desired output dimension
         /// </summary>
-        private Vector<double> ProjectToOutputDimension(Vector<double> features)
+        private Vector<T> ProjectToOutputDimension(Vector<T> features)
         {
             if (features.Length == OutputDimension)
                 return features;
 
-            var result = new double[OutputDimension];
+            var result = new T[OutputDimension];
 
             if (features.Length > OutputDimension)
             {
@@ -349,10 +374,11 @@ namespace AiDotNet.MultimodalAI.Encoders
                 var projectionMatrix = GenerateRandomProjectionMatrix(features.Length, OutputDimension);
                 for (int i = 0; i < OutputDimension; i++)
                 {
-                    double sum = 0;
+                    T sum = _numericOps.Zero;
                     for (int j = 0; j < features.Length; j++)
                     {
-                        sum += projectionMatrix[i, j] * features[j];
+                        sum = _numericOps.Add(sum, 
+                            _numericOps.Multiply(_numericOps.FromDouble(projectionMatrix[i, j]), features[j]));
                     }
                     result[i] = sum;
                 }
@@ -366,11 +392,11 @@ namespace AiDotNet.MultimodalAI.Encoders
                 var random = new Random(42);
                 for (int i = features.Length; i < OutputDimension; i++)
                 {
-                    result[i] = (random.NextDouble() - 0.5) * 0.1;
+                    result[i] = _numericOps.FromDouble((random.NextDouble() - 0.5) * 0.1);
                 }
             }
 
-            return new Vector<double>(result);
+            return new Vector<T>(result);
         }
 
         /// <summary>
@@ -444,7 +470,7 @@ namespace AiDotNet.MultimodalAI.Encoders
                 
                 // Calculate IDF score
                 int docsWithWord = textData.Tokens.Count(tokens => tokens.Contains(item.Word));
-                _idfScores[item.Word] = Math.Log((double)totalDocs / (1 + docsWithWord));
+                _idfScores[item.Word] = _numericOps.FromDouble(Math.Log((double)totalDocs / (1 + docsWithWord)));
             }
         }
 

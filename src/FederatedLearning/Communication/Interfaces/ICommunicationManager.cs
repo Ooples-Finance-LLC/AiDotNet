@@ -24,7 +24,7 @@ namespace AiDotNet.FederatedLearning.Communication.Interfaces
         /// <summary>
         /// Receive client update
         /// </summary>
-        Task<Dictionary<string, Vector<double>>?> ReceiveClientUpdateAsync(string clientId, TimeSpan timeout);
+        Task<Dictionary<string, Vector<double>>> ReceiveClientUpdateAsync(string clientId, TimeSpan timeout);
 
         /// <summary>
         /// Send client update to server
@@ -34,7 +34,7 @@ namespace AiDotNet.FederatedLearning.Communication.Interfaces
         /// <summary>
         /// Receive global model from server
         /// </summary>
-        Task<Dictionary<string, Vector<double>>?> ReceiveGlobalModelAsync(TimeSpan timeout);
+        Task<Dictionary<string, Vector<double>>> ReceiveGlobalModelAsync(TimeSpan timeout);
 
         /// <summary>
         /// Send status update

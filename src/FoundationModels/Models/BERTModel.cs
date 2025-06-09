@@ -15,17 +15,18 @@ namespace AiDotNet.FoundationModels.Models
     /// BERT (Bidirectional Encoder Representations from Transformers) model implementation.
     /// Supports masked language modeling, text classification, and embeddings extraction.
     /// </summary>
-    public class BERTModel : FoundationModelBase
+    /// <typeparam name="T">The numeric type used for calculations</typeparam>
+    public class BERTModel<T> : FoundationModelBase<T>
     {
         private readonly string _modelPath;
         private readonly FoundationModelConfig _config;
-        private BERTEncoder? _encoder;
-        private Matrix<double>? _tokenEmbeddings;
-        private Matrix<double>? _segmentEmbeddings;
-        private Matrix<double>? _positionEmbeddings;
-        private BERTPooler? _pooler;
-        private Matrix<double>? _mlmOutputWeights;
-        private Vector<double>? _mlmOutputBias;
+        private BERTEncoder<T>? _encoder;
+        private Matrix<T>? _tokenEmbeddings;
+        private Matrix<T>? _segmentEmbeddings;
+        private Matrix<T>? _positionEmbeddings;
+        private BERTPooler<T>? _pooler;
+        private Matrix<T>? _mlmOutputWeights;
+        private Vector<T>? _mlmOutputBias;
         
         // Model configuration
         private readonly int _numLayers = 12;
@@ -120,7 +121,7 @@ namespace AiDotNet.FoundationModels.Models
         }
 
         /// <inheritdoc/>
-        protected override async Task<Tensor<double>> ComputeEmbeddingsAsync(
+        protected override async Task<Tensor<T>> ComputeEmbeddingsAsync(
             TokenizerOutput tokenizedInput,
             CancellationToken cancellationToken)
         {
@@ -233,15 +234,15 @@ namespace AiDotNet.FoundationModels.Models
             var random = new Random(42);
             
             // Token embeddings
-            _tokenEmbeddings = new Matrix<double>(_vocabSize, _hiddenSize);
+            _tokenEmbeddings = new Matrix<T>(_vocabSize, _hiddenSize);
             InitializeMatrix(_tokenEmbeddings, random, 0.02);
             
             // Segment embeddings
-            _segmentEmbeddings = new Matrix<double>(_typeVocabSize, _hiddenSize);
+            _segmentEmbeddings = new Matrix<T>(_typeVocabSize, _hiddenSize);
             InitializeMatrix(_segmentEmbeddings, random, 0.02);
             
             // Position embeddings
-            _positionEmbeddings = new Matrix<double>(_maxPositions, _hiddenSize);
+            _positionEmbeddings = new Matrix<T>(_maxPositions, _hiddenSize);
             InitializeMatrix(_positionEmbeddings, random, 0.02);
             
             // MLM output weights (can be tied with input embeddings)
@@ -305,7 +306,7 @@ namespace AiDotNet.FoundationModels.Models
         private List<int> FindMaskPositions(Matrix<int> inputIds)
         {
             var maskPositions = new List<int>();
-            var maskTokenId = _tokenizer.SpecialTokens.GetValueOrDefault("[MASK]", -1);
+            var maskTokenId = _tokenizer.SpecialTokens.ContainsKey("[MASK]") ? _tokenizer.SpecialTokens["[MASK]"] : -1;
             
             if (maskTokenId == -1)
             {
@@ -375,13 +376,13 @@ namespace AiDotNet.FoundationModels.Models
         /// <summary>
         /// Other helper methods...
         /// </summary>
-        private void InitializeMatrix(Matrix<double> matrix, Random random, double stdDev)
+        private void InitializeMatrix(Matrix<T> matrix, Random random, double stdDev)
         {
             for (int i = 0; i < matrix.Rows; i++)
             {
                 for (int j = 0; j < matrix.Columns; j++)
                 {
-                    matrix[i, j] = NormalRandom(random) * stdDev;
+                    matrix[i, j] = NumOps.FromDouble(NormalRandom(random) * stdDev);
                 }
             }
         }
@@ -393,7 +394,7 @@ namespace AiDotNet.FoundationModels.Models
             return Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
         }
 
-        private Tensor<double> ApplyLayerNorm(Tensor<double> input)
+        private Tensor<T> ApplyLayerNorm(Tensor<T> input)
         {
             // Simplified layer normalization
             return input;
@@ -409,11 +410,11 @@ namespace AiDotNet.FoundationModels.Models
                 .ToList();
             
             double cumulativeProb = 0;
-            var filtered = new List<(int Index, double Prob)>();
+            var filtered = new List<Tuple<int, double>>();
             
             foreach (var item in indexed)
             {
-                filtered.Add((item.Index, item.Probability));
+                filtered.Add(Tuple.Create(item.Index, item.Probability));
                 cumulativeProb += item.Probability;
                 
                 if (cumulativeProb >= topP)
@@ -422,8 +423,8 @@ namespace AiDotNet.FoundationModels.Models
                 }
             }
             
-            var sum = filtered.Sum(x => x.Prob);
-            var normalized = filtered.Select(x => (x.Index, x.Prob / sum)).ToList();
+            var sum = filtered.Sum(x => x.Item2);
+            var normalized = filtered.Select(x => Tuple.Create(x.Item1, x.Item2 / sum)).ToList();
             
             var random = new Random();
             var sample = random.NextDouble();
@@ -440,7 +441,7 @@ namespace AiDotNet.FoundationModels.Models
                 }
             }
             
-            return normalized.Last().Index;
+            return normalized.Last().Item1;
         }
 
         private Vector<double> Softmax(Vector<double> logits)
@@ -499,7 +500,7 @@ namespace AiDotNet.FoundationModels.Models
         /// <summary>
         /// BERT encoder implementation
         /// </summary>
-        private class BERTEncoder
+        private class BERTEncoder<TNum>
         {
             private readonly int _numLayers;
             private readonly int _hiddenSize;
@@ -516,8 +517,8 @@ namespace AiDotNet.FoundationModels.Models
                 _maxPositions = maxPositions;
             }
             
-            public async Task<Tensor<double>> ForwardAsync(
-                Tensor<double> input, 
+            public async Task<Tensor<TNum>> ForwardAsync(
+                Tensor<TNum> input, 
                 Matrix<int> attentionMask,
                 CancellationToken cancellationToken)
             {
@@ -536,33 +537,35 @@ namespace AiDotNet.FoundationModels.Models
         /// <summary>
         /// BERT pooler for CLS token
         /// </summary>
-        private class BERTPooler
+        private class BERTPooler<TNum>
         {
             private readonly int _hiddenSize;
-            private readonly Matrix<double> _denseWeight;
-            private readonly Vector<double> _denseBias;
+            private readonly Matrix<TNum> _denseWeight;
+            private readonly Vector<TNum> _denseBias;
+            private readonly INumericOperations<TNum> _numOps;
             
             public BERTPooler(int hiddenSize)
             {
                 _hiddenSize = hiddenSize;
-                _denseWeight = new Matrix<double>(hiddenSize, hiddenSize);
-                _denseBias = new Vector<double>(hiddenSize);
+                _denseWeight = new Matrix<TNum>(hiddenSize, hiddenSize);
+                _denseBias = new Vector<TNum>(hiddenSize);
+                _numOps = MathHelper.GetNumericOperations<TNum>();
                 
                 // Initialize weights
                 var random = new Random(42);
                 for (int i = 0; i < hiddenSize; i++)
                 {
-                    _denseBias[i] = 0;
+                    _denseBias[i] = _numOps.Zero;
                     for (int j = 0; j < hiddenSize; j++)
                     {
-                        _denseWeight[i, j] = (random.NextDouble() * 2 - 1) * 0.02;
+                        _denseWeight[i, j] = _numOps.FromDouble((random.NextDouble() * 2 - 1) * 0.02);
                     }
                 }
             }
             
-            public Vector<double> Forward(Vector<double> clsToken)
+            public Vector<TNum> Forward(Vector<TNum> clsToken)
             {
-                var output = new Vector<double>(_hiddenSize);
+                var output = new Vector<TNum>(_hiddenSize);
                 
                 // Linear transformation
                 for (int i = 0; i < _hiddenSize; i++)
@@ -587,9 +590,9 @@ namespace AiDotNet.FoundationModels.Models
         /// <summary>
         /// Creates a new instance of the BERT model
         /// </summary>
-        protected override IFullModel<double, string, string> CreateNewInstance()
+        protected override IFullModel<T, string, string> CreateNewInstance()
         {
-            return new BERTModel(_modelPath, _tokenizer, _config, _logger);
+            return new BERTModel<T>(_modelPath, _tokenizer, _config, _logger);
         }
 
         #endregion

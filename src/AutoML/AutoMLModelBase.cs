@@ -196,22 +196,53 @@ namespace AiDotNet.AutoML
         }
 
         /// <summary>
-        /// Trains the model (legacy method - use SearchAsync instead)
+        /// Configures the search space for hyperparameters
         /// </summary>
-        public virtual void Train(double[][] inputs, double[] outputs)
+        public virtual void ConfigureSearchSpace(HyperparameterSearchSpace config)
         {
-            // AutoML models are trained through SearchAsync
-            throw new NotSupportedException("Use SearchAsync to train AutoML models");
+            // Convert HyperparameterSearchSpace to internal format
+            // This would be implemented by specific AutoML implementations
+            throw new NotImplementedException("ConfigureSearchSpace must be implemented by derived classes");
         }
 
         /// <summary>
-        /// Makes predictions using the best model (legacy method)
+        /// Sets the time limit for the search
         /// </summary>
-        public virtual double[] Predict(double[][] inputs)
+        public virtual void SetTimeLimit(TimeSpan timeLimit)
         {
-            // This is a legacy method - use the generic Predict method instead
-            throw new NotSupportedException("Use the generic Predict method instead");
+            // Store time limit for search
+            // This would be used by the SearchAsync implementation
         }
+
+        /// <summary>
+        /// Sets the trial limit for the search
+        /// </summary>
+        public virtual void SetTrialLimit(int trialLimit)
+        {
+            // Store trial limit for search
+            // This would be used by the SearchAsync implementation
+        }
+
+        /// <summary>
+        /// Enables Neural Architecture Search
+        /// </summary>
+        public virtual void EnableNAS(bool enabled)
+        {
+            // Enable or disable NAS
+            // This would be implemented by specific AutoML implementations
+        }
+
+        /// <summary>
+        /// Searches for the best model synchronously
+        /// </summary>
+        public virtual IFullModel<T, TInput, TOutput> SearchBestModel(TInput inputs, TOutput targets)
+        {
+            // Synchronous wrapper for SearchAsync
+            var searchTask = SearchAsync(inputs, targets, inputs, targets, TimeSpan.FromMinutes(10));
+            searchTask.Wait();
+            return BestModel ?? throw new InvalidOperationException("Search failed to find a model");
+        }
+
 
         /// <summary>
         /// Gets model metadata
@@ -241,6 +272,194 @@ namespace AiDotNet.AutoML
                 }
             };
         }
+        
+
+        
+        #region IModelSerializer Implementation
+        
+        public virtual byte[] Serialize()
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model to serialize");
+            return BestModel.Serialize();
+        }
+        
+        public virtual void Deserialize(byte[] data)
+        {
+            throw new NotSupportedException("AutoML models cannot be directly deserialized. Deserialize the best model instead.");
+        }
+        
+        #endregion
+        
+        #region IParameterizable Implementation
+        
+        public virtual Vector<T> GetParameters()
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available");
+            return BestModel.GetParameters();
+        }
+        
+        public virtual void SetParameters(Vector<T> parameters)
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available");
+            BestModel.SetParameters(parameters);
+        }
+        
+        public virtual IFullModel<T, TInput, TOutput> WithParameters(Vector<T> parameters)
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available");
+            var newBestModel = BestModel.WithParameters(parameters);
+            var newAutoML = (AutoMLModelBase<T, TInput, TOutput>)MemberwiseClone();
+            newAutoML.BestModel = newBestModel;
+            return newAutoML;
+        }
+        
+        #endregion
+        
+        #region IFeatureAware Implementation
+        
+        public virtual IEnumerable<int> GetActiveFeatureIndices()
+        {
+            if (BestModel == null)
+                return Enumerable.Empty<int>();
+            return BestModel.GetActiveFeatureIndices();
+        }
+        
+        public virtual bool IsFeatureUsed(int featureIndex)
+        {
+            if (BestModel == null)
+                return false;
+            return BestModel.IsFeatureUsed(featureIndex);
+        }
+        
+        public virtual void SetActiveFeatureIndices(IEnumerable<int> activeIndices)
+        {
+            if (BestModel != null)
+                BestModel.SetActiveFeatureIndices(activeIndices);
+        }
+        
+        #endregion
+        
+        #region ICloneable Implementation
+        
+        public virtual IFullModel<T, TInput, TOutput> DeepCopy()
+        {
+            var clone = (AutoMLModelBase<T, TInput, TOutput>)MemberwiseClone();
+            if (BestModel != null)
+                clone.BestModel = BestModel.DeepCopy();
+            clone._trialHistory.Clear();
+            clone._trialHistory.AddRange(_trialHistory);
+            return clone;
+        }
+        
+        public virtual IFullModel<T, TInput, TOutput> Clone()
+        {
+            return DeepCopy();
+        }
+        
+        #endregion
+        
+        #region IInterpretableModel Implementation
+        
+        public virtual async Task<Dictionary<int, T>> GetGlobalFeatureImportanceAsync()
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available for interpretation");
+            return await BestModel.GetGlobalFeatureImportanceAsync();
+        }
+        
+        public virtual async Task<Matrix<T>> GetShapValuesAsync(TInput input)
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available for interpretation");
+            return await BestModel.GetShapValuesAsync(input);
+        }
+        
+        public virtual async Task<Dictionary<int, T>> GetLocalFeatureImportanceAsync(TInput input)
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available for interpretation");
+            return await BestModel.GetLocalFeatureImportanceAsync(input);
+        }
+        
+        public virtual async Task<LimeExplanation<T>> GetLimeExplanationAsync(TInput input, int numFeatures = 10)
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available for interpretation");
+            return await BestModel.GetLimeExplanationAsync(input, numFeatures);
+        }
+        
+        public virtual async Task<CounterfactualExplanation<T>> GetCounterfactualAsync(TInput input, TOutput desiredOutput, int maxChanges = 5)
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available for interpretation");
+            return await BestModel.GetCounterfactualAsync(input, desiredOutput, maxChanges);
+        }
+        
+        public virtual async Task<PartialDependenceData<T>> GetPartialDependenceAsync(Vector<int> featureIndices, int gridResolution = 20)
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available for interpretation");
+            return await BestModel.GetPartialDependenceAsync(featureIndices, gridResolution);
+        }
+        
+        public virtual async Task<FairnessMetrics<T>> ValidateFairnessAsync(TInput inputs, int sensitiveFeatureIndex)
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available for interpretation");
+            return await BestModel.ValidateFairnessAsync(inputs, sensitiveFeatureIndex);
+        }
+        
+        public virtual async Task<Dictionary<string, object>> GetModelSpecificInterpretabilityAsync()
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available for interpretation");
+            return await BestModel.GetModelSpecificInterpretabilityAsync();
+        }
+        
+        public virtual async Task<string> GenerateTextExplanationAsync(TInput input, TOutput prediction)
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available for interpretation");
+            return await BestModel.GenerateTextExplanationAsync(input, prediction);
+        }
+        
+        public virtual async Task<T> GetFeatureInteractionAsync(int feature1Index, int feature2Index)
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available for interpretation");
+            return await BestModel.GetFeatureInteractionAsync(feature1Index, feature2Index);
+        }
+        
+        public virtual async Task<AnchorExplanation<T>> GetAnchorExplanationAsync(TInput input, T threshold)
+        {
+            if (BestModel == null)
+                throw new InvalidOperationException("No model available for interpretation");
+            return await BestModel.GetAnchorExplanationAsync(input, threshold);
+        }
+        
+        public virtual void SetBaseModel(IModel<TInput, TOutput, ModelMetaData<T>> model)
+        {
+            if (BestModel != null)
+                BestModel.SetBaseModel(model);
+        }
+        
+        public virtual void EnableMethod(params InterpretationMethod[] methods)
+        {
+            if (BestModel != null)
+                BestModel.EnableMethod(methods);
+        }
+        
+        public virtual void ConfigureFairness(Vector<int> sensitiveFeatures, params FairnessMetric[] fairnessMetrics)
+        {
+            if (BestModel != null)
+                BestModel.ConfigureFairness(sensitiveFeatures, fairnessMetrics);
+        }
+        
+        #endregion
 
         /// <summary>
         /// Checks if early stopping criteria is met
@@ -319,9 +538,9 @@ namespace AiDotNet.AutoML
         /// </summary>
         public virtual void Train(TInput input, TOutput expectedOutput)
         {
-            // AutoML doesn't use traditional training - it searches for the best model
-            // This would typically be called internally during the search process
-            throw new NotImplementedException("Use SearchAsync method instead for AutoML");
+            // For AutoML, training means running the search
+            var searchTask = SearchAsync(input, expectedOutput, input, expectedOutput, TimeSpan.FromMinutes(10));
+            searchTask.Wait();
         }
 
         /// <summary>
@@ -335,10 +554,7 @@ namespace AiDotNet.AutoML
             return BestModel.Predict(input);
         }
 
-
         #endregion
-
-        #region IModelSerializer Implementation
 
         /// <summary>
         /// Saves the model to a file
@@ -362,69 +578,9 @@ namespace AiDotNet.AutoML
         }
 
         /// <summary>
-        /// Serializes the model to bytes
-        /// </summary>
-        public virtual byte[] Serialize()
-        {
-            if (BestModel == null)
-                throw new InvalidOperationException("No best model to serialize.");
-            
-            return BestModel.Serialize();
-        }
-
-        /// <summary>
-        /// Deserializes the model from bytes
-        /// </summary>
-        public virtual void Deserialize(byte[] data)
-        {
-            throw new NotImplementedException("AutoML models should be recreated with SearchAsync");
-        }
-
-        #endregion
-
-        #region IParameterizable Implementation
-
-        /// <summary>
-        /// Gets the model parameters
-        /// </summary>
-        public virtual Vector<T> GetParameters()
-        {
-            if (BestModel == null)
-                throw new InvalidOperationException("No best model found.");
-            
-            return BestModel.GetParameters();
-        }
-
-        /// <summary>
-        /// Sets the model parameters
-        /// </summary>
-        public virtual void SetParameters(Vector<T> parameters)
-        {
-            if (BestModel == null)
-                throw new InvalidOperationException("No best model found.");
-            
-            BestModel.SetParameters(parameters);
-        }
-
-        /// <summary>
         /// Gets the number of parameters
         /// </summary>
         public virtual int ParameterCount => BestModel?.GetParameters()?.Length ?? 0;
-
-        /// <summary>
-        /// Creates a new instance with the given parameters
-        /// </summary>
-        public virtual IFullModel<T, TInput, TOutput> WithParameters(Vector<T> parameters)
-        {
-            if (BestModel == null)
-                throw new InvalidOperationException("No best model found.");
-            
-            throw new NotImplementedException("AutoML models should be recreated with SearchAsync");
-        }
-
-        #endregion
-
-        #region IFeatureAware Implementation
 
         /// <summary>
         /// Gets the feature names
@@ -444,61 +600,6 @@ namespace AiDotNet.AutoML
             var paramCount = BestModel.GetParameters()?.Length ?? 0;
             return new double[paramCount];
         }
-
-        /// <summary>
-        /// Gets the indices of active features
-        /// </summary>
-        public virtual IEnumerable<int> GetActiveFeatureIndices()
-        {
-            if (BestModel == null)
-                throw new InvalidOperationException("No best model found.");
-            
-            return BestModel.GetActiveFeatureIndices();
-        }
-
-        /// <summary>
-        /// Checks if a feature is used
-        /// </summary>
-        public virtual bool IsFeatureUsed(int featureIndex)
-        {
-            if (BestModel == null)
-                throw new InvalidOperationException("No best model found.");
-            
-            return BestModel.IsFeatureUsed(featureIndex);
-        }
-
-        /// <summary>
-        /// Sets the active feature indices
-        /// </summary>
-        public virtual void SetActiveFeatureIndices(IEnumerable<int> featureIndices)
-        {
-            if (BestModel == null)
-                throw new InvalidOperationException("No best model found.");
-            
-            BestModel.SetActiveFeatureIndices(featureIndices);
-        }
-
-        #endregion
-
-        #region ICloneable Implementation
-
-        /// <summary>
-        /// Creates a deep copy of the AutoML model
-        /// </summary>
-        public virtual IFullModel<T, TInput, TOutput> Clone()
-        {
-            throw new NotImplementedException("AutoML models should be recreated with SearchAsync");
-        }
-
-        /// <summary>
-        /// Creates a deep copy of the AutoML model
-        /// </summary>
-        public virtual IFullModel<T, TInput, TOutput> DeepCopy()
-        {
-            throw new NotImplementedException("AutoML models should be recreated with SearchAsync");
-        }
-
-        #endregion
 
         /// <summary>
         /// Sets the model evaluator to use for evaluating candidate models

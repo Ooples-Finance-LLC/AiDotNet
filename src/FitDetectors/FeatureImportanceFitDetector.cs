@@ -363,7 +363,7 @@ public class FeatureImportanceFitDetector<T, TInput, TOutput> : FitDetectorBase<
     /// </remarks>
     private Vector<T> PermuteFeature(Vector<T> feature)
     {
-        var permutedFeature = feature.Clone();
+        var permutedFeature = (Vector<T>)feature.Clone();
         int n = permutedFeature.Length;
 
         for (int i = n - 1; i > 0; i--)

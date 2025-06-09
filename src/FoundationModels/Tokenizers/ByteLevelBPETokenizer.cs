@@ -14,7 +14,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
     /// </summary>
     public class ByteLevelBPETokenizer : TokenizerBase
     {
-        private Dictionary<(string, string), int> _merges;
+        private Dictionary<Tuple<string, string>, int> _merges;
         private Dictionary<string, int> _bytesToUnicode;
         private Dictionary<int, string> _unicodeToBytes;
         private readonly int _vocabSize;
@@ -31,7 +31,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
         public ByteLevelBPETokenizer(int vocabSize = 50257) // GPT-2 vocab size
         {
             _vocabSize = vocabSize;
-            _merges = new Dictionary<(string, string), int>();
+            _merges = new Dictionary<Tuple<string, string>, int>();
             _bytesToUnicode = new Dictionary<string, int>();
             _unicodeToBytes = new Dictionary<int, string>();
             _cache = new Dictionary<string, string>();
@@ -132,14 +132,14 @@ namespace AiDotNet.FoundationModels.Tokenizers
             int tokenId = startTokenId;
             
             // Common English bigrams and trigrams
-            var commonMerges = new List<(string, string)>
+            var commonMerges = new List<Tuple<string, string>>
             {
-                ("t", "h"), ("h", "e"), ("i", "n"), ("e", "r"), ("a", "n"),
-                ("r", "e"), ("n", "d"), ("o", "n"), ("e", "n"), ("a", "t"),
-                ("o", "u"), ("e", "d"), ("i", "t"), ("i", "s"), ("a", "l"),
-                ("o", "r"), ("a", "r"), ("t", "o"), ("e", "s"), ("l", "e"),
-                ("th", "e"), ("in", "g"), ("an", "d"), ("er", "e"), ("on", "e"),
-                ("re", "d"), ("ou", "r"), ("ti", "on"), ("en", "t"), ("es", "t")
+                Tuple.Create("t", "h"), Tuple.Create("h", "e"), Tuple.Create("i", "n"), Tuple.Create("e", "r"), Tuple.Create("a", "n"),
+                Tuple.Create("r", "e"), Tuple.Create("n", "d"), Tuple.Create("o", "n"), Tuple.Create("e", "n"), Tuple.Create("a", "t"),
+                Tuple.Create("o", "u"), Tuple.Create("e", "d"), Tuple.Create("i", "t"), Tuple.Create("i", "s"), Tuple.Create("a", "l"),
+                Tuple.Create("o", "r"), Tuple.Create("a", "r"), Tuple.Create("t", "o"), Tuple.Create("e", "s"), Tuple.Create("l", "e"),
+                Tuple.Create("th", "e"), Tuple.Create("in", "g"), Tuple.Create("an", "d"), Tuple.Create("er", "e"), Tuple.Create("on", "e"),
+                Tuple.Create("re", "d"), Tuple.Create("ou", "r"), Tuple.Create("ti", "on"), Tuple.Create("en", "t"), Tuple.Create("es", "t")
             };
 
             foreach (var tuple in commonMerges)
@@ -151,7 +151,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
                 string merged = first + second;
                 if (!_vocabulary.ContainsKey(merged))
                 {
-                    _merges[(first, second)] = _merges.Count;
+                    _merges[Tuple.Create(first, second)] = _merges.Count;
                     _vocabulary[merged] = tokenId;
                     _reverseVocabulary[tokenId] = merged;
                     tokenId++;
@@ -190,7 +190,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
             var bytes = new List<byte>();
             foreach (char c in text)
             {
-                if (_unicodeToBytes.TryGetValue((int)c, out string byteStr))
+                if (_unicodeToBytes.TryGetValue((int)c, out string? byteStr))
                 {
                     bytes.Add((byte)byteStr[0]);
                 }
@@ -208,7 +208,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
         private string ApplyBPE(string word)
         {
             // Check cache
-            if (_cache.TryGetValue(word, out string cachedResult))
+            if (_cache.TryGetValue(word, out string? cachedResult))
             {
                 return cachedResult;
             }
@@ -234,7 +234,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
                     .OrderBy(p => _merges[p])
                     .FirstOrDefault();
 
-                if (bestPair == default) break;
+                if (bestPair == null) break;
 
                 // Merge the best pair
                 var newWordTokens = new List<string>();
@@ -267,12 +267,12 @@ namespace AiDotNet.FoundationModels.Tokenizers
         /// <summary>
         /// Gets all consecutive pairs in a list
         /// </summary>
-        private HashSet<(string, string)> GetPairs(List<string> tokens)
+        private HashSet<Tuple<string, string>> GetPairs(List<string> tokens)
         {
-            var pairs = new HashSet<(string, string)>();
+            var pairs = new HashSet<Tuple<string, string>>();
             for (int i = 0; i < tokens.Count - 1; i++)
             {
-                pairs.Add((tokens[i], tokens[i + 1]));
+                pairs.Add(Tuple.Create(tokens[i], tokens[i + 1]));
             }
             return pairs;
         }
@@ -354,7 +354,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
                     byte[] bytes = Encoding.UTF8.GetBytes(piece);
                     string unicodePiece = ConvertBytesToUnicode(bytes);
                     
-                    tokenFreqs[unicodePiece] = tokenFreqs.GetValueOrDefault(unicodePiece, 0) + 1;
+                    tokenFreqs[unicodePiece] = tokenFreqs.ContainsKey(unicodePiece) ? tokenFreqs[unicodePiece] + 1 : 1;
                 }
             }
 
@@ -365,7 +365,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
                 var wordTokens = token.Select(c => c.ToString()).ToArray();
                 foreach (var t in wordTokens)
                 {
-                    vocab[t] = vocab.GetValueOrDefault(t, 0) + tokenFreqs[token];
+                    vocab[t] = vocab.ContainsKey(t) ? vocab[t] + tokenFreqs[token] : tokenFreqs[token];
                 }
             }
 
@@ -374,7 +374,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
             
             for (int i = 0; i < numMerges; i++)
             {
-                var pairs = new Dictionary<(string, string), int>();
+                var pairs = new Dictionary<Tuple<string, string>, int>();
                 
                 // Count pair frequencies
                 foreach (var token in tokenFreqs.Keys)
@@ -385,7 +385,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
                     var tokenPairs = GetPairs(wordTokens);
                     foreach (var pair in tokenPairs)
                     {
-                        pairs[pair] = pairs.GetValueOrDefault(pair, 0) + tokenFreqs[token];
+                        pairs[pair] = pairs.ContainsKey(pair) ? pairs[pair] + tokenFreqs[token] : tokenFreqs[token];
                     }
                 }
 

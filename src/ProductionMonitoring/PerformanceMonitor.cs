@@ -1,3 +1,4 @@
+using AiDotNet.Extensions;
 using AiDotNet.Interfaces;
 using AiDotNet.LinearAlgebra;
 using System;
@@ -346,7 +347,7 @@ namespace AiDotNet.ProductionMonitoring
                 
                 if (!recentPredictions.Any()) return;
                 
-                var metrics = CalculatePerformanceMetrics(recentPredictions.Where(p => p.Actual.HasValue).ToList());
+                var metrics = CalculatePerformanceMetrics(recentPredictions.Where(p => p.HasActual).ToList());
                 
                 var aggregated = new AggregatedMetrics
                 {
@@ -358,7 +359,7 @@ namespace AiDotNet.ProductionMonitoring
                     MAE = metrics.MAE,
                     RMSE = metrics.RMSE,
                     PredictionCount = recentPredictions.Count,
-                    ActualCount = recentPredictions.Count(p => p.Actual.HasValue),
+                    ActualCount = recentPredictions.Count(p => p.HasActual),
                     CustomMetrics = new Dictionary<string, double>()
                 };
                 
@@ -552,28 +553,28 @@ namespace AiDotNet.ProductionMonitoring
             public double RMSE { get; set; }
             public int PredictionCount { get; set; }
             public int ActualCount { get; set; }
-            public Dictionary<string, double> CustomMetrics { get; set; }
+            public Dictionary<string, double> CustomMetrics { get; set; } = new();
         }
 
         public class PerformanceTrends
         {
-            public string TrendDirection { get; set; }
+            public string TrendDirection { get; set; } = string.Empty;
             public double TrendStrength { get; set; }
             public double AccuracyTrend { get; set; }
             public double F1ScoreTrend { get; set; }
             public double MAETrend { get; set; }
-            public List<PerformanceAnomaly> Anomalies { get; set; }
+            public List<PerformanceAnomaly> Anomalies { get; set; } = new();
             public DateTime AnalysisTimestamp { get; set; }
         }
 
         public class PerformanceAnomaly
         {
             public DateTime Timestamp { get; set; }
-            public string MetricName { get; set; }
+            public string MetricName { get; set; } = string.Empty;
             public double Value { get; set; }
             public double ExpectedValue { get; set; }
             public double AnomalyScore { get; set; }
-            public string Type { get; set; }
+            public string Type { get; set; } = string.Empty;
         }
     }
 

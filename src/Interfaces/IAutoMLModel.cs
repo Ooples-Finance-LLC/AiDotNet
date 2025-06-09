@@ -105,5 +105,37 @@ namespace AiDotNet.Interfaces
         /// </summary>
         /// <param name="constraints">List of constraints</param>
         void SetConstraints(List<SearchConstraint> constraints);
+        
+        /// <summary>
+        /// Configures the search space for hyperparameters
+        /// </summary>
+        /// <param name="config">Search space configuration</param>
+        void ConfigureSearchSpace(HyperparameterSearchSpace config);
+        
+        /// <summary>
+        /// Sets the time limit for the search
+        /// </summary>
+        /// <param name="timeLimit">Maximum time to spend searching</param>
+        void SetTimeLimit(TimeSpan timeLimit);
+        
+        /// <summary>
+        /// Sets the trial limit for the search
+        /// </summary>
+        /// <param name="trialLimit">Maximum number of trials to run</param>
+        void SetTrialLimit(int trialLimit);
+        
+        /// <summary>
+        /// Enables Neural Architecture Search
+        /// </summary>
+        /// <param name="enabled">Whether to enable NAS</param>
+        void EnableNAS(bool enabled);
+        
+        /// <summary>
+        /// Searches for the best model synchronously
+        /// </summary>
+        /// <param name="inputs">Training inputs</param>
+        /// <param name="targets">Training targets</param>
+        /// <returns>Best model found</returns>
+        IFullModel<T, TInput, TOutput> SearchBestModel(TInput inputs, TOutput targets);
     }
 }

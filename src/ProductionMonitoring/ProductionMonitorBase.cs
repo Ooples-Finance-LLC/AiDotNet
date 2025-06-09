@@ -1,3 +1,4 @@
+using AiDotNet.Enums;
 using AiDotNet.Helpers;
 using AiDotNet.Interfaces;
 using AiDotNet.LinearAlgebra;
@@ -31,6 +32,12 @@ namespace AiDotNet.ProductionMonitoring
             _driftHistory = new List<DriftDetectionResult>();
             _thresholds = new MonitoringThresholds();
         }
+
+        // Additional fields for IProductionMonitor interface
+        protected DriftDetectionMethod _driftDetectionMethod = DriftDetectionMethod.KullbackLeiblerDivergence;
+        protected double _driftDetectionThreshold = 0.3;
+        protected bool _autoRetrainingEnabled = false;
+        protected TimeSpan _retrainingCheckInterval = TimeSpan.FromDays(1);
 
         /// <summary>
         /// Sets reference data for drift detection
@@ -162,34 +169,37 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Gets monitoring metrics for a time period
         /// </summary>
-        public virtual async Task<MonitoringMetricsCollection> GetMonitoringMetricsAsync(DateTime startDate, DateTime endDate)
+        public virtual Task<MonitoringMetricsCollection> GetMonitoringMetricsAsync(DateTime startDate, DateTime endDate)
         {
-            lock (_lockObject)
+            return Task.Run(() =>
             {
-                var performanceHistory = _performanceHistory
-                    .Where(p => p.Timestamp >= startDate && p.Timestamp <= endDate)
-                    .ToList();
-
-                var driftHistory = _driftHistory
-                    .Where(d => d.DetectionTimestamp >= startDate && d.DetectionTimestamp <= endDate)
-                    .ToList();
-
-                var relevantPredictions = _predictionHistory
-                    .Where(p => p.Timestamp >= startDate && p.Timestamp <= endDate)
-                    .ToList();
-
-                var featureStats = CalculateFeatureStatistics(relevantPredictions);
-
-                return Task.FromResult(new MonitoringMetricsCollection
+                lock (_lockObject)
                 {
-                    PerformanceHistory = performanceHistory,
-                    DriftHistory = driftHistory,
-                    FeatureStatistics = featureStats,
-                    TotalPredictions = relevantPredictions.Count,
-                    StartDate = startDate,
-                    EndDate = endDate
-                });
-            }
+                    var performanceHistory = _performanceHistory
+                        .Where(p => p.Timestamp >= startDate && p.Timestamp <= endDate)
+                        .ToList();
+
+                    var driftHistory = _driftHistory
+                        .Where(d => d.DetectionTimestamp >= startDate && d.DetectionTimestamp <= endDate)
+                        .ToList();
+
+                    var relevantPredictions = _predictionHistory
+                        .Where(p => p.Timestamp >= startDate && p.Timestamp <= endDate)
+                        .ToList();
+
+                    var featureStats = CalculateFeatureStatistics(relevantPredictions);
+
+                    return new MonitoringMetricsCollection
+                    {
+                        PerformanceHistory = performanceHistory,
+                        DriftHistory = driftHistory,
+                        FeatureStatistics = featureStats,
+                        TotalPredictions = relevantPredictions.Count,
+                        StartDate = startDate,
+                        EndDate = endDate
+                    };
+                }
+            });
         }
 
         /// <summary>
@@ -327,11 +337,33 @@ namespace AiDotNet.ProductionMonitoring
         /// </summary>
         protected class PredictionRecord
         {
-            public Vector<T> Features { get; set; }
-            public T Prediction { get; set; }
-            public T Actual { get; set; }
+            public Vector<T> Features { get; set; } = default!;
+            public T Prediction { get; set; } = default!;
+            public T Actual { get; set; } = default!;
             public bool HasActual { get; set; }
             public DateTime Timestamp { get; set; }
         }
+
+        #region IProductionMonitor Implementation
+
+        /// <summary>
+        /// Configures drift detection settings
+        /// </summary>
+        public virtual void ConfigureDriftDetection(DriftDetectionMethod method, double threshold)
+        {
+            _driftDetectionMethod = method;
+            _driftDetectionThreshold = threshold;
+        }
+        
+        /// <summary>
+        /// Configures automatic retraining settings
+        /// </summary>
+        public virtual void ConfigureRetraining(bool enabled, TimeSpan checkInterval)
+        {
+            _autoRetrainingEnabled = enabled;
+            _retrainingCheckInterval = checkInterval;
+        }
+
+        #endregion
     }
 }

@@ -247,9 +247,9 @@ namespace AiDotNet.FoundationModels.Tokenizers
 
             foreach (var tuple in specialTokenMatches)
             {
-                var start = tuple.start;
-                var end = tuple.end;
-                var token = tuple.token;
+                var start = tuple.Item1;
+                var end = tuple.Item2;
+                var token = tuple.Item3;
                 if (start > lastEnd)
                 {
                     // Process text before special token
@@ -336,21 +336,21 @@ namespace AiDotNet.FoundationModels.Tokenizers
         /// <summary>
         /// Finds special tokens in text
         /// </summary>
-        private List<(int start, int end, string token)> FindSpecialTokens(string text)
+        private List<Tuple<int, int, string>> FindSpecialTokens(string text)
         {
-            var matches = new List<(int start, int end, string token)>();
+            var matches = new List<Tuple<int, int, string>>();
             
             foreach (var token in _specialTokens.Keys)
             {
                 int index = 0;
                 while ((index = text.IndexOf(token, index, StringComparison.Ordinal)) != -1)
                 {
-                    matches.Add((index, index + token.Length, token));
+                    matches.Add(Tuple.Create(index, index + token.Length, token));
                     index += token.Length;
                 }
             }
 
-            return matches.OrderBy(m => m.start).ToList();
+            return matches.OrderBy(m => m.Item1).ToList();
         }
 
         /// <summary>
@@ -403,7 +403,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
         /// Encodes conversation with proper formatting
         /// </summary>
         public async Task<Vector<int>> EncodeConversationAsync(
-            List<(string role, string content)> messages,
+            List<Tuple<string, string>> messages,
             bool addSystemPrompt = true)
         {
             var tokens = new List<int>();
@@ -415,9 +415,9 @@ namespace AiDotNet.FoundationModels.Tokenizers
             }
 
             // Add system prompt if needed
-            if (addSystemPrompt && !messages.Any(m => m.role == "system"))
+            if (addSystemPrompt && !messages.Any(m => m.Item1 == "system"))
             {
-                messages.Insert(0, ("system", "You are Claude, a helpful AI assistant."));
+                messages.Insert(0, Tuple.Create("system", "You are Claude, a helpful AI assistant."));
             }
 
             foreach (var tuple in messages)

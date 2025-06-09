@@ -1,3 +1,4 @@
+using AiDotNet.Extensions;
 using AiDotNet.Interfaces;
 using AiDotNet.LinearAlgebra;
 using System;
@@ -132,17 +133,19 @@ namespace AiDotNet.ProductionMonitoring
         /// <summary>
         /// Gets health trends over time
         /// </summary>
-        public async Task<HealthTrendAnalysis> AnalyzeHealthTrendsAsync(int lookbackDays = 7)
+        public Task<HealthTrendAnalysis> AnalyzeHealthTrendsAsync(int lookbackDays = 7)
         {
-            List<HealthCheckResult> relevantHistory;
-            lock (_lockObject)
+            return Task.Run(() =>
             {
-                var cutoff = DateTime.UtcNow.AddDays(-lookbackDays);
-                relevantHistory = _healthHistory
-                    .Where(h => h.Timestamp >= cutoff)
-                    .OrderBy(h => h.Timestamp)
-                    .ToList();
-            }
+                List<HealthCheckResult> relevantHistory;
+                lock (_lockObject)
+                {
+                    var cutoff = DateTime.UtcNow.AddDays(-lookbackDays);
+                    relevantHistory = _healthHistory
+                        .Where(h => h.Timestamp >= cutoff)
+                        .OrderBy(h => h.Timestamp)
+                        .ToList();
+                }
             
             if (!relevantHistory.Any())
             {
@@ -190,6 +193,7 @@ namespace AiDotNet.ProductionMonitoring
                 AnalysisPeriod = lookbackDays,
                 DataPoints = relevantHistory.Count
             };
+            });
         }
 
         /// <summary>
@@ -815,7 +819,7 @@ namespace AiDotNet.ProductionMonitoring
 
         private class HealthComponent
         {
-            public string Name { get; set; }
+            public string Name { get; set; } = string.Empty;
             public double Weight { get; set; }
             public bool IsCritical { get; set; }
             public double MinThreshold { get; set; }
@@ -825,41 +829,41 @@ namespace AiDotNet.ProductionMonitoring
 
         public class ComponentScore
         {
-            public string ComponentName { get; set; }
+            public string ComponentName { get; set; } = string.Empty;
             public double Score { get; set; }
-            public string Status { get; set; }
-            public Dictionary<string, object> Details { get; set; }
+            public string Status { get; set; } = string.Empty;
+            public Dictionary<string, object> Details { get; set; } = new();
             public DateTime LastChecked { get; set; }
         }
 
         public class ComprehensiveHealthReport
         {
             public double OverallHealthScore { get; set; }
-            public string HealthStatus { get; set; }
-            public Dictionary<string, ComponentScore> ComponentScores { get; set; }
-            public List<HealthIssue> Issues { get; set; }
-            public List<string> Recommendations { get; set; }
+            public string HealthStatus { get; set; } = string.Empty;
+            public Dictionary<string, ComponentScore> ComponentScores { get; set; } = new();
+            public List<HealthIssue> Issues { get; set; } = new();
+            public List<string> Recommendations { get; set; } = new();
             public DateTime Timestamp { get; set; }
-            public HealthTrendAnalysis TrendAnalysis { get; set; }
+            public HealthTrendAnalysis TrendAnalysis { get; set; } = new();
             public double PredictedHealthIn24Hours { get; set; }
-            public List<RiskFactor> RiskFactors { get; set; }
+            public List<RiskFactor> RiskFactors { get; set; } = new();
         }
 
         public class HealthIssue
         {
-            public string Component { get; set; }
-            public string Severity { get; set; }
-            public string Description { get; set; }
-            public string Impact { get; set; }
-            public Dictionary<string, object> Details { get; set; }
+            public string Component { get; set; } = string.Empty;
+            public string Severity { get; set; } = string.Empty;
+            public string Description { get; set; } = string.Empty;
+            public string Impact { get; set; } = string.Empty;
+            public Dictionary<string, object> Details { get; set; } = new();
         }
 
         public class HealthTrendAnalysis
         {
-            public string TrendDirection { get; set; }
+            public string TrendDirection { get; set; } = string.Empty;
             public double TrendStrength { get; set; }
             public double OverallTrend { get; set; }
-            public Dictionary<string, TrendInfo> ComponentTrends { get; set; }
+            public Dictionary<string, TrendInfo> ComponentTrends { get; set; } = new();
             public int AnalysisPeriod { get; set; }
             public int DataPoints { get; set; }
         }
@@ -878,17 +882,17 @@ namespace AiDotNet.ProductionMonitoring
         {
             public DateTime Timestamp { get; set; }
             public double OverallScore { get; set; }
-            public string Status { get; set; }
-            public Dictionary<string, double> ComponentScores { get; set; }
+            public string Status { get; set; } = string.Empty;
+            public Dictionary<string, double> ComponentScores { get; set; } = new();
         }
 
         public class RiskFactor
         {
-            public string Factor { get; set; }
-            public string Severity { get; set; }
+            public string Factor { get; set; } = string.Empty;
+            public string Severity { get; set; } = string.Empty;
             public double Likelihood { get; set; }
-            public string Description { get; set; }
-            public string MitigationStrategy { get; set; }
+            public string Description { get; set; } = string.Empty;
+            public string MitigationStrategy { get; set; } = string.Empty;
         }
     }
 }

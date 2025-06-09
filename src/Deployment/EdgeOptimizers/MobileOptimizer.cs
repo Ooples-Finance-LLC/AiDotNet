@@ -732,11 +732,11 @@ See the provided example files for complete implementation.
 
         private class MobilePlatformConfig
         {
-            public string PlatformName { get; set; }
+            public string PlatformName { get; set; } = string.Empty;
             public double MaxModelSize { get; set; }
-            public string[] SupportedFormats { get; set; }
-            public string MinOSVersion { get; set; }
-            public string[] HardwareAccelerators { get; set; }
+            public string[] SupportedFormats { get; set; } = new string[0];
+            public string MinOSVersion { get; set; } = string.Empty;
+            public string[] HardwareAccelerators { get; set; } = new string[0];
         }
     }
 }

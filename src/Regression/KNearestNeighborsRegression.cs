@@ -207,9 +207,9 @@ public class KNearestNeighborsRegression<T> : NonLinearRegressionModelBase<T>
             .ToList();
 
         T sum = NumOps.Zero;
-        foreach (var (index, distance) in nearestNeighbors)
+        foreach (var neighbor in nearestNeighbors)
         {
-            sum = NumOps.Add(sum, _yTrain[index]);
+            sum = NumOps.Add(sum, _yTrain[neighbor.Item1]);
         }
 
         return NumOps.Divide(sum, NumOps.FromDouble(_options.K));

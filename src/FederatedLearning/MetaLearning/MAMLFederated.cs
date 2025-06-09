@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AiDotNet.Extensions;
 using AiDotNet.LinearAlgebra;
 using AiDotNet.Interfaces;
 using AiDotNet.Models;
@@ -21,37 +22,37 @@ namespace AiDotNet.FederatedLearning.MetaLearning
         /// <summary>
         /// Meta-learning parameters
         /// </summary>
-        public MAMLParameters Parameters { get; set; }
+        public MAMLParameters Parameters { get; set; } = new();
 
         /// <summary>
         /// Meta-model for learning across tasks
         /// </summary>
-        public IFullModel<double, Matrix<double>, Vector<double>> MetaModel { get; private set; }
+        public IFullModel<double, Matrix<double>, Vector<double>> MetaModel { get; private set; } = default!;
 
         /// <summary>
         /// Client task definitions
         /// </summary>
-        protected Dictionary<string, FederatedTask> ClientTasks { get; set; }
+        protected Dictionary<string, FederatedTask> ClientTasks { get; set; } = new();
 
         /// <summary>
         /// Meta-gradient accumulator
         /// </summary>
-        protected Dictionary<string, Vector<double>> MetaGradients { get; set; }
+        protected Dictionary<string, Vector<double>> MetaGradients { get; set; } = new();
 
         /// <summary>
         /// Task performance history
         /// </summary>
-        public List<MetaLearningRound> MetaHistory { get; private set; }
+        public List<MetaLearningRound> MetaHistory { get; private set; } = new();
 
         /// <summary>
         /// Inner loop optimizer for task adaptation
         /// </summary>
-        protected IOptimizer<double, Matrix<double>, Vector<double>> InnerOptimizer { get; set; }
+        protected IOptimizer<double, Matrix<double>, Vector<double>> InnerOptimizer { get; set; } = default!;
 
         /// <summary>
         /// Outer loop optimizer for meta-updates
         /// </summary>
-        protected IOptimizer<double, Matrix<double>, Vector<double>> OuterOptimizer { get; set; }
+        protected IOptimizer<double, Matrix<double>, Vector<double>> OuterOptimizer { get; set; } = default!;
 
         /// <summary>
         /// Model parameter cache for efficiency
@@ -157,7 +158,10 @@ namespace AiDotNet.FederatedLearning.MetaLearning
 
                 foreach (var result in innerResults.Where(r => r != null))
                 {
-                    clientResults[result.ClientId] = result;
+                    if (result != null)
+                    {
+                        clientResults[result.ClientId] = result;
+                    }
                 }
 
                 if (clientResults.Count == 0)
@@ -448,7 +452,7 @@ namespace AiDotNet.FederatedLearning.MetaLearning
                     if (clientResults[clientId].MetaGradients.ContainsKey(paramName))
                     {
                         var clientGradient = clientResults[clientId].MetaGradients[paramName];
-                        var weight = normalizedWeights.GetValueOrDefault(clientId, 1.0 / clientResults.Count);
+                        var weight = normalizedWeights.ContainsKey(clientId) ? normalizedWeights[clientId] : 1.0 / clientResults.Count;
 
                         for (int i = 0; i < paramSize; i++)
                         {

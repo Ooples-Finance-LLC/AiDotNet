@@ -21,6 +21,12 @@ namespace AiDotNet.Enums;
 public enum ModelType
 {
     /// <summary>
+    /// Unknown or unspecified model type.
+    /// </summary>
+    [ModelInfo(ModelCategory.None, new[] { MetricGroups.General }, "Unknown model type")]
+    Unknown,
+    
+    /// <summary>
     /// Represents no model selection.
     /// </summary>
     [ModelInfo(ModelCategory.None, new[] { MetricGroups.General }, "No model selection")]
@@ -2592,5 +2598,41 @@ public enum ModelType
     [ModelInfo(ModelCategory.NeuralNetwork,
               new[] { MetricGroups.General },
               "Generative model using optimal transport flow matching")]
-    FlowMatchingModel
+    FlowMatchingModel,
+
+    /// <summary>
+    /// Foundation Model - large pre-trained language or multimodal model.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Foundation Models are large AI models pre-trained on vast amounts of data that can be
+    /// adapted for many different tasks. Examples include GPT, BERT, and CLIP. These models have learned general
+    /// knowledge and can be fine-tuned for specific applications like classification, regression, or generation.
+    /// They represent a paradigm shift in AI where instead of training models from scratch for each task, we start
+    /// with a powerful pre-trained model and adapt it. This approach often achieves better results with less data
+    /// and training time.
+    /// </para>
+    /// </remarks>
+    [ModelInfo(ModelCategory.NeuralNetwork,
+              new[] { MetricGroups.General, MetricGroups.NeuralNetwork },
+              "Large pre-trained model adaptable to various tasks")]
+    FoundationModel,
+
+    /// <summary>
+    /// Interpretable Model Wrapper - adds interpretability and explainability features to any model.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Interpretable Model Wrappers add transparency to AI models by providing explanations
+    /// for their predictions. They implement techniques like SHAP (which shows how each input feature contributes
+    /// to the prediction), LIME (which explains individual predictions), and feature importance analysis. This is
+    /// crucial when you need to understand why a model made a specific decision - for example, why a loan was
+    /// approved or denied, or which factors most influenced a medical diagnosis. The wrapper doesn't change how
+    /// the underlying model works; it adds tools to peek inside and understand the model's reasoning.
+    /// </para>
+    /// </remarks>
+    [ModelInfo(ModelCategory.NeuralNetwork,
+              new[] { MetricGroups.General },
+              "Wrapper that adds interpretability features to any model")]
+    InterpretableWrapper
 }

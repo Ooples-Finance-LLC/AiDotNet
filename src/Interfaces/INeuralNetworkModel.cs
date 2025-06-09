@@ -1,3 +1,5 @@
+using AiDotNet.NeuralNetworks;
+
 namespace AiDotNet.Interfaces;
 
 /// <summary>
@@ -84,4 +86,70 @@ public interface INeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     /// </remarks>
     /// <param name="isTrainingMode">True to set the network to training mode; false to set it to inference mode.</param>
     void SetTrainingMode(bool isTrainingMode);
+    
+    /// <summary>
+    /// Gets the intermediate activations from each layer when processing the given input.
+    /// </summary>
+    /// <remarks>
+    /// This method returns the output values from each layer in the neural network when processing
+    /// the provided input. This is useful for understanding what the network is learning and for
+    /// techniques like model quantization and pruning.
+    /// 
+    /// <b>For Beginners:</b> This is like looking at what happens at each step as data flows through the network.
+    /// 
+    /// When a neural network processes data, it goes through multiple layers:
+    /// - The input layer receives the raw data
+    /// - Each hidden layer transforms the data in some way
+    /// - The output layer produces the final prediction
+    /// 
+    /// This method lets you see the transformed data at each layer, which is helpful for:
+    /// - Understanding what patterns each layer is detecting
+    /// - Debugging when the network isn't working as expected
+    /// - Optimizing the network by identifying layers that aren't contributing much
+    /// - Techniques like quantization (reducing model size) that need to know value ranges
+    /// 
+    /// For example, in an image recognition network:
+    /// - Early layers might detect edges and simple shapes
+    /// - Middle layers might detect more complex features like eyes or wheels
+    /// - Later layers might recognize complete objects
+    /// 
+    /// By examining these activations, you can see how the network gradually builds up
+    /// its understanding of the input data.
+    /// </remarks>
+    /// <param name="input">The input tensor to process through the network.</param>
+    /// <returns>A dictionary mapping layer names to their activation tensors.</returns>
+    Dictionary<string, Tensor<T>> GetLayerActivations(Tensor<T> input);
+    
+    /// <summary>
+    /// Gets the architectural structure of the neural network.
+    /// </summary>
+    /// <remarks>
+    /// This method returns information about the network's structure, including its layers,
+    /// their types, sizes, and connections. This is useful for model analysis, optimization,
+    /// and understanding the network's design.
+    /// 
+    /// <b>For Beginners:</b> This returns the blueprint of your neural network.
+    /// 
+    /// Just like a building's blueprint shows:
+    /// - How many floors it has
+    /// - The size and purpose of each room
+    /// - How rooms are connected
+    /// 
+    /// This method returns information about:
+    /// - How many layers your network has
+    /// - What type each layer is (dense, convolutional, etc.)
+    /// - How many neurons are in each layer
+    /// - How the layers connect to each other
+    /// 
+    /// This information is useful for:
+    /// - Understanding the complexity of your model
+    /// - Optimizing the network (removing unnecessary layers or connections)
+    /// - Calculating how much memory the model will use
+    /// - Comparing different network designs
+    /// 
+    /// For example, you might discover that your network has 50 layers with millions
+    /// of parameters, helping you understand why it might be slow or require lots of memory.
+    /// </remarks>
+    /// <returns>The neural network architecture containing layer information and structure.</returns>
+    NeuralNetworkArchitecture<T> GetArchitecture();
 }

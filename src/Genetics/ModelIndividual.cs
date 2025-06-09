@@ -1,4 +1,7 @@
-﻿namespace AiDotNet.Genetics;
+﻿using AiDotNet.LinearAlgebra;
+using AiDotNet.Models;
+
+namespace AiDotNet.Genetics;
 
 /// <summary>
 /// Represents an individual that is also a full model, allowing direct evolution of models
@@ -25,6 +28,7 @@
 /// </para>
 /// </remarks>
 public class ModelIndividual<T, TInput, TOutput, TGene> :
+    Interpretability.InterpretableModelBase<T, TInput, TOutput>,
     IEvolvable<TGene, T>,
     IFullModel<T, TInput, TOutput>
     where TGene : class
@@ -404,7 +408,7 @@ public class ModelIndividual<T, TInput, TOutput, TGene> :
     /// and producing useful outputs or predictions.
     /// </para>
     /// </remarks>
-    public TOutput Predict(TInput input)
+    public override TOutput Predict(TInput input)
     {
         return _innerModel.Predict(input);
     }
@@ -642,7 +646,7 @@ public class ModelIndividual<T, TInput, TOutput, TGene> :
     /// In most cases, you would improve this model through evolution rather than direct training.
     /// </para>
     /// </remarks>
-    public void Train(TInput input, TOutput expectedOutput)
+    public override void Train(TInput input, TOutput expectedOutput)
     {
         // Try to use reflection to check if the inner model has a Train method
         var trainMethod = _innerModel.GetType().GetMethod("Train", [typeof(TInput), typeof(TOutput)]);
@@ -682,7 +686,7 @@ public class ModelIndividual<T, TInput, TOutput, TGene> :
     /// This comprehensive information helps with model selection, comparison, and documentation.
     /// </para>
     /// </remarks>
-    public ModelMetaData<T> GetModelMetaData()
+    public override ModelMetaData<T> GetModelMetaData()
     {
         // Get the inner model's metadata
         var metadata = _innerModel.GetModelMetaData();
@@ -935,6 +939,84 @@ public class ModelIndividual<T, TInput, TOutput, TGene> :
         }
 
         _innerModel.SetActiveFeatureIndices(featureIndices);
+    }
+    
+    /// <inheritdoc/>
+    public override async Task<TOutput> PredictAsync(TInput input)
+    {
+        return await _innerModel.PredictAsync(input);
+    }
+    
+    /// <inheritdoc/>
+    public override async Task TrainAsync(TInput input, TOutput expectedOutput)
+    {
+        await _innerModel.TrainAsync(input, expectedOutput);
+    }
+    
+    /// <inheritdoc/>
+    public override void SetModelMetaData(ModelMetaData<T> metadata)
+    {
+        // Update the inner model's metadata
+        if (_innerModel is IModel<TInput, TOutput, ModelMetaData<T>> model)
+        {
+            model.SetModelMetaData(metadata);
+        }
+        
+        // Update fitness based on metadata complexity or other metrics
+        if (metadata.Complexity > 0)
+        {
+            // Optionally update fitness based on model complexity
+            // Lower complexity might mean better fitness in some scenarios
+        }
+    }
+    
+    /// <inheritdoc/>
+    public override void Save(string filepath)
+    {
+        _innerModel.Save(filepath);
+    }
+    
+    /// <inheritdoc/>
+    public override void Load(string filepath)
+    {
+        _innerModel.Load(filepath);
+    }
+    
+    /// <inheritdoc/>
+    public override void Dispose()
+    {
+        if (_innerModel is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
+        _genes.Clear();
+        _explicitlySetActiveFeatures?.Clear();
+    }
+    
+    // Override interpretability methods to delegate to inner model
+    public override async Task<Dictionary<int, T>> GetGlobalFeatureImportanceAsync()
+    {
+        return await _innerModel.GetGlobalFeatureImportanceAsync();
+    }
+    
+    public override async Task<Dictionary<int, T>> GetLocalFeatureImportanceAsync(TInput input)
+    {
+        return await _innerModel.GetLocalFeatureImportanceAsync(input);
+    }
+    
+    public override async Task<LimeExplanation<T>> GetLimeExplanationAsync(TInput input, int numFeatures = 10)
+    {
+        return await _innerModel.GetLimeExplanationAsync(input, numFeatures);
+    }
+    
+    public override async Task<Matrix<T>> GetShapValuesAsync(TInput inputs)
+    {
+        return await _innerModel.GetShapValuesAsync(inputs);
+    }
+    
+    public override async Task<string> GenerateTextExplanationAsync(TInput input, TOutput prediction)
+    {
+        return await _innerModel.GenerateTextExplanationAsync(input, prediction);
     }
 
     #endregion

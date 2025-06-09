@@ -346,13 +346,13 @@ def output_fn(prediction, content_type):
 
         private class AWSServiceConfig
         {
-            public string ServiceName { get; set; }
+            public string ServiceName { get; set; } = string.Empty;
             public double MaxModelSize { get; set; }
             public double MaxMemory { get; set; }
             public double MaxTimeout { get; set; }
-            public string[] SupportedFormats { get; set; }
-            public string[] InstanceTypes { get; set; }
-            public string[] ComputeEnvironments { get; set; }
+            public string[] SupportedFormats { get; set; } = Array.Empty<string>();
+            public string[] InstanceTypes { get; set; } = Array.Empty<string>();
+            public string[] ComputeEnvironments { get; set; } = Array.Empty<string>();
         }
     }
 }

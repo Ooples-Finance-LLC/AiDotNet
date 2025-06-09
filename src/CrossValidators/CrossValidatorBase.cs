@@ -123,8 +123,10 @@ public abstract class CrossValidatorBase<T> : ICrossValidator<T>
         var totalTimer = Stopwatch.StartNew();
         int foldIndex = 0;
 
-        foreach (var (trainIndices, validationIndices) in folds)
+        foreach (var fold in folds)
         {
+            var trainIndices = fold.trainIndices;
+            var validationIndices = fold.validationIndices;
             var XTrain = X.Submatrix(trainIndices);
             var yTrain = y.Subvector(trainIndices);
             var XValidation = X.Submatrix(validationIndices);

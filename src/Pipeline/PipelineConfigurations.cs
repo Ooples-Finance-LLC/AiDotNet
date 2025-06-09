@@ -14,6 +14,57 @@ namespace AiDotNet.Pipeline
         public bool EnableCheckpointing { get; set; } = true;
         public int MaxRetries { get; set; } = 3;
         public Dictionary<string, object> Metadata { get; set; } = new Dictionary<string, object>();
+        
+        /// <summary>
+        /// Whether to transform data between steps during fitting
+        /// </summary>
+        public bool TransformBetweenSteps { get; set; } = true;
+        
+        /// <summary>
+        /// Whether to validate step compatibility
+        /// </summary>
+        public bool ValidateStepCompatibility { get; set; } = true;
+        
+        /// <summary>
+        /// Maximum allowed input size (0 for no limit)
+        /// </summary>
+        public int MaxInputSize { get; set; } = 0;
+        
+        /// <summary>
+        /// Whether to enable parallel execution where possible
+        /// </summary>
+        public bool EnableParallelExecution { get; set; } = false;
+        
+        /// <summary>
+        /// Default timeout for operations in milliseconds
+        /// </summary>
+        public int DefaultTimeoutMs { get; set; } = 300000; // 5 minutes
+        
+        /// <summary>
+        /// Whether to enable detailed logging
+        /// </summary>
+        public bool EnableDetailedLogging { get; set; } = false;
+        
+        /// <summary>
+        /// Creates a copy of the configuration
+        /// </summary>
+        public PipelineConfiguration Clone()
+        {
+            return new PipelineConfiguration
+            {
+                Name = Name,
+                EnableLogging = EnableLogging,
+                EnableCheckpointing = EnableCheckpointing,
+                MaxRetries = MaxRetries,
+                Metadata = new Dictionary<string, object>(Metadata),
+                TransformBetweenSteps = TransformBetweenSteps,
+                ValidateStepCompatibility = ValidateStepCompatibility,
+                MaxInputSize = MaxInputSize,
+                EnableParallelExecution = EnableParallelExecution,
+                DefaultTimeoutMs = DefaultTimeoutMs,
+                EnableDetailedLogging = EnableDetailedLogging
+            };
+        }
     }
     
     /// <summary>

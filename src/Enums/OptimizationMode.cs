@@ -22,5 +22,10 @@ public enum OptimizationMode
     /// <summary>
     /// Optimize both feature selection and model parameters.
     /// </summary>
-    Both
+    Both,
+    
+    /// <summary>
+    /// Balanced optimization mode (alias for Both).
+    /// </summary>
+    Balanced = Both
 }

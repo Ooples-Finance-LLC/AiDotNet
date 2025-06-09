@@ -14,7 +14,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
     /// </summary>
     public class TikTokenizer : TokenizerBase
     {
-        private readonly Dictionary<(string, string), int> _merges;
+        private readonly Dictionary<Tuple<string, string>, int> _merges;
         private readonly Dictionary<string, int> _encoder;
         private readonly Dictionary<int, string> _decoder;
         private readonly Dictionary<int, byte[]> _tokenBytes;
@@ -31,7 +31,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
         /// <param name="encodingName">Encoding name (cl100k_base for GPT-4, p50k_base for GPT-3)</param>
         public TikTokenizer(string encodingName = "cl100k_base")
         {
-            _merges = new Dictionary<(string, string), int>();
+            _merges = new Dictionary<Tuple<string, string>, int>();
             _encoder = new Dictionary<string, int>();
             _decoder = new Dictionary<int, string>();
             _tokenBytes = new Dictionary<int, byte[]>();
@@ -180,7 +180,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
                     
                     if (parts.Length == 2)
                     {
-                        _merges[(parts[0], parts[1])] = _merges.Count;
+                        _merges[Tuple.Create(parts[0], parts[1])] = _merges.Count;
                     }
                     
                     tokenId++;
@@ -239,28 +239,28 @@ namespace AiDotNet.FoundationModels.Tokenizers
             
             // First, check for special tokens
             var processedText = text;
-            var specialTokenPositions = new List<(int start, int end, string token)>();
+            var specialTokenPositions = new List<Tuple<int, int, string>>();
             
             foreach (var specialToken in _specialTokensSet.OrderByDescending(t => t.Length))
             {
                 int index = 0;
                 while ((index = processedText.IndexOf(specialToken, index)) != -1)
                 {
-                    specialTokenPositions.Add((index, index + specialToken.Length, specialToken));
+                    specialTokenPositions.Add(Tuple.Create(index, index + specialToken.Length, specialToken));
                     index += specialToken.Length;
                 }
             }
             
             // Sort by position
-            specialTokenPositions.Sort((a, b) => a.start.CompareTo(b.start));
+            specialTokenPositions.Sort((a, b) => a.Item1.CompareTo(b.Item1));
             
             // Process text segments
             int currentPos = 0;
             foreach (var tuple in specialTokenPositions)
             {
-                var start = tuple.start;
-                var end = tuple.end;
-                var token = tuple.token;
+                var start = tuple.Item1;
+                var end = tuple.Item2;
+                var token = tuple.Item3;
                 if (start > currentPos)
                 {
                     // Process text before special token
@@ -335,7 +335,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
                     .OrderBy(p => _merges[p])
                     .FirstOrDefault();
                 
-                if (bestPair == default) break;
+                if (bestPair == null) break;
                 
                 // Apply merge
                 var newTokens = new List<string>();
@@ -372,12 +372,12 @@ namespace AiDotNet.FoundationModels.Tokenizers
         /// <summary>
         /// Gets all consecutive pairs in a list
         /// </summary>
-        private HashSet<(string, string)> GetPairs(List<string> tokens)
+        private HashSet<Tuple<string, string>> GetPairs(List<string> tokens)
         {
-            var pairs = new HashSet<(string, string)>();
+            var pairs = new HashSet<Tuple<string, string>>();
             for (int i = 0; i < tokens.Count - 1; i++)
             {
-                pairs.Add((tokens[i], tokens[i + 1]));
+                pairs.Add(Tuple.Create(tokens[i], tokens[i + 1]));
             }
             return pairs;
         }
@@ -392,7 +392,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
             foreach (var token in tokens)
             {
                 // Try to get pre-stored bytes for this token
-                var tokenId = _encoder.GetValueOrDefault(token, -1);
+                var tokenId = _encoder.ContainsKey(token) ? _encoder[token] : -1;
                 if (tokenId != -1 && _tokenBytes.TryGetValue(tokenId, out var tokenBytes))
                 {
                     bytes.AddRange(tokenBytes);
@@ -427,7 +427,7 @@ namespace AiDotNet.FoundationModels.Tokenizers
         /// <summary>
         /// Encodes text with special handling for chat format
         /// </summary>
-        public async Task<Vector<int>> EncodeChatAsync(List<(string role, string content)> messages)
+        public async Task<Vector<int>> EncodeChatAsync(List<Tuple<string, string>> messages)
         {
             var tokens = new List<int>();
             

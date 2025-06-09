@@ -20,7 +20,7 @@ namespace AiDotNet.NeuralNetworks.DiffusionModels
         private readonly double rho;
         private readonly ScheduleType scheduleType;
         private readonly bool useDistillation;
-        private INeuralNetworkModel<double> teacherModel;
+        private INeuralNetworkModel<double>? teacherModel;
         
         public enum ScheduleType
         {

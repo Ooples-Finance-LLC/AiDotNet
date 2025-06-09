@@ -22,22 +22,22 @@ namespace AiDotNet.FederatedLearning.MetaLearning.Models
         /// <summary>
         /// Support set data for task adaptation
         /// </summary>
-        public Matrix<double> SupportSet { get; set; }
+        public Matrix<double> SupportSet { get; set; } = new();
 
         /// <summary>
         /// Labels for the support set
         /// </summary>
-        public Vector<double> SupportLabels { get; set; }
+        public Vector<double> SupportLabels { get; set; } = new();
 
         /// <summary>
         /// Query set data for task evaluation
         /// </summary>
-        public Matrix<double> QuerySet { get; set; }
+        public Matrix<double> QuerySet { get; set; } = new();
 
         /// <summary>
         /// Labels for the query set
         /// </summary>
-        public Vector<double> QueryLabels { get; set; }
+        public Vector<double> QueryLabels { get; set; } = new();
 
         /// <summary>
         /// Additional metadata about the task

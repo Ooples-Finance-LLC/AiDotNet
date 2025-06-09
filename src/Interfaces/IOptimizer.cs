@@ -1,4 +1,6 @@
-﻿namespace AiDotNet.Interfaces;
+﻿using AiDotNet.LinearAlgebra;
+
+namespace AiDotNet.Interfaces;
 
 /// <summary>
 /// Defines the contract for optimization algorithms used in machine learning models.
@@ -109,4 +111,21 @@ public interface IOptimizer<T, TInput, TOutput> : IModelSerializer
     /// </para>
     /// </remarks>
     IFullModel<T, TInput, TOutput> Model { get; }
+    
+    /// <summary>
+    /// Calculates the parameter updates based on the gradients.
+    /// </summary>
+    /// <remarks>
+    /// This method computes how the model parameters should be updated based on the 
+    /// gradients calculated during backpropagation.
+    /// 
+    /// <b>For Beginners:</b> This is like calculating how much to adjust each knob on a 
+    /// control panel. The gradients tell us which direction to turn each knob and how 
+    /// sensitive the output is to each knob, and this method decides exactly how much 
+    /// to turn each one.
+    /// </remarks>
+    /// <param name="gradients">The gradients of the loss function with respect to the parameters.</param>
+    /// <param name="parameters">The current parameter values.</param>
+    /// <returns>The updates to be applied to the parameters.</returns>
+    Vector<T> CalculateUpdate(Vector<T> gradients, Vector<T> parameters);
 }

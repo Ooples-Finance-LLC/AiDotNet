@@ -3,6 +3,7 @@ using AiDotNet.Models.Options;
 using AiDotNet.Enums;
 using AiDotNet.Helpers;
 using AiDotNet.Interfaces;
+using AiDotNet.Interpretability;
 using AiDotNet.LinearAlgebra;
 using AiDotNet.Logging;
 using AiDotNet.Models;
@@ -22,7 +23,7 @@ namespace AiDotNet.Ensemble;
 /// and managing weights. Specific ensemble types (voting, stacking, etc.) build on this base.
 /// </para>
 /// </remarks>
-public abstract class EnsembleModelBase<T, TInput, TOutput> : IEnsembleModel<T, TInput, TOutput>
+public abstract class EnsembleModelBase<T, TInput, TOutput> : InterpretableModelBase<T, TInput, TOutput>, IEnsembleModel<T, TInput, TOutput>
 {
     protected readonly List<IFullModel<T, TInput, TOutput>> _baseModels;
     protected Vector<T> _modelWeights;
@@ -283,7 +284,7 @@ public abstract class EnsembleModelBase<T, TInput, TOutput> : IEnsembleModel<T, 
     /// <summary>
     /// Trains all base models in the ensemble.
     /// </summary>
-    public virtual void Train(TInput input, TOutput output)
+    public override void Train(TInput input, TOutput output)
     {
         if (_baseModels.Count == 0)
         {
@@ -334,7 +335,7 @@ public abstract class EnsembleModelBase<T, TInput, TOutput> : IEnsembleModel<T, 
     /// <summary>
     /// Makes predictions using the ensemble.
     /// </summary>
-    public virtual TOutput Predict(TInput input)
+    public override TOutput Predict(TInput input)
     {
         if (_baseModels.Count == 0)
         {
@@ -419,7 +420,7 @@ public abstract class EnsembleModelBase<T, TInput, TOutput> : IEnsembleModel<T, 
     /// <summary>
     /// Saves the ensemble model to a file.
     /// </summary>
-    public virtual void Save(string path)
+    public override void Save(string path)
     {
         _logger.Information("Saving ensemble model to {Path}", path);
         
@@ -458,7 +459,7 @@ public abstract class EnsembleModelBase<T, TInput, TOutput> : IEnsembleModel<T, 
     /// <summary>
     /// Loads the ensemble model from a file.
     /// </summary>
-    public virtual void Load(string path)
+    public override void Load(string path)
     {
         _logger.Information("Loading ensemble model from {Path}", path);
         
@@ -557,7 +558,7 @@ public abstract class EnsembleModelBase<T, TInput, TOutput> : IEnsembleModel<T, 
     /// <summary>
     /// Gets metadata about the ensemble model.
     /// </summary>
-    public virtual ModelMetaData<T> GetModelMetaData()
+    public override ModelMetaData<T> GetModelMetaData()
     {
         var metadata = new ModelMetaData<T>
         {

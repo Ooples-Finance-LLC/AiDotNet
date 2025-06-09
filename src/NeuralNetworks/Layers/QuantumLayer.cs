@@ -348,7 +348,7 @@ public class QuantumLayer<T> : LayerBase<T>
     public override Vector<T> GetParameters()
     {
         // Return a copy of the rotation angles
-        return _rotationAngles.Clone();
+        return (Vector<T>)_rotationAngles.Clone();
     }
 
     /// <summary>

@@ -220,7 +220,7 @@ public interface IPredictionModelBuilder<T, TInput, TOutput>
     /// like combining text, images, and audio. Think of it like a human who can read, see, and hear
     /// all at once to understand something better.
     /// </remarks>
-    IPredictionModelBuilder<T, TInput, TOutput> UseMultimodalModel(IMultimodalModel multimodalModel);
+    IPredictionModelBuilder<T, TInput, TOutput> UseMultimodalModel(IMultimodalModel<T> multimodalModel);
 
     /// <summary>
     /// Adds a data modality (type) to the multimodal model.
@@ -230,7 +230,7 @@ public interface IPredictionModelBuilder<T, TInput, TOutput>
     /// <returns>The builder instance for method chaining.</returns>
     IPredictionModelBuilder<T, TInput, TOutput> AddModality(
         ModalityType modalityType,
-        IPipelineStep? preprocessor = null);
+        IPipelineStep<T>? preprocessor = null);
 
     /// <summary>
     /// Configures how different modalities are combined.
@@ -253,7 +253,7 @@ public interface IPredictionModelBuilder<T, TInput, TOutput>
     /// language, code, or other data types. They're like having an expert who already knows
     /// a lot about the world, and you're just teaching them your specific task.
     /// </remarks>
-    IPredictionModelBuilder<T, TInput, TOutput> UseFoundationModel(IFoundationModel foundationModel);
+    IPredictionModelBuilder<T, TInput, TOutput> UseFoundationModel(IFoundationModel<T> foundationModel);
 
     /// <summary>
     /// Configures fine-tuning for a foundation model.
@@ -319,7 +319,7 @@ public interface IPredictionModelBuilder<T, TInput, TOutput>
     /// certain predictions. It's like asking the model to explain its reasoning,
     /// which is important for trust and debugging.
     /// </remarks>
-    IPredictionModelBuilder<T, TInput, TOutput> WithInterpretability(IInterpretableModel interpretableModel);
+    IPredictionModelBuilder<T, TInput, TOutput> WithInterpretability(IInterpretableModel<T, TInput, TOutput> interpretableModel);
 
     /// <summary>
     /// Enables specific interpretation methods.
@@ -390,7 +390,7 @@ public interface IPredictionModelBuilder<T, TInput, TOutput>
     /// to do special processing that's unique to your needs.
     /// </remarks>
     IPredictionModelBuilder<T, TInput, TOutput> AddPipelineStep(
-        IPipelineStep step,
+        IPipelineStep<T> step,
         PipelinePosition position = PipelinePosition.Preprocessing);
 
     /// <summary>

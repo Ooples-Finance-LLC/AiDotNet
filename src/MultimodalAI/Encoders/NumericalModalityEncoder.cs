@@ -2,25 +2,27 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AiDotNet.LinearAlgebra;
+using AiDotNet.Interfaces;
 
 namespace AiDotNet.MultimodalAI.Encoders
 {
     /// <summary>
     /// Numerical data modality encoder for processing numerical/tabular data
     /// </summary>
-    public class NumericalModalityEncoder : ModalityEncoderBase
+    /// <typeparam name="T">The numeric type used for calculations</typeparam>
+    public class NumericalModalityEncoder<T> : ModalityEncoderBase<T>
     {
         private readonly bool _useFeatureEngineering;
         private readonly bool _useInteractionFeatures;
         private readonly int _polynomialDegree;
-        private readonly double _missingValueIndicator;
+        private readonly T _missingValueIndicator;
         private readonly NormalizationMethod _normalizationMethod;
         
         // Feature statistics for normalization
-        private double[] _featureMeans;
-        private double[] _featureStdDevs;
-        private double[] _featureMins;
-        private double[] _featureMaxs;
+        private T[] _featureMeans = Array.Empty<T>();
+        private T[] _featureStdDevs = Array.Empty<T>();
+        private T[] _featureMins = Array.Empty<T>();
+        private T[] _featureMaxs = Array.Empty<T>();
         private bool _statisticsComputed;
         
         /// <summary>
@@ -43,17 +45,18 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <param name="polynomialDegree">Degree for polynomial features (default: 2)</param>
         /// <param name="normalizationMethod">Method for normalizing features (default: StandardScore)</param>
         /// <param name="missingValueIndicator">Value to use for missing data (default: -999)</param>
+        /// <param name="encoder">Optional custom neural network encoder. If null, a default encoder will be created when needed.</param>
         public NumericalModalityEncoder(int outputDimension = 128, bool useFeatureEngineering = true,
             bool useInteractionFeatures = true, int polynomialDegree = 2,
             NormalizationMethod normalizationMethod = NormalizationMethod.StandardScore,
-            double missingValueIndicator = -999) 
-            : base("Numerical", outputDimension)
+            double missingValueIndicator = -999, INeuralNetworkModel<T>? encoder = null) 
+            : base("Numerical", outputDimension, encoder)
         {
             _useFeatureEngineering = useFeatureEngineering;
             _useInteractionFeatures = useInteractionFeatures;
             _polynomialDegree = Math.Max(1, Math.Min(polynomialDegree, 3)); // Limit to reasonable range
             _normalizationMethod = normalizationMethod;
-            _missingValueIndicator = missingValueIndicator;
+            _missingValueIndicator = _numericOps.FromDouble(missingValueIndicator);
             _statisticsComputed = false;
         }
 
@@ -62,7 +65,7 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// </summary>
         /// <param name="input">Numerical data as array, Vector, or Tensor</param>
         /// <returns>Encoded vector representation</returns>
-        public override Vector<double> Encode(object input)
+        public override Vector<T> Encode(object input)
         {
             if (!ValidateInput(input))
             {
@@ -71,7 +74,7 @@ namespace AiDotNet.MultimodalAI.Encoders
 
             // Preprocess the input
             var preprocessed = Preprocess(input);
-            var numericData = preprocessed as double[] ?? throw new InvalidOperationException("Preprocessing failed");
+            var numericData = preprocessed as T[] ?? throw new InvalidOperationException("Preprocessing failed");
 
             // Extract features
             var features = ExtractNumericalFeatures(numericData);
@@ -91,34 +94,45 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// </summary>
         public override object Preprocess(object input)
         {
-            double[] data;
+            T[] data;
 
             switch (input)
             {
+                case T[] genericArray:
+                    data = (T[])genericArray.Clone();
+                    break;
                 case double[] doubleArray:
-                    data = (double[])doubleArray.Clone();
+                    data = doubleArray.Select(d => _numericOps.FromDouble(d)).ToArray();
                     break;
                 case float[] floatArray:
-                    data = floatArray.Select(f => (double)f).ToArray();
+                    data = floatArray.Select(f => _numericOps.FromDouble(f)).ToArray();
                     break;
                 case int[] intArray:
-                    data = intArray.Select(i => (double)i).ToArray();
+                    data = intArray.Select(i => _numericOps.FromDouble(i)).ToArray();
                     break;
-                case Vector<double> vector:
+                case Vector<T> vector:
                     data = vector.ToArray();
                     break;
-                case Vector<float> floatVector:
-                    data = floatVector.ToArray().Select(f => (double)f).ToArray();
+                case Vector<double> doubleVector:
+                    data = doubleVector.ToArray().Select(d => _numericOps.FromDouble(d)).ToArray();
                     break;
-                case Tensor<double> tensor:
+                case Vector<float> floatVector:
+                    data = floatVector.ToArray().Select(f => _numericOps.FromDouble(f)).ToArray();
+                    break;
+                case Tensor<T> tensor:
                     if (tensor.Rank != 1)
                         throw new ArgumentException($"Tensor must be 1D for numerical encoding, got rank {tensor.Rank}");
                     data = tensor.ToArray();
                     break;
+                case Tensor<double> doubleTensor:
+                    if (doubleTensor.Rank != 1)
+                        throw new ArgumentException($"Tensor must be 1D for numerical encoding, got rank {doubleTensor.Rank}");
+                    data = doubleTensor.ToArray().Select(d => _numericOps.FromDouble(d)).ToArray();
+                    break;
                 case Tensor<float> floatTensor:
                     if (floatTensor.Rank != 1)
                         throw new ArgumentException($"Tensor must be 1D for numerical encoding, got rank {floatTensor.Rank}");
-                    data = floatTensor.ToArray().Select(f => (double)f).ToArray();
+                    data = floatTensor.ToArray().Select(f => _numericOps.FromDouble(f)).ToArray();
                     break;
                 default:
                     throw new ArgumentException($"Unsupported input type: {input?.GetType()?.Name ?? "null"}");
@@ -144,43 +158,48 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// </summary>
         protected override bool ValidateInput(object input)
         {
-            return input is double[] || input is float[] || input is int[] ||
-                   input is Vector<double> || input is Vector<float> ||
-                   input is Tensor<double> || input is Tensor<float>;
+            return input is T[] || input is double[] || input is float[] || input is int[] ||
+                   input is Vector<T> || input is Vector<double> || input is Vector<float> ||
+                   input is Tensor<T> || input is Tensor<double> || input is Tensor<float>;
         }
 
         /// <summary>
         /// Extracts features from numerical data
         /// </summary>
-        private Vector<double> ExtractNumericalFeatures(double[] data)
+        private Vector<T> ExtractNumericalFeatures(T[] data)
         {
             var features = new List<double>();
 
+            // Convert T[] to double[] for feature extraction
+            var doubleData = data.Select(x => Convert.ToDouble(x)).ToArray();
+
             // Original features
-            features.AddRange(data);
+            features.AddRange(doubleData);
 
             if (_useFeatureEngineering)
             {
                 // Statistical aggregations
-                features.AddRange(ExtractStatisticalFeatures(data));
+                features.AddRange(ExtractStatisticalFeatures(doubleData));
 
                 // Polynomial features
                 if (_polynomialDegree > 1)
                 {
-                    features.AddRange(ExtractPolynomialFeatures(data));
+                    features.AddRange(ExtractPolynomialFeatures(doubleData));
                 }
 
                 // Interaction features
-                if (_useInteractionFeatures && data.Length > 1)
+                if (_useInteractionFeatures && doubleData.Length > 1)
                 {
-                    features.AddRange(ExtractInteractionFeatures(data));
+                    features.AddRange(ExtractInteractionFeatures(doubleData));
                 }
 
                 // Binned features
-                features.AddRange(ExtractBinnedFeatures(data));
+                features.AddRange(ExtractBinnedFeatures(doubleData));
             }
 
-            return new Vector<double>(features.ToArray());
+            // Convert back to T[]
+            var tFeatures = features.Select(f => _numericOps.FromDouble(f)).ToArray();
+            return new Vector<T>(tFeatures);
         }
 
         /// <summary>
@@ -312,22 +331,24 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Projects features to the desired output dimension
         /// </summary>
-        private Vector<double> ProjectToOutputDimension(Vector<double> features)
+        private Vector<T> ProjectToOutputDimension(Vector<T> features)
         {
             if (features.Length == OutputDimension)
                 return features;
 
+            // Convert to double for processing
+            var doubleFeatures = features.ToArray().Select(f => Convert.ToDouble(f)).ToArray();
             var result = new double[OutputDimension];
 
-            if (features.Length > OutputDimension)
+            if (doubleFeatures.Length > OutputDimension)
             {
                 // Use feature selection based on variance
                 var featureVariances = new List<(int Index, double Variance)>();
                 
-                for (int i = 0; i < features.Length; i++)
+                for (int i = 0; i < doubleFeatures.Length; i++)
                 {
                     // Simple variance estimate using feature value as proxy
-                    featureVariances.Add((i, Math.Abs(features[i])));
+                    featureVariances.Add((i, Math.Abs(doubleFeatures[i])));
                 }
 
                 // Select top features by variance
@@ -340,41 +361,44 @@ namespace AiDotNet.MultimodalAI.Encoders
 
                 for (int i = 0; i < OutputDimension; i++)
                 {
-                    result[i] = features[selectedIndices[i]];
+                    result[i] = doubleFeatures[selectedIndices[i]];
                 }
             }
             else
             {
                 // Copy existing features
-                for (int i = 0; i < features.Length; i++)
+                for (int i = 0; i < doubleFeatures.Length; i++)
                 {
-                    result[i] = features[i];
+                    result[i] = doubleFeatures[i];
                 }
                 
                 // Pad with learned representations
                 var random = new Random(42);
-                for (int i = features.Length; i < OutputDimension; i++)
+                for (int i = doubleFeatures.Length; i < OutputDimension; i++)
                 {
                     // Create synthetic features based on existing ones
-                    int idx1 = random.Next(features.Length);
-                    int idx2 = random.Next(features.Length);
-                    result[i] = (features[idx1] + features[idx2]) / 2.0;
+                    int idx1 = random.Next(doubleFeatures.Length);
+                    int idx2 = random.Next(doubleFeatures.Length);
+                    result[i] = (doubleFeatures[idx1] + doubleFeatures[idx2]) / 2.0;
                 }
             }
 
-            return new Vector<double>(result);
+            // Convert back to T
+            var tResult = result.Select(r => _numericOps.FromDouble(r)).ToArray();
+            return new Vector<T>(tResult);
         }
 
         /// <summary>
         /// Handles missing values in the data
         /// </summary>
-        private double[] HandleMissingValues(double[] data)
+        private T[] HandleMissingValues(T[] data)
         {
-            var result = new double[data.Length];
+            var result = new T[data.Length];
             
             for (int i = 0; i < data.Length; i++)
             {
-                if (double.IsNaN(data[i]) || double.IsInfinity(data[i]))
+                double doubleValue = Convert.ToDouble(data[i]);
+                if (double.IsNaN(doubleValue) || double.IsInfinity(doubleValue))
                 {
                     result[i] = _missingValueIndicator;
                 }
@@ -390,19 +414,19 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Computes statistics for normalization
         /// </summary>
-        private void ComputeStatistics(double[] data)
+        private void ComputeStatistics(T[] data)
         {
             int n = data.Length;
-            _featureMeans = new double[n];
-            _featureStdDevs = new double[n];
-            _featureMins = new double[n];
-            _featureMaxs = new double[n];
+            _featureMeans = new T[n];
+            _featureStdDevs = new T[n];
+            _featureMins = new T[n];
+            _featureMaxs = new T[n];
 
             // For this simple implementation, compute element-wise statistics
             for (int i = 0; i < n; i++)
             {
                 _featureMeans[i] = data[i];
-                _featureStdDevs[i] = 1.0; // Default to 1 for single sample
+                _featureStdDevs[i] = _numericOps.One; // Default to 1 for single sample
                 _featureMins[i] = data[i];
                 _featureMaxs[i] = data[i];
             }
@@ -413,21 +437,22 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Applies normalization to the data
         /// </summary>
-        private double[] ApplyNormalization(double[] data)
+        private T[] ApplyNormalization(T[] data)
         {
             if (_normalizationMethod == NormalizationMethod.None)
                 return data;
 
-            var normalized = new double[data.Length];
+            var normalized = new T[data.Length];
 
             for (int i = 0; i < data.Length; i++)
             {
                 switch (_normalizationMethod)
                 {
                     case NormalizationMethod.StandardScore:
-                        if (_statisticsComputed && i < _featureStdDevs.Length && _featureStdDevs[i] > 0)
+                        if (_statisticsComputed && i < _featureStdDevs.Length && _numericOps.GreaterThan(_featureStdDevs[i], _numericOps.Zero))
                         {
-                            normalized[i] = (data[i] - _featureMeans[i]) / _featureStdDevs[i];
+                            T diff = _numericOps.Subtract(data[i], _featureMeans[i]);
+                            normalized[i] = _numericOps.Divide(diff, _featureStdDevs[i]);
                         }
                         else
                         {
@@ -438,14 +463,15 @@ namespace AiDotNet.MultimodalAI.Encoders
                     case NormalizationMethod.MinMax:
                         if (_statisticsComputed && i < _featureMaxs.Length)
                         {
-                            double range = _featureMaxs[i] - _featureMins[i];
-                            if (range > 0)
+                            T range = _numericOps.Subtract(_featureMaxs[i], _featureMins[i]);
+                            if (_numericOps.GreaterThan(range, _numericOps.Zero))
                             {
-                                normalized[i] = (data[i] - _featureMins[i]) / range;
+                                T diff = _numericOps.Subtract(data[i], _featureMins[i]);
+                                normalized[i] = _numericOps.Divide(diff, range);
                             }
                             else
                             {
-                                normalized[i] = 0.5; // Center if no range
+                                normalized[i] = _numericOps.FromDouble(0.5); // Center if no range
                             }
                         }
                         else
@@ -456,7 +482,9 @@ namespace AiDotNet.MultimodalAI.Encoders
 
                     case NormalizationMethod.Robust:
                         // Simplified robust scaling using median and IQR approximation
-                        normalized[i] = data[i] / (1 + Math.Abs(data[i]));
+                        T absValue = !_numericOps.LessThan(data[i], _numericOps.Zero) ? data[i] : _numericOps.Negate(data[i]);
+                        T denominator = _numericOps.Add(_numericOps.One, absValue);
+                        normalized[i] = _numericOps.Divide(data[i], denominator);
                         break;
 
                     default:
@@ -488,54 +516,77 @@ namespace AiDotNet.MultimodalAI.Encoders
         }
 
         /// <summary>
-        /// Fits the encoder to training data (for learning statistics)
+        /// Trains the encoder on training data (for learning statistics)
         /// </summary>
-        public void Fit(double[][] trainingData)
+        public void Train(Vector<T>[] trainingData)
         {
             if (trainingData == null || trainingData.Length == 0)
                 return;
 
             int numFeatures = trainingData[0].Length;
-            _featureMeans = new double[numFeatures];
-            _featureStdDevs = new double[numFeatures];
-            _featureMins = new double[numFeatures];
-            _featureMaxs = new double[numFeatures];
+            _featureMeans = new T[numFeatures];
+            _featureStdDevs = new T[numFeatures];
+            _featureMins = new T[numFeatures];
+            _featureMaxs = new T[numFeatures];
 
             // Initialize min/max
             for (int i = 0; i < numFeatures; i++)
             {
-                _featureMins[i] = double.MaxValue;
-                _featureMaxs[i] = double.MinValue;
+                _featureMins[i] = _numericOps.FromDouble(double.MaxValue);
+                _featureMaxs[i] = _numericOps.FromDouble(double.MinValue);
             }
 
             // Compute means and min/max
+            var tempMeans = new T[numFeatures];
+            var tempMins = new T[numFeatures];
+            var tempMaxs = new T[numFeatures];
+            
+            for (int i = 0; i < numFeatures; i++)
+            {
+                tempMins[i] = _numericOps.FromDouble(double.MaxValue);
+                tempMaxs[i] = _numericOps.FromDouble(double.MinValue);
+                tempMeans[i] = _numericOps.Zero;
+            }
+
             foreach (var sample in trainingData)
             {
                 for (int i = 0; i < numFeatures && i < sample.Length; i++)
                 {
-                    _featureMeans[i] += sample[i];
-                    _featureMins[i] = Math.Min(_featureMins[i], sample[i]);
-                    _featureMaxs[i] = Math.Max(_featureMaxs[i], sample[i]);
+                    tempMeans[i] = _numericOps.Add(tempMeans[i], sample[i]);
+                    if (_numericOps.LessThan(sample[i], tempMins[i]))
+                        tempMins[i] = sample[i];
+                    if (_numericOps.GreaterThan(sample[i], tempMaxs[i]))
+                        tempMaxs[i] = sample[i];
                 }
             }
 
             for (int i = 0; i < numFeatures; i++)
             {
-                _featureMeans[i] /= trainingData.Length;
+                _featureMeans[i] = _numericOps.Divide(tempMeans[i], _numericOps.FromDouble(trainingData.Length));
+                _featureMins[i] = tempMins[i];
+                _featureMaxs[i] = tempMaxs[i];
             }
 
             // Compute standard deviations
+            var tempStdDevs = new T[numFeatures];
+            for (int i = 0; i < numFeatures; i++)
+            {
+                tempStdDevs[i] = _numericOps.Zero;
+            }
+
             foreach (var sample in trainingData)
             {
                 for (int i = 0; i < numFeatures && i < sample.Length; i++)
                 {
-                    _featureStdDevs[i] += Math.Pow(sample[i] - _featureMeans[i], 2);
+                    T diff = _numericOps.Subtract(sample[i], _featureMeans[i]);
+                    tempStdDevs[i] = _numericOps.Add(tempStdDevs[i], _numericOps.Multiply(diff, diff));
                 }
             }
 
             for (int i = 0; i < numFeatures; i++)
             {
-                _featureStdDevs[i] = Math.Sqrt(_featureStdDevs[i] / trainingData.Length);
+                T variance = _numericOps.Divide(tempStdDevs[i], _numericOps.FromDouble(trainingData.Length));
+                _featureStdDevs[i] = _numericOps.Sqrt(variance);
             }
 
             _statisticsComputed = true;

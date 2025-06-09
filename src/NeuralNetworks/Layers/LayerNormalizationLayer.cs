@@ -497,8 +497,8 @@ public class LayerNormalizationLayer<T> : LayerBase<T>
             throw new ArgumentException("Source layer has incompatible dimensions");
         }
 
-        _gamma = source._gamma.Clone();
-        _beta = source._beta.Clone();
+        _gamma = (Vector<T>)source._gamma.Clone();
+        _beta = (Vector<T>)source._beta.Clone();
     }
 
     /// <summary>

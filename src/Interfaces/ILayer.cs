@@ -1,3 +1,5 @@
+global using System.Collections.Generic;
+
 namespace AiDotNet.Interfaces;
 
 /// <summary>

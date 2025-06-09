@@ -2,13 +2,15 @@ using System;
 using System.Linq;
 using AiDotNet.LinearAlgebra;
 using AiDotNet.Helpers;
+using AiDotNet.Interfaces;
 
 namespace AiDotNet.MultimodalAI.Encoders
 {
     /// <summary>
     /// Audio-specific modality encoder for processing audio data
     /// </summary>
-    public class AudioModalityEncoder : ModalityEncoderBase
+    /// <typeparam name="T">The numeric type used for calculations</typeparam>
+    public class AudioModalityEncoder<T> : ModalityEncoderBase<T>
     {
         private readonly int _sampleRate;
         private readonly int _frameSize;
@@ -21,9 +23,10 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <param name="sampleRate">Sample rate of audio data (default: 16000)</param>
         /// <param name="frameSize">Frame size for feature extraction (default: 512)</param>
         /// <param name="useSpectralFeatures">Whether to extract spectral features (default: true)</param>
+        /// <param name="encoder">Optional custom neural network encoder. If null, a default encoder will be created when needed.</param>
         public AudioModalityEncoder(int outputDimension = 256, int sampleRate = 16000, 
-            int frameSize = 512, bool useSpectralFeatures = true) 
-            : base("Audio", outputDimension)
+            int frameSize = 512, bool useSpectralFeatures = true, INeuralNetworkModel<T>? encoder = null) 
+            : base("Audio", outputDimension, encoder)
         {
             _sampleRate = sampleRate;
             _frameSize = frameSize;
@@ -33,9 +36,9 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Encodes audio data into a vector representation
         /// </summary>
-        /// <param name="input">Audio data as double[], float[], or Tensor<double></param>
+        /// <param name="input">Audio data as double[], float[], or Tensor</param>
         /// <returns>Encoded vector representation</returns>
-        public override Vector<double> Encode(object input)
+        public override Vector<T> Encode(object input)
         {
             if (!ValidateInput(input))
             {
@@ -44,7 +47,7 @@ namespace AiDotNet.MultimodalAI.Encoders
 
             // Preprocess the input
             var preprocessed = Preprocess(input);
-            var audioData = preprocessed as double[] ?? throw new InvalidOperationException("Preprocessing failed");
+            var audioData = preprocessed as T[] ?? throw new InvalidOperationException("Preprocessing failed");
 
             // Extract features
             var features = ExtractAudioFeatures(audioData);
@@ -64,21 +67,30 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// </summary>
         public override object Preprocess(object input)
         {
-            double[] audioData;
+            T[] audioData;
 
             switch (input)
             {
+                case T[] genericArray:
+                    audioData = (T[])genericArray.Clone();
+                    break;
                 case double[] doubleArray:
-                    audioData = doubleArray;
+                    audioData = doubleArray.Select(d => _numericOps.FromDouble(d)).ToArray();
                     break;
                 case float[] floatArray:
-                    audioData = floatArray.Select(f => (double)f).ToArray();
+                    audioData = floatArray.Select(f => _numericOps.FromDouble(f)).ToArray();
                     break;
-                case Tensor<double> tensor:
+                case int[] intArray:
+                    audioData = intArray.Select(i => _numericOps.FromDouble(i)).ToArray();
+                    break;
+                case Tensor<T> tensor:
                     audioData = tensor.ToArray();
                     break;
+                case Tensor<double> doubleTensor:
+                    audioData = doubleTensor.ToArray().Select(d => _numericOps.FromDouble(d)).ToArray();
+                    break;
                 case Tensor<float> floatTensor:
-                    audioData = floatTensor.ToArray().Select(f => (double)f).ToArray();
+                    audioData = floatTensor.ToArray().Select(f => _numericOps.FromDouble(f)).ToArray();
                     break;
                 default:
                     throw new ArgumentException($"Unsupported input type: {input?.GetType()?.Name ?? "null"}");
@@ -90,7 +102,7 @@ namespace AiDotNet.MultimodalAI.Encoders
             
             if (_useSpectralFeatures)
             {
-                audioData = ApplyPreEmphasis(audioData, 0.97);
+                audioData = ApplyPreEmphasis(audioData, _numericOps.FromDouble(0.97));
             }
 
             return audioData;
@@ -101,16 +113,16 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// </summary>
         protected override bool ValidateInput(object input)
         {
-            return input is double[] || input is float[] || 
-                   input is Tensor<double> || input is Tensor<float>;
+            return input is T[] || input is double[] || input is float[] || input is int[] ||
+                   input is Tensor<T> || input is Tensor<double> || input is Tensor<float>;
         }
 
         /// <summary>
         /// Extracts audio features from preprocessed data
         /// </summary>
-        private Vector<double> ExtractAudioFeatures(double[] audioData)
+        private Vector<T> ExtractAudioFeatures(T[] audioData)
         {
-            var features = new System.Collections.Generic.List<double>();
+            var features = new System.Collections.Generic.List<T>();
 
             // Time domain features
             features.AddRange(ExtractTimeDomainFeatures(audioData));
@@ -124,30 +136,30 @@ namespace AiDotNet.MultimodalAI.Encoders
             // Statistical features
             features.AddRange(ExtractStatisticalFeatures(audioData));
 
-            return new Vector<double>(features.ToArray());
+            return new Vector<T>(features.ToArray());
         }
 
         /// <summary>
         /// Extracts time domain features
         /// </summary>
-        private double[] ExtractTimeDomainFeatures(double[] audioData)
+        private T[] ExtractTimeDomainFeatures(T[] audioData)
         {
-            var features = new System.Collections.Generic.List<double>();
+            var features = new System.Collections.Generic.List<T>();
 
             // Zero Crossing Rate
-            double zcr = CalculateZeroCrossingRate(audioData);
+            T zcr = CalculateZeroCrossingRate(audioData);
             features.Add(zcr);
 
             // Energy
-            double energy = audioData.Sum(x => x * x) / audioData.Length;
+            T energy = ComputeEnergy(audioData);
             features.Add(energy);
 
             // Root Mean Square
-            double rms = Math.Sqrt(energy);
+            T rms = _numericOps.Sqrt(energy);
             features.Add(rms);
 
             // Peak amplitude
-            double peak = audioData.Max(Math.Abs);
+            T peak = ComputePeakAmplitude(audioData);
             features.Add(peak);
 
             return features.ToArray();
@@ -156,9 +168,9 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Extracts spectral features using basic FFT
         /// </summary>
-        private double[] ExtractSpectralFeatures(double[] audioData)
+        private T[] ExtractSpectralFeatures(T[] audioData)
         {
-            var features = new System.Collections.Generic.List<double>();
+            var features = new System.Collections.Generic.List<T>();
 
             // Simple spectral analysis (placeholder for full FFT)
             // In production, you would use a proper FFT library
@@ -166,15 +178,15 @@ namespace AiDotNet.MultimodalAI.Encoders
             var spectrum = ComputeSimpleSpectrum(audioData, numBins);
 
             // Spectral centroid
-            double centroid = CalculateSpectralCentroid(spectrum);
+            T centroid = CalculateSpectralCentroid(spectrum);
             features.Add(centroid);
 
             // Spectral spread
-            double spread = CalculateSpectralSpread(spectrum, centroid);
+            T spread = CalculateSpectralSpread(spectrum, centroid);
             features.Add(spread);
 
             // Spectral flux
-            double flux = CalculateSpectralFlux(spectrum);
+            T flux = CalculateSpectralFlux(spectrum);
             features.Add(flux);
 
             // Add spectral bins (reduced set)
@@ -186,24 +198,58 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Extracts statistical features
         /// </summary>
-        private double[] ExtractStatisticalFeatures(double[] audioData)
+        private T[] ExtractStatisticalFeatures(T[] audioData)
         {
-            var features = new System.Collections.Generic.List<double>();
+            var features = new System.Collections.Generic.List<T>();
 
             // Mean
-            double mean = audioData.Average();
+            T sum = _numericOps.Zero;
+            foreach (var value in audioData)
+            {
+                sum = _numericOps.Add(sum, value);
+            }
+            T mean = _numericOps.Divide(sum, _numericOps.FromDouble(audioData.Length));
             features.Add(mean);
 
             // Standard deviation
-            double stdDev = Math.Sqrt(audioData.Select(x => Math.Pow(x - mean, 2)).Average());
+            T varianceSum = _numericOps.Zero;
+            foreach (var value in audioData)
+            {
+                T diff = _numericOps.Subtract(value, mean);
+                varianceSum = _numericOps.Add(varianceSum, _numericOps.Multiply(diff, diff));
+            }
+            T variance = _numericOps.Divide(varianceSum, _numericOps.FromDouble(audioData.Length));
+            T stdDev = _numericOps.Sqrt(variance);
             features.Add(stdDev);
 
-            // Skewness
-            double skewness = audioData.Select(x => Math.Pow((x - mean) / stdDev, 3)).Average();
+            // Simplified skewness (third moment)
+            T skewnessSum = _numericOps.Zero;
+            foreach (var value in audioData)
+            {
+                T diff = _numericOps.Subtract(value, mean);
+                T normalizedDiff = _numericOps.GreaterThan(stdDev, _numericOps.Zero) 
+                    ? _numericOps.Divide(diff, stdDev) 
+                    : _numericOps.Zero;
+                skewnessSum = _numericOps.Add(skewnessSum, 
+                    _numericOps.Multiply(_numericOps.Multiply(normalizedDiff, normalizedDiff), normalizedDiff));
+            }
+            T skewness = _numericOps.Divide(skewnessSum, _numericOps.FromDouble(audioData.Length));
             features.Add(skewness);
 
-            // Kurtosis
-            double kurtosis = audioData.Select(x => Math.Pow((x - mean) / stdDev, 4)).Average() - 3;
+            // Simplified kurtosis (fourth moment - 3)
+            T kurtosisSum = _numericOps.Zero;
+            foreach (var value in audioData)
+            {
+                T diff = _numericOps.Subtract(value, mean);
+                T normalizedDiff = _numericOps.GreaterThan(stdDev, _numericOps.Zero) 
+                    ? _numericOps.Divide(diff, stdDev) 
+                    : _numericOps.Zero;
+                T fourth = _numericOps.Multiply(_numericOps.Multiply(normalizedDiff, normalizedDiff), 
+                                              _numericOps.Multiply(normalizedDiff, normalizedDiff));
+                kurtosisSum = _numericOps.Add(kurtosisSum, fourth);
+            }
+            T kurtosis = _numericOps.Subtract(_numericOps.Divide(kurtosisSum, _numericOps.FromDouble(audioData.Length)), 
+                                            _numericOps.FromDouble(3));
             features.Add(kurtosis);
 
             return features.ToArray();
@@ -212,12 +258,12 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Projects features to the desired output dimension
         /// </summary>
-        private Vector<double> ProjectToOutputDimension(Vector<double> features)
+        private Vector<T> ProjectToOutputDimension(Vector<T> features)
         {
             if (features.Length == OutputDimension)
                 return features;
 
-            var result = new double[OutputDimension];
+            var result = new T[OutputDimension];
 
             if (features.Length > OutputDimension)
             {
@@ -227,12 +273,12 @@ namespace AiDotNet.MultimodalAI.Encoders
                 {
                     int start = i * groupSize;
                     int end = Math.Min(start + groupSize, features.Length);
-                    double sum = 0;
+                    T sum = _numericOps.Zero;
                     for (int j = start; j < end; j++)
                     {
-                        sum += features[j];
+                        sum = _numericOps.Add(sum, features[j]);
                     }
-                    result[i] = sum / (end - start);
+                    result[i] = _numericOps.Divide(sum, _numericOps.FromDouble(end - start));
                 }
             }
             else
@@ -245,31 +291,46 @@ namespace AiDotNet.MultimodalAI.Encoders
                     int lower = (int)pos;
                     int upper = Math.Min(lower + 1, features.Length - 1);
                     double frac = pos - lower;
-                    result[i] = features[lower] * (1 - frac) + features[upper] * frac;
+                    
+                    T lowerValue = features[lower];
+                    T upperValue = features[upper];
+                    T fracT = _numericOps.FromDouble(frac);
+                    T oneFrac = _numericOps.FromDouble(1 - frac);
+                    
+                    result[i] = _numericOps.Add(
+                        _numericOps.Multiply(lowerValue, oneFrac),
+                        _numericOps.Multiply(upperValue, fracT)
+                    );
                 }
             }
 
-            return new Vector<double>(result);
+            return new Vector<T>(result);
         }
 
         /// <summary>
         /// Removes DC offset from audio signal
         /// </summary>
-        private double[] RemoveDCOffset(double[] audio)
+        private T[] RemoveDCOffset(T[] audio)
         {
-            double mean = audio.Average();
-            return audio.Select(x => x - mean).ToArray();
+            T sum = _numericOps.Zero;
+            foreach (var sample in audio)
+            {
+                sum = _numericOps.Add(sum, sample);
+            }
+            T mean = _numericOps.Divide(sum, _numericOps.FromDouble(audio.Length));
+            
+            return audio.Select(x => _numericOps.Subtract(x, mean)).ToArray();
         }
 
         /// <summary>
         /// Normalizes audio amplitude to [-1, 1] range
         /// </summary>
-        private double[] NormalizeAmplitude(double[] audio)
+        private T[] NormalizeAmplitude(T[] audio)
         {
-            double maxAbs = audio.Max(Math.Abs);
-            if (maxAbs > 0)
+            T maxAbs = ComputePeakAmplitude(audio);
+            if (_numericOps.GreaterThan(maxAbs, _numericOps.Zero))
             {
-                return audio.Select(x => x / maxAbs).ToArray();
+                return audio.Select(x => _numericOps.Divide(x, maxAbs)).ToArray();
             }
             return audio;
         }
@@ -277,13 +338,13 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Applies pre-emphasis filter
         /// </summary>
-        private double[] ApplyPreEmphasis(double[] audio, double coefficient)
+        private T[] ApplyPreEmphasis(T[] audio, T coefficient)
         {
-            var result = new double[audio.Length];
+            var result = new T[audio.Length];
             result[0] = audio[0];
             for (int i = 1; i < audio.Length; i++)
             {
-                result[i] = audio[i] - coefficient * audio[i - 1];
+                result[i] = _numericOps.Subtract(audio[i], _numericOps.Multiply(coefficient, audio[i - 1]));
             }
             return result;
         }
@@ -291,37 +352,40 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Calculates zero crossing rate
         /// </summary>
-        private double CalculateZeroCrossingRate(double[] audio)
+        private T CalculateZeroCrossingRate(T[] audio)
         {
             int crossings = 0;
             for (int i = 1; i < audio.Length; i++)
             {
-                if (Math.Sign(audio[i]) != Math.Sign(audio[i - 1]))
+                bool currentPositive = !_numericOps.LessThan(audio[i], _numericOps.Zero);
+                bool previousPositive = !_numericOps.LessThan(audio[i - 1], _numericOps.Zero);
+                if (currentPositive != previousPositive)
                 {
                     crossings++;
                 }
             }
-            return (double)crossings / (audio.Length - 1);
+            return _numericOps.Divide(_numericOps.FromDouble(crossings), _numericOps.FromDouble(audio.Length - 1));
         }
 
         /// <summary>
         /// Computes a simple spectrum (placeholder for FFT)
         /// </summary>
-        private double[] ComputeSimpleSpectrum(double[] audio, int numBins)
+        private T[] ComputeSimpleSpectrum(T[] audio, int numBins)
         {
-            var spectrum = new double[numBins];
+            var spectrum = new T[numBins];
             int windowSize = audio.Length / numBins;
 
             for (int i = 0; i < numBins; i++)
             {
                 int start = i * windowSize;
                 int end = Math.Min(start + windowSize, audio.Length);
-                double energy = 0;
+                T energy = _numericOps.Zero;
                 for (int j = start; j < end; j++)
                 {
-                    energy += audio[j] * audio[j];
+                    energy = _numericOps.Add(energy, _numericOps.Multiply(audio[j], audio[j]));
                 }
-                spectrum[i] = Math.Sqrt(energy / (end - start));
+                T avgEnergy = _numericOps.Divide(energy, _numericOps.FromDouble(end - start));
+                spectrum[i] = _numericOps.Sqrt(avgEnergy);
             }
 
             return spectrum;
@@ -330,45 +394,85 @@ namespace AiDotNet.MultimodalAI.Encoders
         /// <summary>
         /// Calculates spectral centroid
         /// </summary>
-        private double CalculateSpectralCentroid(double[] spectrum)
+        private T CalculateSpectralCentroid(T[] spectrum)
         {
-            double weightedSum = 0;
-            double magnitudeSum = 0;
+            T weightedSum = _numericOps.Zero;
+            T magnitudeSum = _numericOps.Zero;
 
             for (int i = 0; i < spectrum.Length; i++)
             {
-                weightedSum += i * spectrum[i];
-                magnitudeSum += spectrum[i];
+                T weighted = _numericOps.Multiply(_numericOps.FromDouble(i), spectrum[i]);
+                weightedSum = _numericOps.Add(weightedSum, weighted);
+                magnitudeSum = _numericOps.Add(magnitudeSum, spectrum[i]);
             }
 
-            return magnitudeSum > 0 ? weightedSum / magnitudeSum : 0;
+            return _numericOps.GreaterThan(magnitudeSum, _numericOps.Zero) 
+                ? _numericOps.Divide(weightedSum, magnitudeSum) 
+                : _numericOps.Zero;
         }
 
         /// <summary>
         /// Calculates spectral spread
         /// </summary>
-        private double CalculateSpectralSpread(double[] spectrum, double centroid)
+        private T CalculateSpectralSpread(T[] spectrum, T centroid)
         {
-            double weightedVariance = 0;
-            double magnitudeSum = 0;
+            T weightedVariance = _numericOps.Zero;
+            T magnitudeSum = _numericOps.Zero;
 
             for (int i = 0; i < spectrum.Length; i++)
             {
-                double deviation = i - centroid;
-                weightedVariance += deviation * deviation * spectrum[i];
-                magnitudeSum += spectrum[i];
+                T deviation = _numericOps.Subtract(_numericOps.FromDouble(i), centroid);
+                T deviationSquared = _numericOps.Multiply(deviation, deviation);
+                T weighted = _numericOps.Multiply(deviationSquared, spectrum[i]);
+                weightedVariance = _numericOps.Add(weightedVariance, weighted);
+                magnitudeSum = _numericOps.Add(magnitudeSum, spectrum[i]);
             }
 
-            return magnitudeSum > 0 ? Math.Sqrt(weightedVariance / magnitudeSum) : 0;
+            return _numericOps.GreaterThan(magnitudeSum, _numericOps.Zero) 
+                ? _numericOps.Sqrt(_numericOps.Divide(weightedVariance, magnitudeSum))
+                : _numericOps.Zero;
         }
 
         /// <summary>
         /// Calculates spectral flux
         /// </summary>
-        private double CalculateSpectralFlux(double[] spectrum)
+        private T CalculateSpectralFlux(T[] spectrum)
         {
             // For a single frame, return the sum of squared magnitudes
-            return spectrum.Sum(x => x * x);
+            T sum = _numericOps.Zero;
+            foreach (var value in spectrum)
+            {
+                sum = _numericOps.Add(sum, _numericOps.Multiply(value, value));
+            }
+            return sum;
+        }
+
+        /// <summary>
+        /// Computes energy of the audio signal
+        /// </summary>
+        private T ComputeEnergy(T[] audioData)
+        {
+            T sum = _numericOps.Zero;
+            foreach (var sample in audioData)
+            {
+                sum = _numericOps.Add(sum, _numericOps.Multiply(sample, sample));
+            }
+            return _numericOps.Divide(sum, _numericOps.FromDouble(audioData.Length));
+        }
+
+        /// <summary>
+        /// Computes peak amplitude of the audio signal
+        /// </summary>
+        private T ComputePeakAmplitude(T[] audioData)
+        {
+            T max = _numericOps.Zero;
+            foreach (var sample in audioData)
+            {
+                T abs = !_numericOps.LessThan(sample, _numericOps.Zero) ? sample : _numericOps.Negate(sample);
+                if (_numericOps.GreaterThan(abs, max))
+                    max = abs;
+            }
+            return max;
         }
     }
 }

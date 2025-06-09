@@ -1202,7 +1202,7 @@ public class UnobservedComponentsModel<T, TInput, TOutput> : TimeSeriesModelBase
     protected override void TrainCore(Matrix<T> x, Vector<T> y)
     {
         // Save the original time series data
-        _y = y.Clone();
+        _y = (Vector<T>)y.Clone();
         int n = _y.Length;
     
         if (n < 2)
@@ -1220,7 +1220,7 @@ public class UnobservedComponentsModel<T, TInput, TOutput> : TimeSeriesModelBase
         InitializeComponents(_y);
     
         // Save initial trend estimates for convergence checking
-        _previousTrend = _trend.Clone();
+        _previousTrend = (Vector<T>)_trend.Clone();
     
         // Initialize Kalman filter parameters
         InitializeKalmanParameters();
@@ -1730,10 +1730,10 @@ public class UnobservedComponentsModel<T, TInput, TOutput> : TimeSeriesModelBase
     
         Dictionary<string, Vector<T>> components = new Dictionary<string, Vector<T>>
         {
-            ["Trend"] = _trend.Clone(),
-            ["Seasonal"] = _seasonal.Clone(),
-            ["Cycle"] = _cycle.Clone(),
-            ["Irregular"] = _irregular.Clone()
+            ["Trend"] = (Vector<T>)_trend.Clone(),
+            ["Seasonal"] = (Vector<T>)_seasonal.Clone(),
+            ["Cycle"] = (Vector<T>)_cycle.Clone(),
+            ["Irregular"] = (Vector<T>)_irregular.Clone()
         };
     
         return components;
