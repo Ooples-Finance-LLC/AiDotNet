@@ -45,6 +45,94 @@ else
     FILE_MOD_AVAILABLE=false
 fi
 
+# Source file modification library
+if [[ -f "$SCRIPT_DIR/state/dev_core/file_modifier.sh" ]]; then
+    source "$SCRIPT_DIR/state/dev_core/file_modifier.sh"
+    FILE_MOD_AVAILABLE=true
+else
+    FILE_MOD_AVAILABLE=false
+fi
+
+# Source file modification library
+if [[ -f "$SCRIPT_DIR/state/dev_core/file_modifier.sh" ]]; then
+    source "$SCRIPT_DIR/state/dev_core/file_modifier.sh"
+    FILE_MOD_AVAILABLE=true
+else
+    FILE_MOD_AVAILABLE=false
+fi
+
+# Source file modification library
+if [[ -f "$SCRIPT_DIR/state/dev_core/file_modifier.sh" ]]; then
+    source "$SCRIPT_DIR/state/dev_core/file_modifier.sh"
+    FILE_MOD_AVAILABLE=true
+else
+    FILE_MOD_AVAILABLE=false
+fi
+
+# Source file modification library
+if [[ -f "$SCRIPT_DIR/state/dev_core/file_modifier.sh" ]]; then
+    source "$SCRIPT_DIR/state/dev_core/file_modifier.sh"
+    FILE_MOD_AVAILABLE=true
+else
+    FILE_MOD_AVAILABLE=false
+fi
+
+# Source file modification library
+if [[ -f "$SCRIPT_DIR/state/dev_core/file_modifier.sh" ]]; then
+    source "$SCRIPT_DIR/state/dev_core/file_modifier.sh"
+    FILE_MOD_AVAILABLE=true
+else
+    FILE_MOD_AVAILABLE=false
+fi
+
+# Source file modification library
+if [[ -f "$SCRIPT_DIR/state/dev_core/file_modifier.sh" ]]; then
+    source "$SCRIPT_DIR/state/dev_core/file_modifier.sh"
+    FILE_MOD_AVAILABLE=true
+else
+    FILE_MOD_AVAILABLE=false
+fi
+
+# Source file modification library
+if [[ -f "$SCRIPT_DIR/state/dev_core/file_modifier.sh" ]]; then
+    source "$SCRIPT_DIR/state/dev_core/file_modifier.sh"
+    FILE_MOD_AVAILABLE=true
+else
+    FILE_MOD_AVAILABLE=false
+fi
+
+# Source file modification library
+if [[ -f "$SCRIPT_DIR/state/dev_core/file_modifier.sh" ]]; then
+    source "$SCRIPT_DIR/state/dev_core/file_modifier.sh"
+    FILE_MOD_AVAILABLE=true
+else
+    FILE_MOD_AVAILABLE=false
+fi
+
+# Source file modification library
+if [[ -f "$SCRIPT_DIR/state/dev_core/file_modifier.sh" ]]; then
+    source "$SCRIPT_DIR/state/dev_core/file_modifier.sh"
+    FILE_MOD_AVAILABLE=true
+else
+    FILE_MOD_AVAILABLE=false
+fi
+
+# Source file modification library
+if [[ -f "$SCRIPT_DIR/state/dev_core/file_modifier.sh" ]]; then
+    source "$SCRIPT_DIR/state/dev_core/file_modifier.sh"
+    FILE_MOD_AVAILABLE=true
+else
+    FILE_MOD_AVAILABLE=false
+fi
+
+# Source file modification library
+if [[ -f "$SCRIPT_DIR/state/dev_core/file_modifier.sh" ]]; then
+    source "$SCRIPT_DIR/state/dev_core/file_modifier.sh"
+    FILE_MOD_AVAILABLE=true
+else
+    FILE_MOD_AVAILABLE=false
+fi
+
 # Agent configuration (passed as arguments)
 AGENT_ID="${1:-generic_agent}"
 AGENT_SPEC_FILE="${2:-$SCRIPT_DIR/agent_specifications.json}"
@@ -383,6 +471,17 @@ resolve_generic_constraints() {
 # Enhanced resolve_error function with actual file modification
 # Enhanced resolve_error function with actual file modification
 # Enhanced resolve_error function with actual file modification
+# Enhanced resolve_error function with actual file modification
+# Enhanced resolve_error function with actual file modification
+# Enhanced resolve_error function with actual file modification
+# Enhanced resolve_error function with actual file modification
+# Enhanced resolve_error function with actual file modification
+# Enhanced resolve_error function with actual file modification
+# Enhanced resolve_error function with actual file modification
+# Enhanced resolve_error function with actual file modification
+# Enhanced resolve_error function with actual file modification
+# Enhanced resolve_error function with actual file modification
+# Enhanced resolve_error function with actual file modification
 resolve_error() {
     local file_path="$1"
     local error_code="$2"
@@ -599,9 +698,438 @@ update_build_status() {
         mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
     fi
 }
+find_using_for_type() {
+    local type="$1"
+    
+    # Common .NET type mappings
+    case "$type" in
+        "List"|"Dictionary"|"HashSet"|"Queue"|"Stack")
+            echo "System.Collections.Generic"
+            ;;
+        "File"|"Directory"|"Path")
+            echo "System.IO"
+            ;;
+        "Task"|"TaskFactory")
+            echo "System.Threading.Tasks"
+            ;;
+        "Regex"|"Match")
+            echo "System.Text.RegularExpressions"
+            ;;
+        "HttpClient"|"HttpResponseMessage")
+            echo "System.Net.Http"
+            ;;
+        *)
+            # Try to find in project
+            local found=$(grep -r "namespace.*$type" "$PROJECT_DIR" 2>/dev/null | head -1 | sed 's/.*namespace //' | sed 's/ .*//')
+            echo "$found"
+            ;;
+    esac
+}
+
+# Update build status after fix
+update_build_status() {
+    local file_path="$1"
+    local error_code="$2"
+    
+    # Remove fixed error from build output
+    if [[ -f "$BUILD_OUTPUT_FILE" ]]; then
+        grep -v "$file_path.*$error_code" "$BUILD_OUTPUT_FILE" > "$BUILD_OUTPUT_FILE.tmp" || true
+        mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
+    fi
+}
+find_using_for_type() {
+    local type="$1"
+    
+    # Common .NET type mappings
+    case "$type" in
+        "List"|"Dictionary"|"HashSet"|"Queue"|"Stack")
+            echo "System.Collections.Generic"
+            ;;
+        "File"|"Directory"|"Path")
+            echo "System.IO"
+            ;;
+        "Task"|"TaskFactory")
+            echo "System.Threading.Tasks"
+            ;;
+        "Regex"|"Match")
+            echo "System.Text.RegularExpressions"
+            ;;
+        "HttpClient"|"HttpResponseMessage")
+            echo "System.Net.Http"
+            ;;
+        *)
+            # Try to find in project
+            local found=$(grep -r "namespace.*$type" "$PROJECT_DIR" 2>/dev/null | head -1 | sed 's/.*namespace //' | sed 's/ .*//')
+            echo "$found"
+            ;;
+    esac
+}
+
+# Update build status after fix
+update_build_status() {
+    local file_path="$1"
+    local error_code="$2"
+    
+    # Remove fixed error from build output
+    if [[ -f "$BUILD_OUTPUT_FILE" ]]; then
+        grep -v "$file_path.*$error_code" "$BUILD_OUTPUT_FILE" > "$BUILD_OUTPUT_FILE.tmp" || true
+        mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
+    fi
+}
+find_using_for_type() {
+    local type="$1"
+    
+    # Common .NET type mappings
+    case "$type" in
+        "List"|"Dictionary"|"HashSet"|"Queue"|"Stack")
+            echo "System.Collections.Generic"
+            ;;
+        "File"|"Directory"|"Path")
+            echo "System.IO"
+            ;;
+        "Task"|"TaskFactory")
+            echo "System.Threading.Tasks"
+            ;;
+        "Regex"|"Match")
+            echo "System.Text.RegularExpressions"
+            ;;
+        "HttpClient"|"HttpResponseMessage")
+            echo "System.Net.Http"
+            ;;
+        *)
+            # Try to find in project
+            local found=$(grep -r "namespace.*$type" "$PROJECT_DIR" 2>/dev/null | head -1 | sed 's/.*namespace //' | sed 's/ .*//')
+            echo "$found"
+            ;;
+    esac
+}
+
+# Update build status after fix
+update_build_status() {
+    local file_path="$1"
+    local error_code="$2"
+    
+    # Remove fixed error from build output
+    if [[ -f "$BUILD_OUTPUT_FILE" ]]; then
+        grep -v "$file_path.*$error_code" "$BUILD_OUTPUT_FILE" > "$BUILD_OUTPUT_FILE.tmp" || true
+        mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
+    fi
+}
+find_using_for_type() {
+    local type="$1"
+    
+    # Common .NET type mappings
+    case "$type" in
+        "List"|"Dictionary"|"HashSet"|"Queue"|"Stack")
+            echo "System.Collections.Generic"
+            ;;
+        "File"|"Directory"|"Path")
+            echo "System.IO"
+            ;;
+        "Task"|"TaskFactory")
+            echo "System.Threading.Tasks"
+            ;;
+        "Regex"|"Match")
+            echo "System.Text.RegularExpressions"
+            ;;
+        "HttpClient"|"HttpResponseMessage")
+            echo "System.Net.Http"
+            ;;
+        *)
+            # Try to find in project
+            local found=$(grep -r "namespace.*$type" "$PROJECT_DIR" 2>/dev/null | head -1 | sed 's/.*namespace //' | sed 's/ .*//')
+            echo "$found"
+            ;;
+    esac
+}
+
+# Update build status after fix
+update_build_status() {
+    local file_path="$1"
+    local error_code="$2"
+    
+    # Remove fixed error from build output
+    if [[ -f "$BUILD_OUTPUT_FILE" ]]; then
+        grep -v "$file_path.*$error_code" "$BUILD_OUTPUT_FILE" > "$BUILD_OUTPUT_FILE.tmp" || true
+        mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
+    fi
+}
+find_using_for_type() {
+    local type="$1"
+    
+    # Common .NET type mappings
+    case "$type" in
+        "List"|"Dictionary"|"HashSet"|"Queue"|"Stack")
+            echo "System.Collections.Generic"
+            ;;
+        "File"|"Directory"|"Path")
+            echo "System.IO"
+            ;;
+        "Task"|"TaskFactory")
+            echo "System.Threading.Tasks"
+            ;;
+        "Regex"|"Match")
+            echo "System.Text.RegularExpressions"
+            ;;
+        "HttpClient"|"HttpResponseMessage")
+            echo "System.Net.Http"
+            ;;
+        *)
+            # Try to find in project
+            local found=$(grep -r "namespace.*$type" "$PROJECT_DIR" 2>/dev/null | head -1 | sed 's/.*namespace //' | sed 's/ .*//')
+            echo "$found"
+            ;;
+    esac
+}
+
+# Update build status after fix
+update_build_status() {
+    local file_path="$1"
+    local error_code="$2"
+    
+    # Remove fixed error from build output
+    if [[ -f "$BUILD_OUTPUT_FILE" ]]; then
+        grep -v "$file_path.*$error_code" "$BUILD_OUTPUT_FILE" > "$BUILD_OUTPUT_FILE.tmp" || true
+        mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
+    fi
+}
+find_using_for_type() {
+    local type="$1"
+    
+    # Common .NET type mappings
+    case "$type" in
+        "List"|"Dictionary"|"HashSet"|"Queue"|"Stack")
+            echo "System.Collections.Generic"
+            ;;
+        "File"|"Directory"|"Path")
+            echo "System.IO"
+            ;;
+        "Task"|"TaskFactory")
+            echo "System.Threading.Tasks"
+            ;;
+        "Regex"|"Match")
+            echo "System.Text.RegularExpressions"
+            ;;
+        "HttpClient"|"HttpResponseMessage")
+            echo "System.Net.Http"
+            ;;
+        *)
+            # Try to find in project
+            local found=$(grep -r "namespace.*$type" "$PROJECT_DIR" 2>/dev/null | head -1 | sed 's/.*namespace //' | sed 's/ .*//')
+            echo "$found"
+            ;;
+    esac
+}
+
+# Update build status after fix
+update_build_status() {
+    local file_path="$1"
+    local error_code="$2"
+    
+    # Remove fixed error from build output
+    if [[ -f "$BUILD_OUTPUT_FILE" ]]; then
+        grep -v "$file_path.*$error_code" "$BUILD_OUTPUT_FILE" > "$BUILD_OUTPUT_FILE.tmp" || true
+        mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
+    fi
+}
+find_using_for_type() {
+    local type="$1"
+    
+    # Common .NET type mappings
+    case "$type" in
+        "List"|"Dictionary"|"HashSet"|"Queue"|"Stack")
+            echo "System.Collections.Generic"
+            ;;
+        "File"|"Directory"|"Path")
+            echo "System.IO"
+            ;;
+        "Task"|"TaskFactory")
+            echo "System.Threading.Tasks"
+            ;;
+        "Regex"|"Match")
+            echo "System.Text.RegularExpressions"
+            ;;
+        "HttpClient"|"HttpResponseMessage")
+            echo "System.Net.Http"
+            ;;
+        *)
+            # Try to find in project
+            local found=$(grep -r "namespace.*$type" "$PROJECT_DIR" 2>/dev/null | head -1 | sed 's/.*namespace //' | sed 's/ .*//')
+            echo "$found"
+            ;;
+    esac
+}
+
+# Update build status after fix
+update_build_status() {
+    local file_path="$1"
+    local error_code="$2"
+    
+    # Remove fixed error from build output
+    if [[ -f "$BUILD_OUTPUT_FILE" ]]; then
+        grep -v "$file_path.*$error_code" "$BUILD_OUTPUT_FILE" > "$BUILD_OUTPUT_FILE.tmp" || true
+        mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
+    fi
+}
+find_using_for_type() {
+    local type="$1"
+    
+    # Common .NET type mappings
+    case "$type" in
+        "List"|"Dictionary"|"HashSet"|"Queue"|"Stack")
+            echo "System.Collections.Generic"
+            ;;
+        "File"|"Directory"|"Path")
+            echo "System.IO"
+            ;;
+        "Task"|"TaskFactory")
+            echo "System.Threading.Tasks"
+            ;;
+        "Regex"|"Match")
+            echo "System.Text.RegularExpressions"
+            ;;
+        "HttpClient"|"HttpResponseMessage")
+            echo "System.Net.Http"
+            ;;
+        *)
+            # Try to find in project
+            local found=$(grep -r "namespace.*$type" "$PROJECT_DIR" 2>/dev/null | head -1 | sed 's/.*namespace //' | sed 's/ .*//')
+            echo "$found"
+            ;;
+    esac
+}
+
+# Update build status after fix
+update_build_status() {
+    local file_path="$1"
+    local error_code="$2"
+    
+    # Remove fixed error from build output
+    if [[ -f "$BUILD_OUTPUT_FILE" ]]; then
+        grep -v "$file_path.*$error_code" "$BUILD_OUTPUT_FILE" > "$BUILD_OUTPUT_FILE.tmp" || true
+        mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
+    fi
+}
+find_using_for_type() {
+    local type="$1"
+    
+    # Common .NET type mappings
+    case "$type" in
+        "List"|"Dictionary"|"HashSet"|"Queue"|"Stack")
+            echo "System.Collections.Generic"
+            ;;
+        "File"|"Directory"|"Path")
+            echo "System.IO"
+            ;;
+        "Task"|"TaskFactory")
+            echo "System.Threading.Tasks"
+            ;;
+        "Regex"|"Match")
+            echo "System.Text.RegularExpressions"
+            ;;
+        "HttpClient"|"HttpResponseMessage")
+            echo "System.Net.Http"
+            ;;
+        *)
+            # Try to find in project
+            local found=$(grep -r "namespace.*$type" "$PROJECT_DIR" 2>/dev/null | head -1 | sed 's/.*namespace //' | sed 's/ .*//')
+            echo "$found"
+            ;;
+    esac
+}
+
+# Update build status after fix
+update_build_status() {
+    local file_path="$1"
+    local error_code="$2"
+    
+    # Remove fixed error from build output
+    if [[ -f "$BUILD_OUTPUT_FILE" ]]; then
+        grep -v "$file_path.*$error_code" "$BUILD_OUTPUT_FILE" > "$BUILD_OUTPUT_FILE.tmp" || true
+        mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
+    fi
+}
+find_using_for_type() {
+    local type="$1"
+    
+    # Common .NET type mappings
+    case "$type" in
+        "List"|"Dictionary"|"HashSet"|"Queue"|"Stack")
+            echo "System.Collections.Generic"
+            ;;
+        "File"|"Directory"|"Path")
+            echo "System.IO"
+            ;;
+        "Task"|"TaskFactory")
+            echo "System.Threading.Tasks"
+            ;;
+        "Regex"|"Match")
+            echo "System.Text.RegularExpressions"
+            ;;
+        "HttpClient"|"HttpResponseMessage")
+            echo "System.Net.Http"
+            ;;
+        *)
+            # Try to find in project
+            local found=$(grep -r "namespace.*$type" "$PROJECT_DIR" 2>/dev/null | head -1 | sed 's/.*namespace //' | sed 's/ .*//')
+            echo "$found"
+            ;;
+    esac
+}
+
+# Update build status after fix
+update_build_status() {
+    local file_path="$1"
+    local error_code="$2"
+    
+    # Remove fixed error from build output
+    if [[ -f "$BUILD_OUTPUT_FILE" ]]; then
+        grep -v "$file_path.*$error_code" "$BUILD_OUTPUT_FILE" > "$BUILD_OUTPUT_FILE.tmp" || true
+        mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
+    fi
+}
+find_using_for_type() {
+    local type="$1"
+    
+    # Common .NET type mappings
+    case "$type" in
+        "List"|"Dictionary"|"HashSet"|"Queue"|"Stack")
+            echo "System.Collections.Generic"
+            ;;
+        "File"|"Directory"|"Path")
+            echo "System.IO"
+            ;;
+        "Task"|"TaskFactory")
+            echo "System.Threading.Tasks"
+            ;;
+        "Regex"|"Match")
+            echo "System.Text.RegularExpressions"
+            ;;
+        "HttpClient"|"HttpResponseMessage")
+            echo "System.Net.Http"
+            ;;
+        *)
+            # Try to find in project
+            local found=$(grep -r "namespace.*$type" "$PROJECT_DIR" 2>/dev/null | head -1 | sed 's/.*namespace //' | sed 's/ .*//')
+            echo "$found"
+            ;;
+    esac
+}
+
+# Update build status after fix
+update_build_status() {
+    local file_path="$1"
+    local error_code="$2"
+    
+    # Remove fixed error from build output
+    if [[ -f "$BUILD_OUTPUT_FILE" ]]; then
+        grep -v "$file_path.*$error_code" "$BUILD_OUTPUT_FILE" > "$BUILD_OUTPUT_FILE.tmp" || true
+        mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
+    fi
+}
 load_pattern_database() {
     local language="${1:-csharp}"
-    local pattern_script="$AGENT_DIR/${language}_patterns.sh"
+    local pattern_script="$SCRIPT_DIR/${language}_patterns.sh"
     
     if [[ -f "$pattern_script" ]]; then
         log_message "Loading $language patterns from $pattern_script"
@@ -753,8 +1281,8 @@ main() {
     
     # Detect language and load patterns
     local language="csharp"  # Default
-    if [[ -f "$AGENT_DIR/state/detected_language.txt" ]]; then
-        language=$(cat "$AGENT_DIR/state/detected_language.txt" 2>/dev/null || echo "csharp")
+    if [[ -f "$SCRIPT_DIR/state/detected_language.txt" ]]; then
+        language=$(cat "$SCRIPT_DIR/state/detected_language.txt" 2>/dev/null || echo "csharp")
     fi
     
     log_message "Loading patterns for language: $language"

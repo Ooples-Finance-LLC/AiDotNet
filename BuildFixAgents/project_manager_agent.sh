@@ -154,7 +154,12 @@ track_progress() {
     
     # Calculate completion percentages
     local planning_complete=100
-    local dev_complete=$((completed_agents * 100 / 8))  # Assuming 8 dev agents
+    # Avoid division by zero
+    if [[ $total_agents -gt 0 ]]; then
+        local dev_complete=$((completed_agents * 100 / total_agents))
+    else
+        local dev_complete=0
+    fi
     local testing_complete=60  # Based on QA progress
     local deployment_complete=0
     
@@ -254,15 +259,19 @@ assess_risks() {
     
     # Check for performance issues
     if [[ -f "$SCRIPT_DIR/state/performance/performance_report.json" ]]; then
-        local slow_ops=$(jq '.bottlenecks | length' "$SCRIPT_DIR/state/performance/performance_report.json" 2>/dev/null || echo 0)
-        if [[ $slow_ops -gt 3 ]]; then
+        local slow_ops=$(jq -r '.bottlenecks | length // 0' "$SCRIPT_DIR/state/performance/performance_report.json" 2>/dev/null || echo 0)
+        # Ensure slow_ops is a number
+        slow_ops=$(echo "$slow_ops" | grep -o '^[0-9]*$' || echo 0)
+        if [[ -n "$slow_ops" && "$slow_ops" -gt 3 ]]; then
             risks+=("Performance bottlenecks detected: $slow_ops")
         fi
     fi
     
     # Check test coverage
-    local test_failures=$(jq '.tests_failed' "$SCRIPT_DIR/state/qa_final/qa_report.json" 2>/dev/null || echo 0)
-    if [[ $test_failures -gt 0 ]]; then
+    local test_failures=$(jq -r '.tests_failed // 0' "$SCRIPT_DIR/state/qa_final/qa_report.json" 2>/dev/null || echo 0)
+    # Ensure test_failures is a number
+    test_failures=$(echo "$test_failures" | grep -o '^[0-9]*$' || echo 0)
+    if [[ -n "$test_failures" && "$test_failures" -gt 0 ]]; then
         risks+=("Test failures: $test_failures")
     fi
     

@@ -1,3 +1,41 @@
 {
-  "standups": []
+  "standups": [
+    {
+      "timestamp": "2025-06-16T15:59:05Z",
+      "updates": [
+        {
+          "agent": "architect",
+          "status": "In progress with current tasks"
+        },
+        {
+          "agent": "performance",
+          "status": "In progress with current tasks"
+        },
+        {
+          "agent": "testing",
+          "status": "In progress with current tasks"
+        },
+        {
+          "agent": "developer_1",
+          "status": "Completed all assigned tasks"
+        },
+        {
+          "agent": "developer_2",
+          "status": "Completed all assigned tasks"
+        },
+        {
+          "agent": "developer_3",
+          "status": "Completed all assigned tasks"
+        },
+        {
+          "agent": "developer_4",
+          "status": "In progress with current tasks"
+        },
+        {
+          "agent": "project_manager",
+          "status": "In progress with current tasks"
+        }
+      ]
+    }
+  ]
 }

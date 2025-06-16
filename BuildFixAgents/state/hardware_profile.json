@@ -1,29 +1,29 @@
 {
-  "detected_at": "2025-06-16T14:35:13Z",
+  "detected_at": "2025-06-16T15:52:49Z",
   "cpu": {
     "cores": 16,
     "model": "AMD Ryzen 7 4800H with Radeon Graphics"
   },
   "memory": {
     "total_mb": 7620,
-    "available_mb": 1948
+    "available_mb": 4516
   },
   "system": {
-    "load_average": 1.27,
+    "load_average": 19.60,
     "platform": "Linux",
     "architecture": "x86_64"
   },
   "recommendations": {
-    "optimal_agents": 3,
+    "optimal_agents": 4,
     "performance_tier": "standard",
     "max_concurrent_builds": 2,
     "enable_parallel_tests": true,
     "enable_performance_monitoring": false
   },
   "agent_limits": {
-    "developer_agents": 3,
+    "developer_agents": 4,
     "tester_agents": 1,
     "performance_agents": 1,
-    "max_total_agents": 5
+    "max_total_agents": 6
   }
 }

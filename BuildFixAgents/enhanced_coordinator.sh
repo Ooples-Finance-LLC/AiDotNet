@@ -68,46 +68,97 @@ EOF
 }
 
 # Deploy developer agents
-deploy_developer_agents() {
-    local error_count="$1"
-    local deployed=0
+# Deploy visionary agent for strategic planning
+deploy_visionary_agent() {
+    log_message "Deploying visionary agent for strategic analysis..."
     
-    if [[ $error_count -eq 0 ]]; then
-        log_message "No build errors - skipping developer agents"
-        return 0
+    if [[ -f "$SCRIPT_DIR/visionary_agent.sh" ]]; then
+        (
+            bash "$SCRIPT_DIR/visionary_agent.sh" analyze > "$LOG_DIR/visionary_agent.log" 2>&1
+            echo "visionary:completed" >> "$STATE_DIR/agent_status.txt"
+        ) &
+        
+        local visionary_pid=$!
+        AGENT_PIDS+=($visionary_pid)
+        echo "visionary:$visionary_pid" >> "$STATE_DIR/agent_pids.txt"
+        log_message "Visionary agent deployed (PID: $visionary_pid)"
+    fi
+}
+
+# Original function backed up
+# Deploy developer agents based on specifications
+deploy_developer_agents() {
+    log_message "Deploying developer agents..."
+    
+    if [[ ! -f "$AGENT_SPEC_FILE" ]]; then
+        log_message "No agent specifications found. Running build analyzer..."
+        bash "$AGENT_DIR/generic_build_analyzer.sh" "$PROJECT_DIR"
     fi
     
-    log_message "Deploying up to $MAX_DEVELOPER_AGENTS developer agents for $error_count errors"
-    
-    # Run the generic analyzer
-    bash "$SCRIPT_DIR/generic_build_analyzer.sh" "$PROJECT_DIR"
-    
-    # Deploy agents based on specifications
-    if [[ ! -f "$SCRIPT_DIR/state/agent_specifications.json" ]]; then
-        log_message "ERROR: No agent specifications found"
+    if [[ ! -f "$AGENT_SPEC_FILE" ]]; then
+        log_message "ERROR: Failed to generate agent specifications"
         return 1
     fi
     
-    local agents=$(grep '"agent_id":' "$SCRIPT_DIR/state/agent_specifications.json" | cut -d'"' -f4 | head -$MAX_DEVELOPER_AGENTS)
+    # Read agent specifications
+    local agent_count=$(jq '.agent_specifications | length' "$AGENT_SPEC_FILE" 2>/dev/null || echo 0)
+    log_message "Found specifications for $agent_count agents"
     
-    log_message "Found agents to deploy: $(echo "$agents" | tr '\n' ' ')"
+    if [[ $agent_count -eq 0 ]]; then
+        log_message "WARNING: No agent specifications found. Creating generic agent..."
+        # Create a generic agent specification
+        cat > "$AGENT_SPEC_FILE" << GENERICEOF
+{
+  "generated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "agent_specifications": [
+    {
+      "agent_id": "generic_error_fixer",
+      "name": "Generic Error Fixer",
+      "type": "error_fixer",
+      "specialization": "general",
+      "target_errors": ["CS0101", "CS0111", "CS0246", "CS0462"],
+      "priority": "high",
+      "max_iterations": 3
+    }
+  ]
+}
+GENERICEOF
+        agent_count=1
+    fi
     
-    while IFS= read -r agent_id; do
-        [[ -z "$agent_id" ]] && continue
-        [[ $deployed -ge $MAX_DEVELOPER_AGENTS ]] && break
+    # Deploy each agent
+    local deployed=0
+    for ((i=0; i<agent_count && i<MAX_CONCURRENT_AGENTS; i++)); do
+        local agent_spec=$(jq ".agent_specifications[$i]" "$AGENT_SPEC_FILE")
+        local agent_id=$(echo "$agent_spec" | jq -r '.agent_id')
+        local target_errors=$(echo "$agent_spec" | jq -r '.target_errors[]' | tr '\n' ' ')
         
-        log_message "  ${GREEN}→${NC} Deploying $agent_id"
+        log_message "Deploying agent: $agent_id"
+        log_message "Target errors: $target_errors"
         
+        # Create agent log
+        local agent_log="$LOG_DIR/agent_${agent_id}.log"
+        
+        # Deploy the agent
         (
-            bash "$SCRIPT_DIR/generic_error_agent.sh" "$agent_id" "$SCRIPT_DIR/state/agent_specifications.json" &
-            echo $! > "$SCRIPT_DIR/.pid_dev_$agent_id"
+            bash "$AGENT_DIR/generic_error_agent.sh" \
+                "$agent_id" \
+                "$AGENT_SPEC_FILE" \
+                "$target_errors" \
+                > "$agent_log" 2>&1
+            
+            echo "$agent_id:completed" >> "$STATE_DIR/agent_status.txt"
         ) &
         
-        deployed=$((deployed + 1))
-    done <<< "$agents"
+        local agent_pid=$!
+        AGENT_PIDS+=($agent_pid)
+        echo "$agent_id:$agent_pid" >> "$STATE_DIR/agent_pids.txt"
+        
+        ((deployed++))
+    done
     
     log_message "Deployed $deployed developer agents"
-    return $deployed
+    return 0
 }
 
 # Deploy tester agents
@@ -256,7 +307,8 @@ smart_deployment() {
         log_message "${BOLD}=== ITERATION $iteration ===${NC}"
         
         # Phase 1: Build and fix compile errors
-        local error_count=$(bash "$SCRIPT_DIR/build_checker_agent.sh" build 2>&1 | grep -E '^[0-9]+$' | head -1 | tr -d '\n' || echo "0")
+        local error_count=$(bash "$SCRIPT_DIR/build_checker_agent.sh" build 2>&1 | grep -E '^[0-9]+$' | head -1 | tr -d '\n\r' | sed 's/[^0-9]//g')
+        error_count=${error_count:-0}
         
         if [[ $error_count -gt 0 ]]; then
             log_message "Phase 1: Fixing $error_count build errors"

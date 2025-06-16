@@ -26,6 +26,7 @@
 - **Management Agents**: Coordinate and monitor other agents
 - **QA Agents**: Validate fixes and ensure quality
 - **Learning Agents**: Improve system over time
+- **Visionary Agents**: Strategic planning and innovation
 
 #### 3.2 Agent Capabilities
 - **Autonomous Operation**: Work independently on assigned tasks
