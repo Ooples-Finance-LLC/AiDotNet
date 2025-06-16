@@ -419,7 +419,7 @@ public class ModelIndividual<T, TInput, TOutput, TGene> :
     /// <returns>The model metadata.</returns>
     /// <remarks>
     /// <para>
-    /// This method delegates to GetModelMetaData to retrieve metadata about the model,
+    /// This method delegates to GetModelMetadata to retrieve metadata about the model,
     /// which includes information like the model type, parameters, performance metrics,
     /// and other descriptive data.
     /// </para>
@@ -435,9 +435,9 @@ public class ModelIndividual<T, TInput, TOutput, TGene> :
     /// This information is useful for understanding, comparing, and documenting models.
     /// </para>
     /// </remarks>
-    public ModelMetaData<T> GetMetaData()
+    public ModelMetadata<T> GetMetaData()
     {
-        return GetModelMetaData();
+        return GetModelMetadata();
     }
 
     /// <summary>
@@ -686,14 +686,14 @@ public class ModelIndividual<T, TInput, TOutput, TGene> :
     /// This comprehensive information helps with model selection, comparison, and documentation.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         // Get the inner model's metadata
-        var metadata = _innerModel.GetModelMetaData();
+        var metadata = _innerModel.GetModelMetadata();
 
-        // If inner model's GetModelMetaData method is not properly implemented or returns null,
+        // If inner model's GetModelMetadata method is not properly implemented or returns null,
         // create a new metadata object
-        metadata ??= new ModelMetaData<T>
+        metadata ??= new ModelMetadata<T>
             {
                 ModelType = ModelType.GeneticAlgorithmRegression,
                 Description = "Genetically evolved model individual",
@@ -954,12 +954,12 @@ public class ModelIndividual<T, TInput, TOutput, TGene> :
     }
     
     /// <inheritdoc/>
-    public override void SetModelMetaData(ModelMetaData<T> metadata)
+    public override void SetModelMetadata(ModelMetadata<T> metadata)
     {
         // Update the inner model's metadata
-        if (_innerModel is IModel<TInput, TOutput, ModelMetaData<T>> model)
+        if (_innerModel is IModel<TInput, TOutput, ModelMetadata<T>> model)
         {
-            model.SetModelMetaData(metadata);
+            model.SetModelMetadata(metadata);
         }
         
         // Update fitness based on metadata complexity or other metrics

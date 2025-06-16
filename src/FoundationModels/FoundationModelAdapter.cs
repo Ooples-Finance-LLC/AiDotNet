@@ -144,9 +144,9 @@ namespace AiDotNet.FoundationModels
         }
 
         /// <inheritdoc/>
-        public override ModelMetaData<T> GetModelMetaData()
+        public override ModelMetadata<T> GetModelMetadata()
         {
-            var metadata = new ModelMetaData<T>
+            var metadata = new ModelMetadata<T>
             {
                 ModelType = ModelType.FoundationModel,
                 FeatureCount = _configuration.FeatureNames?.Count ?? 0,
@@ -642,7 +642,7 @@ namespace AiDotNet.FoundationModels
             await Task.Run(() => Train(inputs, targets));
         }
         
-        public override void SetModelMetaData(ModelMetaData<T> metadata)
+        public override void SetModelMetadata(ModelMetadata<T> metadata)
         {
             // Update relevant fields from the provided metadata
             if (metadata.AdditionalInfo != null)

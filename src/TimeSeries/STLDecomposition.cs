@@ -1029,7 +1029,7 @@ public class STLDecomposition<T> : TimeSeriesModelBase<T>
     /// <summary>
     /// Gets metadata about the model, including its type, configuration, and information about the decomposed components.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns detailed metadata about the model, including its type, configuration options,
@@ -1055,9 +1055,9 @@ public class STLDecomposition<T> : TimeSeriesModelBase<T>
     /// Think of it like getting a detailed report card for your decomposition analysis.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.STLDecomposition,
             AdditionalInfo = new Dictionary<string, object>

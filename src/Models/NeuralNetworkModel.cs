@@ -488,11 +488,11 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     /// - Documenting the model for future reference
     /// </para>
     /// </remarks>
-    public ModelMetaData<T> GetModelMetaData()
+    public ModelMetadata<T> GetModelMetadata()
     {
         int[] layerSizes = Architecture.GetLayerSizes();
         
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             FeatureCount = FeatureCount,
             Complexity = Complexity,
@@ -903,7 +903,7 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
     protected Vector<int> _sensitiveFeatures;
     protected readonly List<FairnessMetric> _fairnessMetrics = new();
-    protected IModel<Tensor<T>, Tensor<T>, ModelMetaData<T>> _baseModel;
+    protected IModel<Tensor<T>, Tensor<T>, ModelMetadata<T>> _baseModel;
 
     /// <summary>
     /// Gets the global feature importance across all predictions.
@@ -996,7 +996,7 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     /// <summary>
     /// Sets the base model for interpretability analysis.
     /// </summary>
-    public virtual void SetBaseModel(IModel<Tensor<T>, Tensor<T>, ModelMetaData<T>> model)
+    public virtual void SetBaseModel(IModel<Tensor<T>, Tensor<T>, ModelMetadata<T>> model)
     {
         _baseModel = model ?? throw new ArgumentNullException(nameof(model));
     }

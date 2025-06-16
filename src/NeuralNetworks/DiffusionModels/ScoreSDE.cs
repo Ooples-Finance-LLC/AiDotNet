@@ -582,9 +582,9 @@ namespace AiDotNet.NeuralNetworks.DiffusionModels
             return new ScoreSDE(_scoreNetwork, _sdeType, _sigma, _beta0, _beta1, _solver, modelName);
         }
         
-        public override ModelMetaData<double> GetModelMetaData()
+        public override ModelMetadata<double> GetModelMetadata()
         {
-            var metadata = new ModelMetaData<double>
+            var metadata = new ModelMetadata<double>
             {
                 ModelType = ModelType.NeuralNetwork,
                 FeatureCount = (_scoreNetwork is NeuralNetworkBase<double> nn ? nn.GetParameterCount() : _scoreNetwork?.GetParameters().Length ?? 0),

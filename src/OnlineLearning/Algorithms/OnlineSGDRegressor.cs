@@ -227,9 +227,9 @@ public class OnlineSGDRegressor<T> : AdaptiveOnlineModelBase<T, Vector<T>, T>
     }
     
     /// <inheritdoc/>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.OnlineSGD,
             FeatureCount = _weights.Length,

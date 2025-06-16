@@ -470,7 +470,7 @@ public class ARMAModel<T> : TimeSeriesModelBase<T>
     /// <summary>
     /// Gets metadata about the trained model, including its type, coefficients, and configuration.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method provides comprehensive information about the model, including its type, parameters, coefficients,
@@ -493,10 +493,10 @@ public class ARMAModel<T> : TimeSeriesModelBase<T>
     /// all the important information about how it works and was configured.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         var armaOptions = (ARMAOptions<T>)Options;
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.ARMAModel,
             AdditionalInfo = new Dictionary<string, object>

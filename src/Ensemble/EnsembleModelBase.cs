@@ -558,9 +558,9 @@ public abstract class EnsembleModelBase<T, TInput, TOutput> : InterpretableModel
     /// <summary>
     /// Gets metadata about the ensemble model.
     /// </summary>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.CustomEnsemble,
             Description = $"{GetType().Name} with {_baseModels.Count} models using {_options.Strategy} strategy",

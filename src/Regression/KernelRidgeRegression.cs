@@ -223,9 +223,9 @@ public class KernelRidgeRegression<T> : NonLinearRegressionModelBase<T>
     /// ```
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = base.GetModelMetaData();
+        var metadata = base.GetModelMetadata();
         metadata.AdditionalInfo["LambdaKRR"] = Options.LambdaKRR;
         metadata.AdditionalInfo["RegularizationType"] = Regularization.GetType().Name;
 

@@ -399,7 +399,7 @@ namespace AiDotNet.NeuralNetworks.DiffusionModels
             return new ConsistencyModel(consistencyFunction, sigmaMin, sigmaMax, numSteps, rho, scheduleType, useDistillation, Architecture.CacheName);
         }
         
-        public override AiDotNet.Models.ModelMetaData<double> GetModelMetaData()
+        public override AiDotNet.Models.ModelMetadata<double> GetModelMetadata()
         {
             var paramCount = 0;
             if (consistencyFunction != null)
@@ -417,7 +417,7 @@ namespace AiDotNet.NeuralNetworks.DiffusionModels
                 }
             }
             
-            return new AiDotNet.Models.ModelMetaData<double>
+            return new AiDotNet.Models.ModelMetadata<double>
             {
                 ModelType = ModelType.NeuralNetwork,
                 FeatureCount = 0, // Variable for generative models

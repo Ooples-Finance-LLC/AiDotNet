@@ -1,0 +1,34 @@
+# ML Integration Configuration
+ml_settings:
+  learning:
+    enabled: true
+    min_confidence: 0.75
+    training_threshold: 100  # Min samples before training
+    
+  models:
+    error_predictor:
+      type: "pattern_matching"
+      features:
+        - error_code
+        - file_extension
+        - error_context
+        - previous_fixes
+      
+    fix_suggester:
+      type: "similarity_based"
+      algorithm: "cosine_similarity"
+      
+    anomaly_detector:
+      type: "statistical"
+      threshold: 2.5  # Standard deviations
+      
+  training:
+    batch_size: 50
+    update_frequency: "daily"
+    validation_split: 0.2
+    
+  features:
+    extract_context: true
+    track_success_rate: true
+    learn_from_failures: true
+    cross_project_learning: false

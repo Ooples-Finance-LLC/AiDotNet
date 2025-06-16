@@ -181,9 +181,9 @@ namespace AiDotNet.ReinforcementLearning.Models
         /// Gets the metadata for this model.
         /// </summary>
         /// <returns>The model metadata.</returns>
-        public override ModelMetaData<T> GetModelMetaData()
+        public override ModelMetadata<T> GetModelMetadata()
         {
-            var metadata = base.GetModelMetaData();
+            var metadata = base.GetModelMetadata();
             
             metadata.ModelType = ModelType.NeuralNetwork; // ReinforcementLearning models use neural networks
             metadata.Description = "Actor-critic reinforcement learning algorithm for continuous control";

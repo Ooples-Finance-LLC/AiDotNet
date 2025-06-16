@@ -264,9 +264,9 @@ namespace AiDotNet.NeuralNetworks
 
         #region IFullModel Implementation
 
-        public ModelMetaData<T> GetModelMetaData()
+        public ModelMetadata<T> GetModelMetadata()
         {
-            return _neuralNetwork.GetModelMetaData();
+            return _neuralNetwork.GetModelMetadata();
         }
 
         public byte[] Serialize()
@@ -464,7 +464,7 @@ namespace AiDotNet.NeuralNetworks
         protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
         protected Vector<int> _sensitiveFeatures;
         protected readonly List<FairnessMetric> _fairnessMetrics = new();
-        protected IModel<string, string, ModelMetaData<T>> _baseModel;
+        protected IModel<string, string, ModelMetadata<T>> _baseModel;
 
         /// <summary>
         /// Gets the global feature importance across all predictions.
@@ -557,7 +557,7 @@ namespace AiDotNet.NeuralNetworks
         /// <summary>
         /// Sets the base model for interpretability analysis.
         /// </summary>
-        public virtual void SetBaseModel(IModel<string, string, ModelMetaData<T>> model)
+        public virtual void SetBaseModel(IModel<string, string, ModelMetadata<T>> model)
         {
         _baseModel = model ?? throw new ArgumentNullException(nameof(model));
         }

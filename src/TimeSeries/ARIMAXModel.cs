@@ -691,7 +691,7 @@ public class ARIMAXModel<T> : TimeSeriesModelBase<T>
     /// <summary>
     /// Gets metadata about the ARIMAX model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// <b>For Beginners:</b> This method provides important information about the ARIMAX model
@@ -706,11 +706,11 @@ public class ARIMAXModel<T> : TimeSeriesModelBase<T>
     /// transferring the model's knowledge to other systems.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         var arimaxOptions = (ARIMAXModelOptions<T>)Options;
     
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.ARIMAXModel,
             AdditionalInfo = new Dictionary<string, object>

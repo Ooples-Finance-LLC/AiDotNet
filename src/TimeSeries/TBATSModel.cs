@@ -1137,7 +1137,7 @@ public class TBATSModel<T> : TimeSeriesModelBase<T>
     /// <summary>
     /// Gets metadata about the model, including its type, configuration, and learned parameters.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns detailed metadata about the model, including its type, configuration options,
@@ -1163,9 +1163,9 @@ public class TBATSModel<T> : TimeSeriesModelBase<T>
     /// Think of it like getting a detailed report card for your model.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.TBATSModel,
             AdditionalInfo = new Dictionary<string, object>

@@ -918,9 +918,9 @@ public class DQNAgent<TState, T> : AgentBase<TState, int, T>
             _network.Deserialize(data);
         }
 
-        public ModelMetaData<T> ComputeMetaData()
+        public ModelMetadata<T> ComputeMetaData()
         {
-            return new ModelMetaData<T>
+            return new ModelMetadata<T>
             {
                 ModelType = ModelType.NeuralNetwork,
                 Description = $"Q-Network with {StateSize} states and {ActionSize} actions",
@@ -965,7 +965,7 @@ public class DQNAgent<TState, T> : AgentBase<TState, int, T>
             return Clone();
         }
 
-        public ModelMetaData<T> GetModelMetaData()
+        public ModelMetadata<T> GetModelMetadata()
         {
             return ComputeMetaData();
         }
@@ -1017,7 +1017,7 @@ public class DQNAgent<TState, T> : AgentBase<TState, int, T>
         protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
         protected Vector<int> _sensitiveFeatures;
         protected readonly List<FairnessMetric> _fairnessMetrics = new();
-        protected IModel<Tensor<T>, Tensor<T>, ModelMetaData<T>> _baseModel;
+        protected IModel<Tensor<T>, Tensor<T>, ModelMetadata<T>> _baseModel;
 
         /// <summary>
         /// Gets the global feature importance across all predictions.
@@ -1110,7 +1110,7 @@ public class DQNAgent<TState, T> : AgentBase<TState, int, T>
         /// <summary>
         /// Sets the base model for interpretability analysis.
         /// </summary>
-        public virtual void SetBaseModel(IModel<Tensor<T>, Tensor<T>, ModelMetaData<T>> model)
+        public virtual void SetBaseModel(IModel<Tensor<T>, Tensor<T>, ModelMetadata<T>> model)
         {
             _baseModel = model ?? throw new ArgumentNullException(nameof(model));
         }

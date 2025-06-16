@@ -483,11 +483,11 @@ namespace AiDotNet.NeuralNetworks
             }
         }
 
-        public override AiDotNet.Models.ModelMetaData<double> GetModelMetaData()
+        public override AiDotNet.Models.ModelMetadata<double> GetModelMetadata()
         {
             var totalParams = Layers.Where(l => l != null).Sum(l => l.ParameterCount);
             
-            return new AiDotNet.Models.ModelMetaData<double>
+            return new AiDotNet.Models.ModelMetadata<double>
             {
                 ModelType = ModelType.NeuralNetwork,
                 FeatureCount = baseChannels,

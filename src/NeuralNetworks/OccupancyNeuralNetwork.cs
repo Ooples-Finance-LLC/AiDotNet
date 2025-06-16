@@ -552,7 +552,7 @@ public class OccupancyNeuralNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the occupancy neural network.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the network.</returns>
+    /// <returns>A ModelMetadata object containing information about the network.</returns>
     /// <remarks>
     /// <para>
     /// This method returns comprehensive metadata about the occupancy neural network, including
@@ -570,7 +570,7 @@ public class OccupancyNeuralNetwork<T> : NeuralNetworkBase<T>
     /// or debugging issues with the network's performance.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         // Count layer types
         var layerTypeCount = new Dictionary<string, int>();
@@ -587,7 +587,7 @@ public class OccupancyNeuralNetwork<T> : NeuralNetworkBase<T>
             }
         }
         
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.OccupancyNetwork,
             AdditionalInfo = new Dictionary<string, object>

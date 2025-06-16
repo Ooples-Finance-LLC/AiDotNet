@@ -173,7 +173,7 @@ public abstract class TransferLearningModelBase<T, TInput, TOutput> : ITransferL
     // Abstract methods from IFullModel that must be implemented by derived classes
     public abstract void Train(TInput input, TOutput expectedOutput);
     public abstract TOutput Predict(TInput input);
-    public abstract ModelMetaData<T> GetModelMetaData();
+    public abstract ModelMetadata<T> GetModelMetadata();
     public abstract byte[] Serialize();
     public abstract void Deserialize(byte[] data);
     public abstract IFullModel<T, TInput, TOutput> WithParameters(IDictionary<string, object> parameters);
@@ -193,7 +193,7 @@ public abstract class TransferLearningModelBase<T, TInput, TOutput> : ITransferL
     protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
     protected Vector<int> _sensitiveFeatures;
     protected readonly List<FairnessMetric> _fairnessMetrics = new();
-    protected IModel<TInput, TOutput, ModelMetaData<T>> _baseModel;
+    protected IModel<TInput, TOutput, ModelMetadata<T>> _baseModel;
 
     /// <summary>
     /// Gets the global feature importance across all predictions.
@@ -286,7 +286,7 @@ public abstract class TransferLearningModelBase<T, TInput, TOutput> : ITransferL
     /// <summary>
     /// Sets the base model for interpretability analysis.
     /// </summary>
-    public virtual void SetBaseModel(IModel<TInput, TOutput, ModelMetaData<T>> model)
+    public virtual void SetBaseModel(IModel<TInput, TOutput, ModelMetadata<T>> model)
     {
         _baseModel = model ?? throw new ArgumentNullException(nameof(model));
     }

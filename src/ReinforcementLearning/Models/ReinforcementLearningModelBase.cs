@@ -731,9 +731,9 @@ public virtual IFullModel<T, Tensor<T>, Tensor<T>> WithParameters(Vector<T> para
 /// - How well it's currently performing
 /// </para>
 /// </remarks>
-public virtual ModelMetaData<T> GetModelMetaData()
+public virtual ModelMetadata<T> GetModelMetadata()
 {
-    return new ModelMetaData<T>
+    return new ModelMetadata<T>
     {
         ModelType = Enums.ModelType.DQNModel, // Default RL model type
         Description = GetType().Name,
@@ -741,14 +741,6 @@ public virtual ModelMetaData<T> GetModelMetaData()
     };
 }
 
-/// <summary>
-/// Backward compatibility method for GetModelMetaData.
-/// </summary>
-/// <returns>Metadata describing the model.</returns>
-public virtual ModelMetaData<T> GetModelMetadata()
-{
-    return GetModelMetaData();
-}
 
 /// <summary>
 /// Trains the model on the given input and expected output.
@@ -913,7 +905,7 @@ public virtual void LoadModel(string path)
 private readonly HashSet<InterpretationMethod> _enabledMethods = new();
 private Vector<int> _sensitiveFeatures;
 private readonly List<FairnessMetric> _fairnessMetrics = new();
-private IModel<Tensor<T>, Tensor<T>, ModelMetaData<T>> _baseModel;
+private IModel<Tensor<T>, Tensor<T>, ModelMetadata<T>> _baseModel;
 
 /// <summary>
 /// Gets the global feature importance across all predictions.
@@ -1006,7 +998,7 @@ public virtual async Task<AnchorExplanation<T>> GetAnchorExplanationAsync(Tensor
 /// <summary>
 /// Sets the base model for interpretability analysis.
 /// </summary>
-public virtual void SetBaseModel(IModel<Tensor<T>, Tensor<T>, ModelMetaData<T>> model)
+public virtual void SetBaseModel(IModel<Tensor<T>, Tensor<T>, ModelMetadata<T>> model)
 {
     _baseModel = model ?? throw new ArgumentNullException(nameof(model));
 }

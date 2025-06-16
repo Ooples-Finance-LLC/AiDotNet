@@ -1,0 +1,597 @@
+#!/bin/bash
+
+# Intelligent Auto-Fix Script
+# Automatically detects state and continues or starts fresh
+# Just run: ./autofix.sh
+
+set -euo pipefail
+
+# Get script directory
+AGENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source debug utilities if available
+if [[ -f "$AGENT_DIR/debug_utils.sh" ]]; then
+    source "$AGENT_DIR/debug_utils.sh"
+
+# Source unified error counter
+if [[ -f "$AGENT_DIR/unified_error_counter.sh" ]]; then
+    source "$AGENT_DIR/unified_error_counter.sh"
+fi
+    show_debug_status
+fi
+# If we're in BuildFixAgents, go up one level to the actual project
+if [[ "$(basename "$(pwd)")" == "BuildFixAgents" ]]; then
+    PROJECT_DIR="${PROJECT_DIR:-$(dirname "$(pwd)")}"
+else
+    PROJECT_DIR="${PROJECT_DIR:-$(pwd)}"
+fi
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# Configuration
+STATE_FILE="$AGENT_DIR/state/.autofix_state"
+PROGRESS_FILE="$AGENT_DIR/state/.progress"
+MAX_ATTEMPTS=3
+WATCH_MODE=""  # Will be set based on arguments later
+
+# Source IDE integration if available
+if [[ -f "$AGENT_DIR/ide_integration.sh" ]]; then
+    source "$AGENT_DIR/ide_integration.sh"
+fi
+
+# Unicode characters for pretty output
+CHECK="✓"
+CROSS="✗"
+ARROW="→"
+SPINNER=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+
+# Print with color
+print_message() {
+    local color=$1
+    shift
+    echo -e "${color}$@${NC}"
+}
+
+# Animated spinner
+show_spinner() {
+    local pid=$1
+    local delay=0.1
+    local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    while ps -p $pid > /dev/null 2>&1; do
+        local temp=${spinstr#?}
+        printf " [%c]  " "$spinstr"
+        local spinstr=$temp${spinstr%"$temp"}
+        sleep $delay
+        printf "\b\b\b\b\b\b"
+    done
+    printf "    \b\b\b\b"
+}
+
+# Display banner
+show_banner() {
+    # Don't clear if in IDE
+    local ide="terminal"  # Simplified to avoid hanging
+    [[ "$ide" == "unknown" ]] && clear
+    
+    print_message "$CYAN" "
+╔════════════════════════════════════════════════════════════════╗
+║                                                                ║
+║     🤖 Multi-Agent Build Fix System - Auto Mode 🤖            ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝"
+}
+
+# Check if this is first run
+is_first_run() {
+    [[ ! -f "$STATE_FILE" ]]
+}
+
+# Load previous state
+load_state() {
+    if [[ -f "$STATE_FILE" ]]; then
+        source "$STATE_FILE"
+        return 0
+    fi
+    return 1
+}
+
+# Save current state
+save_state() {
+    mkdir -p "$(dirname "$STATE_FILE")"
+    cat > "$STATE_FILE" << EOF
+LAST_RUN="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+LAST_ERROR_COUNT="${ERROR_COUNT:-0}"
+TOTAL_FIXED="${TOTAL_FIXED:-0}"
+RUN_COUNT="${RUN_COUNT:-0}"
+STATUS="${STATUS:-in_progress}"
+EOF
+}
+
+
+# Get current error count
+get_error_count() {
+    start_timer "get_error_count"
+    debug "Getting error count for project: $PROJECT_DIR"
+    
+    # Run build and count errors, with timeout to prevent hanging
+    cd "$PROJECT_DIR"
+    
+    # First try to detect language from cached file
+    local language=""
+    if [[ -f "$AGENT_DIR/state/detected_language.txt" ]]; then
+        language=$(cat "$AGENT_DIR/state/detected_language.txt" 2>/dev/null || echo "")
+    fi
+    
+    # If no cached language, try quick detection with timeout
+    if [[ -z "$language" ]]; then
+        language=$(timeout 5s "$AGENT_DIR/language_detector.sh" detect "$PROJECT_DIR" 2>/dev/null || echo "")
+    fi
+    
+    # If still no language, try to detect from common files
+    if [[ -z "$language" ]]; then
+        if [[ -f "*.csproj" ]] || [[ -f "*.sln" ]]; then
+            language="csharp"
+        elif [[ -f "package.json" ]]; then
+            language="javascript"
+        elif [[ -f "requirements.txt" ]] || [[ -f "setup.py" ]]; then
+            language="python"
+        elif [[ -f "go.mod" ]]; then
+            language="go"
+        elif [[ -f "Cargo.toml" ]]; then
+            language="rust"
+        elif [[ -f "pom.xml" ]] || [[ -f "build.gradle" ]]; then
+            language="java"
+        fi
+    fi
+    
+    # Use generic build analyzer output if available
+    if [[ -f "$AGENT_DIR/logs/build_output.txt" ]]; then
+        # Count errors from last build output
+        local count=$(grep -cE "error (CS|TS|C[0-9])|error:|Error:|ERROR:|error\[E" "$AGENT_DIR/logs/build_output.txt" 2>/dev/null || echo "0")
+        echo "$count"
+        return
+    fi
+    
+    # Otherwise run build with appropriate command
+    local build_cmd=""
+    case "$language" in
+        csharp)
+            build_cmd="dotnet build --no-restore"
+            ;;
+        javascript|typescript)
+            build_cmd="npm run build || npx tsc"
+            ;;
+        python)
+            build_cmd="python -m py_compile *.py"
+            ;;
+        go)
+            build_cmd="go build"
+            ;;
+        rust)
+            build_cmd="cargo build"
+            ;;
+        java)
+            build_cmd="mvn compile || gradle build"
+            ;;
+        *)
+            # Try to find a build command
+            if [[ -f "Makefile" ]]; then
+                build_cmd="make"
+            elif [[ -f "build.sh" ]]; then
+                build_cmd="./build.sh"
+            else
+                echo "0"
+                return
+            fi
+            ;;
+    esac
+    
+    # Run build and count errors with timeout
+    local count=0
+    local build_output=$(timeout 60s bash -c "$build_cmd" 2>&1)
+    
+    case "$language" in
+        csharp)
+            count=$(echo "$build_output" | grep -c "error CS" || echo "0")
+            ;;
+        python)
+            count=$(echo "$build_output" | grep -cE "(SyntaxError|IndentationError|NameError|TypeError|ImportError|AttributeError)" || echo "0")
+            ;;
+        javascript|typescript)
+            count=$(echo "$build_output" | grep -cE "(error TS|Error:|ERROR:|SyntaxError|TypeError|ReferenceError)" || echo "0")
+            ;;
+        go)
+            count=$(echo "$build_output" | grep -c "error:" || echo "0")
+            ;;
+        rust)
+            count=$(echo "$build_output" | grep -c "error\[E" || echo "0")
+            ;;
+        java)
+            count=$(echo "$build_output" | grep -c "error:" || echo "0")
+            ;;
+        cpp)
+            count=$(echo "$build_output" | grep -cE "(error:|error C)" || echo "0")
+            ;;
+        *)
+            # Generic error detection
+            count=$(echo "$build_output" | grep -ciE "(error|failed|failure)" || echo "0")
+            ;;
+    esac
+    
+    # Save build output for other scripts
+    echo "$build_output" > "$AGENT_DIR/logs/build_output.txt"
+    
+    verbose "Error count: $count (language: $language)"
+    end_timer "get_error_count"
+    echo "$count"
+}
+
+# Show progress bar
+show_progress() {
+    local current=$1
+    local total=$2
+    local width=50
+    
+    if [[ $total -eq 0 ]]; then
+        percent=100
+    else
+        percent=$((current * 100 / total))
+    fi
+    
+    local completed=$((width * current / total))
+    local remaining=$((width - completed))
+    
+    # Build progress bar
+    printf "\rProgress: ["
+    printf "%${completed}s" | tr ' ' '█'
+    printf "%${remaining}s" | tr ' ' '▒'
+    printf "] %d%% (%d/%d errors fixed)" "$percent" "$current" "$total"
+}
+
+# Monitor build in real-time
+monitor_build() {
+    local start_errors=$1
+    local current_errors
+    local last_update=$(date +%s)
+    
+    print_message "$YELLOW" "\n📊 Real-time Monitoring Active"
+    
+    while true; do
+        current_errors=$(get_error_count)
+        local fixed=$((start_errors - current_errors))
+        
+        # Update progress
+        show_progress "$fixed" "$start_errors"
+        
+        # Check if complete
+        if [[ $current_errors -eq 0 ]]; then
+            print_message "$GREEN" "\n\n$CHECK BUILD SUCCESSFUL! All $start_errors errors fixed!"
+            STATUS="completed"
+            TOTAL_FIXED=$start_errors
+            save_state
+            return 0
+        fi
+        
+        # Check if stalled (no progress in 2 minutes)
+        local now=$(date +%s)
+        if [[ $((now - last_update)) -gt 120 ]]; then
+            if [[ $current_errors -eq $ERROR_COUNT ]]; then
+                print_message "$YELLOW" "\n⚠️  No progress in 2 minutes. Restarting agents..."
+                return 1
+            fi
+        fi
+        
+        # Update if progress made
+        if [[ $current_errors -ne ${ERROR_COUNT:-$start_errors} ]]; then
+            ERROR_COUNT=$current_errors
+            last_update=$now
+            save_state
+        fi
+        
+        sleep 5
+    done
+}
+
+# Smart decision making
+make_decision() {
+    local current_errors=$(get_error_count)
+    
+    if [[ $current_errors -eq 0 ]]; then
+        print_message "$GREEN" "$CHECK No errors found - build is clean!"
+        STATUS="completed"
+        save_state
+        return 0
+    fi
+    
+    if is_first_run; then
+        print_message "$BLUE" "🎯 First run detected - starting fresh"
+        print_message "$YELLOW" "  Found $current_errors errors to fix"
+        return 1
+    else
+        load_state
+        print_message "$BLUE" "🔄 Previous session found"
+        print_message "$CYAN" "  Last run: $LAST_RUN"
+        print_message "$CYAN" "  Previous errors: $LAST_ERROR_COUNT"
+        print_message "$CYAN" "  Current errors: $current_errors"
+        
+        if [[ "$STATUS" == "completed" ]] && [[ $current_errors -gt 0 ]]; then
+            print_message "$YELLOW" "⚠️  New errors detected since last run"
+            return 1
+        elif [[ $current_errors -lt $LAST_ERROR_COUNT ]]; then
+            print_message "$GREEN" "  Progress made! Continuing..."
+            return 2
+        else
+            print_message "$YELLOW" "  Resuming from previous state..."
+            return 2
+        fi
+    fi
+}
+
+# Run the fixing process
+run_fix_process() {
+    local mode=$1  # fresh or resume
+    local attempt=1
+    
+    ERROR_COUNT=$(get_error_count)
+    INITIAL_ERRORS=$ERROR_COUNT
+    RUN_COUNT=$((${RUN_COUNT:-0} + 1))
+    STATUS="in_progress"
+    save_state
+    
+    print_message "$BOLD" "\n🚀 Starting Multi-Agent Fix Process"
+    print_message "$CYAN" "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    while [[ $attempt -le $MAX_ATTEMPTS ]] && [[ $ERROR_COUNT -gt 0 ]]; do
+        print_message "$YELLOW" "\n🔧 Attempt $attempt of $MAX_ATTEMPTS"
+        
+        # Run analysis if needed
+        if [[ $mode == "fresh" ]] || [[ $attempt -eq 1 ]]; then
+            print_message "$BLUE" "$ARROW Analyzing error patterns..."
+            # Pass IDE info to analyzer with timeout
+            print_message "$CYAN" "  (Build analysis may take 10-30 seconds...)"
+            timeout 240s bash "$AGENT_DIR/generic_build_analyzer.sh" "$PROJECT_DIR" || {
+                print_message "$YELLOW" "⚠️ Analysis timed out, using default patterns"
+            }
+        fi
+        
+        # Deploy agents (use enhanced coordinator if available)
+        print_message "$BLUE" "$ARROW Deploying specialized agents..."
+        if [[ -f "$AGENT_DIR/enhanced_coordinator.sh" ]]; then
+            timeout 300s bash "$AGENT_DIR/enhanced_coordinator.sh" smart &
+        else
+            timeout 300s bash "$AGENT_DIR/generic_agent_coordinator.sh" execute &
+        fi
+        local coordinator_pid=$!
+        
+        # Monitor progress
+        if monitor_build $ERROR_COUNT; then
+            break
+        fi
+        
+        # Check if coordinator is still running
+        if ! ps -p $coordinator_pid > /dev/null 2>&1; then
+            print_message "$YELLOW" "Agents completed their work"
+        else
+            kill $coordinator_pid 2>/dev/null || true
+        fi
+        
+        # Check results
+        local new_count=$(get_error_count)
+        if [[ $new_count -eq 0 ]]; then
+            break
+        elif [[ $new_count -lt $ERROR_COUNT ]]; then
+            print_message "$GREEN" "$CHECK Reduced errors from $ERROR_COUNT to $new_count"
+            ERROR_COUNT=$new_count
+            mode="fresh"  # Re-analyze for next attempt
+        else
+            print_message "$RED" "$CROSS No progress made"
+            attempt=$((attempt + 1))
+        fi
+        
+        save_state
+    done
+    
+    # Final results
+    echo ""
+    print_message "$CYAN" "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    if [[ $ERROR_COUNT -eq 0 ]]; then
+        STATUS="completed"
+        TOTAL_FIXED=$INITIAL_ERRORS
+        save_state
+        
+        print_message "$GREEN" "$CHECK ${BOLD}BUILD SUCCESSFUL!${NC}"
+        print_message "$GREEN" "  Fixed all $INITIAL_ERRORS errors in $attempt attempt(s)"
+        print_message "$GREEN" "  Total runtime: $SECONDS seconds"
+        
+        # Show summary
+        show_summary
+        return 0
+    else
+        print_message "$RED" "$CROSS Build still has $ERROR_COUNT errors"
+        print_message "$YELLOW" "  Fixed $((INITIAL_ERRORS - ERROR_COUNT)) of $INITIAL_ERRORS errors"
+        print_message "$YELLOW" "  Some errors may require manual intervention"
+        return 1
+    fi
+}
+
+# Show summary statistics
+show_summary() {
+    if [[ -f "$AGENT_DIR/state/error_analysis.json" ]]; then
+        print_message "$BLUE" "\n📈 Fix Summary:"
+        
+        # Parse categories and show what was fixed
+        grep -A2 '"description"' "$AGENT_DIR/state/error_analysis.json" | grep -B1 '"count"' | \
+            while IFS= read -r line; do
+                if [[ "$line" =~ \"(.+)\":\ \{ ]]; then
+                    category="${BASH_REMATCH[1]}"
+                elif [[ "$line" =~ \"count\":\ ([0-9]+) ]]; then
+                    count="${BASH_REMATCH[1]}"
+                    printf "  %-30s %s fixed\n" "${category//_/ }:" "$count"
+                fi
+            done
+    fi
+    
+    # Show agent performance
+    if [[ -f "$AGENT_DIR/logs/agent_coordination.log" ]]; then
+        print_message "$BLUE" "\n🤖 Agent Performance:"
+        grep "reduced errors by" "$AGENT_DIR/logs/agent_coordination.log" | tail -5 | sed 's/^/  /'
+    fi
+}
+
+# Watch mode - continuous monitoring
+watch_mode() {
+    print_message "$MAGENTA" "👁️  Watch Mode Active - Monitoring for changes..."
+    
+    local last_check=$(date +%s)
+    local check_interval=30
+    
+    while true; do
+        local current_errors=$(get_error_count)
+        
+        if [[ $current_errors -gt 0 ]]; then
+            print_message "$YELLOW" "\n⚠️  Detected $current_errors errors at $(date)"
+            run_fix_process "fresh"
+        fi
+        
+        # Wait before next check
+        local remaining=$check_interval
+        while [[ $remaining -gt 0 ]]; do
+            printf "\r⏱️  Next check in %ds... (Press Ctrl+C to stop)" "$remaining"
+            sleep 1
+            remaining=$((remaining - 1))
+        done
+        printf "\r                                                    \r"
+    done
+}
+
+# Cleanup on exit
+cleanup() {
+    # Kill any running agents
+    pkill -f "generic_error_agent.sh" 2>/dev/null || true
+    pkill -f "generic_agent_coordinator.sh" 2>/dev/null || true
+    
+    # Remove lock files
+    rm -f "$AGENT_DIR"/.lock_* 2>/dev/null || true
+    rm -f "$AGENT_DIR"/.pid_* 2>/dev/null || true
+    
+    print_message "$YELLOW" "\n\n🛑 Auto-fix stopped"
+}
+
+# Main execution
+main() {
+    # Set trap for cleanup
+    trap cleanup EXIT INT TERM
+    
+    # Show banner
+    show_banner
+    
+    # Check if Claude Code is available
+    if [[ -n "${CLAUDE_CODE:-}" ]] || [[ -n "${MCP_SERVERS:-}" ]]; then
+        print_message "$BLUE" "🤖 Claude Code detected - using interactive mode"
+        exec "$AGENT_DIR/claude_code_integration.sh" interactive
+        exit 0
+    fi
+    
+    # Make decision based on current state
+    make_decision || local decision=$?
+    decision=${decision:-0}
+    
+    case $decision in
+        0)
+            # No errors, we're done
+            exit 0
+            ;;
+        1)
+            # Start fresh
+            run_fix_process "fresh"
+            ;;
+        2)
+            # Resume
+            run_fix_process "resume"
+            ;;
+    esac
+    
+    # Handle watch mode
+    if [[ "$WATCH_MODE" == "watch" ]]; then
+        watch_mode
+    fi
+}
+
+# Check for Claude Code specific arguments
+if [[ $# -gt 0 ]] && ([[ "$1" == "claude" ]] || [[ "$1" == "--claude-code" ]]); then
+    exec "$AGENT_DIR/claude_code_integration.sh" "${@:2}"
+    exit 0
+fi
+
+# Handle arguments
+case "${1:-auto}" in
+    "watch"|"-w"|"--watch")
+        WATCH_MODE="watch"
+        main
+        ;;
+    "once"|"-o"|"--once")
+        WATCH_MODE="once"
+        main
+        ;;
+    "help"|"-h"|"--help")
+        print_message "$BLUE" "
+Intelligent Auto-Fix Script - Multi-Language Build Error Resolution
+
+Usage: $0 [mode]
+
+Modes:
+  auto    - (default) Run once and exit when complete
+  watch   - Continuously monitor and fix new errors
+  once    - Run once regardless of state
+  help    - Show this help
+
+Examples:
+  $0           # Auto-detect and fix
+  $0 watch     # Keep watching for new errors
+  $0 once      # Force a single run
+
+🤖 CLAUDE CODE USERS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You don't need to run this script directly! Just paste this into
+Claude Code:
+
+'Please help me fix all build errors in my project using the 
+ZeroDev BuildFixAgents tool (https://github.com/ooples/ZeroDev).'
+
+The tool will auto-detect your language and build command!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Supported Languages (1,670+ patterns):
+- C# (.NET)           - Python
+- JavaScript/TypeScript - Java  
+- Go                  - Rust
+- C++                 - PHP
+- Ruby                - SQL
+- HTML/CSS
+
+The script will:
+- Automatically detect if this is first run or resume
+- Show real-time progress
+- Retry if needed
+- Provide detailed summary
+
+For detailed documentation see:
+- USER_STARTER_GUIDE.md - Complete feature guide
+- CLAUDE_CODE_QUICKSTART.md - Claude Code quick start
+- README.md - General documentation
+"
+        ;;
+    *)
+        WATCH_MODE="auto"
+        main
+        ;;
+esac

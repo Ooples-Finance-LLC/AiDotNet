@@ -663,7 +663,7 @@ public class DeepBeliefNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the Deep Belief Network model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata that describes the Deep Belief Network, including its type,
@@ -684,7 +684,7 @@ public class DeepBeliefNetwork<T> : NeuralNetworkBase<T>
     /// - Reproducing your model setup later
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         var layerSizes = new List<int>();
         
@@ -700,7 +700,7 @@ public class DeepBeliefNetwork<T> : NeuralNetworkBase<T>
             layerSizes.Add(_rbmLayers[_rbmLayers.Count - 1].GetOutputShape()[0]);
         }
         
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.DeepBeliefNetwork,
             AdditionalInfo = new Dictionary<string, object>

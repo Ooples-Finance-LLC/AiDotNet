@@ -465,28 +465,4 @@ namespace AiDotNet.FederatedLearning.Client
         #endregion
     }
 
-    /// <summary>
-    /// Client training round information
-    /// </summary>
-    public class ClientTrainingRound
-    {
-        public int Round { get; set; }
-        public double TrainingLoss { get; set; }
-        public TimeSpan TrainingTime { get; set; }
-        public int DataSize { get; set; }
-        public double ParameterUpdateNorm { get; set; }
-    }
-
-    /// <summary>
-    /// Client status enumeration
-    /// </summary>
-    public enum ClientStatus
-    {
-        Ready,
-        Training,
-        UpdatingModel,
-        Communicating,
-        Error,
-        Disconnected
-    }
 }

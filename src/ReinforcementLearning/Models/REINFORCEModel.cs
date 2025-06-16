@@ -279,9 +279,9 @@ namespace AiDotNet.ReinforcementLearning.Models
         /// Gets the metadata for this model.
         /// </summary>
         /// <returns>The model metadata.</returns>
-        public override ModelMetaData<T> GetModelMetaData()
+        public override ModelMetadata<T> GetModelMetadata()
         {
-            var metadata = new ModelMetaData<T>
+            var metadata = new ModelMetadata<T>
             {
                 ModelType = Enums.ModelType.REINFORCEModel,
                 AdditionalInfo = new Dictionary<string, object>

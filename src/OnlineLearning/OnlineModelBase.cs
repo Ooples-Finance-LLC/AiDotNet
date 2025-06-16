@@ -188,7 +188,7 @@ public abstract class OnlineModelBase<T, TInput, TOutput> : IOnlineModel<T, TInp
     // Abstract methods from IModel that must be implemented by derived classes
     public abstract void Train(TInput input, TOutput expectedOutput);
     public abstract TOutput Predict(TInput input);
-    public abstract ModelMetaData<T> GetModelMetaData();
+    public abstract ModelMetadata<T> GetModelMetadata();
     
     // Abstract methods from IModelSerializer
     public abstract byte[] Serialize();
@@ -235,7 +235,7 @@ public abstract class OnlineModelBase<T, TInput, TOutput> : IOnlineModel<T, TInp
     protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
     protected Vector<int> _sensitiveFeatures;
     protected readonly List<FairnessMetric> _fairnessMetrics = new();
-    protected IModel<TInput, TOutput, ModelMetaData<T>> _baseModel;
+    protected IModel<TInput, TOutput, ModelMetadata<T>> _baseModel;
 
     /// <summary>
     /// Gets the global feature importance across all predictions.
@@ -328,7 +328,7 @@ public abstract class OnlineModelBase<T, TInput, TOutput> : IOnlineModel<T, TInp
     /// <summary>
     /// Sets the base model for interpretability analysis.
     /// </summary>
-    public virtual void SetBaseModel(IModel<TInput, TOutput, ModelMetaData<T>> model)
+    public virtual void SetBaseModel(IModel<TInput, TOutput, ModelMetadata<T>> model)
     {
         _baseModel = model ?? throw new ArgumentNullException(nameof(model));
     }

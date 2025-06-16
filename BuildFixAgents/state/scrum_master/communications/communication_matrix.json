@@ -1,0 +1,24 @@
+{
+  "communication_rules": {
+    "architect_agent": {
+      "broadcasts_to": ["all"],
+      "listens_to": ["project_manager", "scrum_master"]
+    },
+    "developer_agents": {
+      "broadcasts_to": ["testing_agents", "architect_agent"],
+      "listens_to": ["architect_agent", "scrum_master"]
+    },
+    "testing_agents": {
+      "broadcasts_to": ["developer_agents", "project_manager"],
+      "listens_to": ["developer_agents", "scrum_master"]
+    },
+    "performance_agent": {
+      "broadcasts_to": ["developer_agents", "project_manager"],
+      "listens_to": ["all"]
+    },
+    "learning_agent": {
+      "broadcasts_to": ["all"],
+      "listens_to": ["all"]
+    }
+  }
+}

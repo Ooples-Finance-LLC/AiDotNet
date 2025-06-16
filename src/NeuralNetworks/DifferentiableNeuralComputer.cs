@@ -1591,7 +1591,7 @@ public class DifferentiableNeuralComputer<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the Differentiable Neural Computer model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata about the DNC, including its model type, memory configuration,
@@ -1611,9 +1611,9 @@ public class DifferentiableNeuralComputer<T> : NeuralNetworkBase<T>
     /// and for saving/loading models for later use.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.DifferentiableNeuralComputer,
             AdditionalInfo = new Dictionary<string, object>

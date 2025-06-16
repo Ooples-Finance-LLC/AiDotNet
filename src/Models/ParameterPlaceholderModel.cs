@@ -58,7 +58,7 @@ public class ParameterPlaceholderModel<T, TInput, TOutput> : IFullModel<T, TInpu
     /// <summary>
     /// Metadata about the model.
     /// </summary>
-    private readonly ModelMetaData<T> _metadata;
+    private readonly ModelMetadata<T> _metadata;
 
     /// <summary>
     /// Optional reference to the original model being optimized.
@@ -100,7 +100,7 @@ public class ParameterPlaceholderModel<T, TInput, TOutput> : IFullModel<T, TInpu
             : [.. Enumerable.Range(0, initialParameters.Length)];
 
         // Initialize metadata
-        _metadata = _originalModel != null ? _originalModel.GetModelMetaData() :  new ModelMetaData<T>
+        _metadata = _originalModel != null ? _originalModel.GetModelMetadata() :  new ModelMetadata<T>
         {
             FeatureCount = initialParameters.Length,
             Complexity = _activeFeatures.Count,
@@ -390,7 +390,7 @@ public class ParameterPlaceholderModel<T, TInput, TOutput> : IFullModel<T, TInpu
     /// <remarks>
     /// Same as GetModelMetadata but with different method name to satisfy interface requirements.
     /// </remarks>
-    public ModelMetaData<T> GetModelMetaData()
+    public ModelMetadata<T> GetModelMetadata()
     {
         return _metadata;
     }
@@ -520,7 +520,7 @@ public class ParameterPlaceholderModel<T, TInput, TOutput> : IFullModel<T, TInpu
         protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
         protected Vector<int> _sensitiveFeatures;
         protected readonly List<FairnessMetric> _fairnessMetrics = new();
-        protected IModel<TInput, TOutput, ModelMetaData<T>> _baseModel;
+        protected IModel<TInput, TOutput, ModelMetadata<T>> _baseModel;
 
         /// <summary>
         /// Gets the global feature importance across all predictions.
@@ -613,7 +613,7 @@ public class ParameterPlaceholderModel<T, TInput, TOutput> : IFullModel<T, TInpu
         /// <summary>
         /// Sets the base model for interpretability analysis.
         /// </summary>
-        public virtual void SetBaseModel(IModel<TInput, TOutput, ModelMetaData<T>> model)
+        public virtual void SetBaseModel(IModel<TInput, TOutput, ModelMetadata<T>> model)
         {
         _baseModel = model ?? throw new ArgumentNullException(nameof(model));
         }

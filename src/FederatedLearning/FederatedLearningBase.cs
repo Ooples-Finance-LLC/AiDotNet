@@ -266,42 +266,6 @@ namespace AiDotNet.FederatedLearning
     }
 
     /// <summary>
-    /// Security settings for federated learning
-    /// </summary>
-    public class FederatedSecuritySettings
-    {
-        public bool UseSecureAggregation { get; set; } = true;
-        public bool UseEncryption { get; set; } = true;
-        public bool VerifyClientIdentity { get; set; } = true;
-        public int KeySize { get; set; } = 2048;
-        public string EncryptionAlgorithm { get; set; } = "RSA";
-    }
-
-    /// <summary>
-    /// Privacy settings for differential privacy
-    /// </summary>
-    public class PrivacySettings
-    {
-        public bool UseDifferentialPrivacy { get; set; } = true;
-        public double Epsilon { get; set; } = 1.0;
-        public double Delta { get; set; } = 1e-5;
-        public double ClippingThreshold { get; set; } = 1.0;
-        public double NoiseMultiplier { get; set; } = 1.0;
-    }
-
-    /// <summary>
-    /// Communication settings for federated learning
-    /// </summary>
-    public class CommunicationSettings
-    {
-        public int TimeoutSeconds { get; set; } = 300;
-        public int MaxRetries { get; set; } = 3;
-        public bool UseCompression { get; set; } = true;
-        public double CompressionRatio { get; set; } = 0.1;
-        public bool UseBandwidthOptimization { get; set; } = true;
-    }
-
-    /// <summary>
     /// Federated aggregation strategies
     /// </summary>
     public enum FederatedAggregationStrategy

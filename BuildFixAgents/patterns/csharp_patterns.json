@@ -1,0 +1,104 @@
+{
+  "language": "csharp",
+  "version": "2.0",
+  "errors": [
+    {
+      "code": "CS0101",
+      "description": "Duplicate class/type definition",
+      "pattern": "(class|struct|interface|enum)\\s+(\\w+)",
+      "detection": "multiple_occurrences",
+      "fix_strategy": "remove_duplicate",
+      "example": "public class MyClass { } public class MyClass { }",
+      "replacement": null
+    },
+    {
+      "code": "CS0111",
+      "description": "Duplicate method definition",
+      "pattern": "(public|private|protected|internal)\\s+.*\\s+(\\w+)\\s*\\([^)]*\\)",
+      "detection": "signature_match",
+      "fix_strategy": "remove_duplicate_method",
+      "example": "public void Method() { } public void Method() { }",
+      "replacement": null
+    },
+    {
+      "code": "CS0246",
+      "description": "Type or namespace not found",
+      "pattern": "\\b(\\w+)\\b",
+      "detection": "missing_type",
+      "fix_strategy": "add_using_or_reference",
+      "common_fixes": {
+        "List": "using System.Collections.Generic;",
+        "Task": "using System.Threading.Tasks;",
+        "HttpClient": "using System.Net.Http;",
+        "File": "using System.IO;",
+        "Regex": "using System.Text.RegularExpressions;"
+      }
+    },
+    {
+      "code": "CS0462",
+      "description": "Inheritance member conflict",
+      "pattern": "override.*\\s+(\\w+)\\s*\\(",
+      "detection": "override_conflict",
+      "fix_strategy": "fix_override_signature",
+      "replacement": "public override ${return_type} ${method_name}(${parameters})"
+    },
+    {
+      "code": "CS1061",
+      "description": "Type does not contain definition",
+      "pattern": "\\.([a-zA-Z_]\\w*)\\s*[\\(\\[]?",
+      "detection": "missing_member",
+      "fix_strategy": "add_member_or_extension"
+    },
+    {
+      "code": "CS0103",
+      "description": "Name does not exist in context",
+      "pattern": "\\b(\\w+)\\b",
+      "detection": "undefined_variable",
+      "fix_strategy": "declare_variable_or_import"
+    },
+    {
+      "code": "CS0535",
+      "description": "Does not implement interface member",
+      "pattern": "interface\\s+(\\w+)",
+      "detection": "missing_implementation",
+      "fix_strategy": "implement_interface_member"
+    },
+    {
+      "code": "CS0161",
+      "description": "Not all code paths return value",
+      "pattern": "(public|private|protected|internal)\\s+(?!void)\\w+\\s+(\\w+)\\s*\\(",
+      "detection": "missing_return",
+      "fix_strategy": "add_return_statement",
+      "replacement": "throw new NotImplementedException();"
+    },
+    {
+      "code": "CS0029",
+      "description": "Cannot implicitly convert type",
+      "pattern": "=\\s*([^;]+);",
+      "detection": "type_mismatch",
+      "fix_strategy": "add_cast_or_conversion"
+    },
+    {
+      "code": "CS0117",
+      "description": "Type does not contain definition for member",
+      "pattern": "(\\w+)\\.(\\w+)",
+      "detection": "static_member_missing",
+      "fix_strategy": "check_static_vs_instance"
+    }
+  ],
+  "fix_templates": {
+    "add_method": "public ${return_type} ${method_name}(${parameters})\n{\n    ${body}\n}",
+    "add_property": "public ${type} ${name} { get; set; }",
+    "add_using": "using ${namespace};",
+    "implement_interface": "public ${return_type} ${method_name}(${parameters})\n{\n    throw new NotImplementedException();\n}"
+  },
+  "common_namespaces": [
+    "System",
+    "System.Collections.Generic",
+    "System.Linq",
+    "System.Text",
+    "System.Threading.Tasks",
+    "System.IO",
+    "System.Net.Http"
+  ]
+}

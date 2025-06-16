@@ -403,7 +403,7 @@ namespace AiDotNet.NeuralNetworks.DiffusionModels
             return new FlowMatchingModel(velocityNetwork, flowType, sigma, useOptimalTransport, rectificationSteps, Architecture.CacheName);
         }
         
-        public override AiDotNet.Models.ModelMetaData<double> GetModelMetaData()
+        public override AiDotNet.Models.ModelMetadata<double> GetModelMetadata()
         {
             var paramCount = 0;
             if (velocityNetwork != null)
@@ -421,7 +421,7 @@ namespace AiDotNet.NeuralNetworks.DiffusionModels
                 }
             }
             
-            return new AiDotNet.Models.ModelMetaData<double>
+            return new AiDotNet.Models.ModelMetadata<double>
             {
                 ModelType = ModelType.NeuralNetwork,
                 FeatureCount = 0, // Variable for generative models

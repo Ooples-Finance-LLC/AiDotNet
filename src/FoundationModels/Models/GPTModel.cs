@@ -207,7 +207,7 @@ namespace AiDotNet.FoundationModels.Models
         #region IModel Implementation
 
         /// <inheritdoc/>
-        // The Train, Predict, and GetModelMetaData methods are implemented in base class
+        // The Train, Predict, and GetModelMetadata methods are implemented in base class
 
         #endregion
 

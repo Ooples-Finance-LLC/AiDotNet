@@ -370,7 +370,7 @@ public class Transformer<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Retrieves metadata about the Transformer model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the Transformer.</returns>
+    /// <returns>A ModelMetadata object containing information about the Transformer.</returns>
     /// <remarks>
     /// <para>
     /// This method collects and returns various pieces of information about the Transformer,
@@ -388,9 +388,9 @@ public class Transformer<T> : NeuralNetworkBase<T>
     /// experimenting with multiple configurations.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.Transformer,
             AdditionalInfo = new Dictionary<string, object>

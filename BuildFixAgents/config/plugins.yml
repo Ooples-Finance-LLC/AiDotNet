@@ -1,0 +1,43 @@
+# Plugin Configuration
+plugins:
+  enabled: true
+  auto_load: true
+  security_mode: "sandboxed"  # strict, sandboxed, trusted
+  
+  # Plugin directories
+  directories:
+    - "./plugins/enabled"
+    - "~/.buildfix/plugins"
+    - "/usr/local/share/buildfix/plugins"
+    
+  # Plugin capabilities
+  capabilities:
+    file_access: "restricted"  # none, restricted, full
+    network_access: false
+    system_commands: false
+    agent_control: true
+    
+  # Plugin lifecycle
+  lifecycle:
+    timeout: 300  # seconds
+    max_memory_mb: 512
+    max_cpu_percent: 50
+    
+  # Plugin API
+  api:
+    version: "1.0"
+    endpoints:
+      - "/api/v1/agents"
+      - "/api/v1/metrics"
+      - "/api/v1/tasks"
+      
+  # Security
+  security:
+    require_signature: false
+    allowed_domains:
+      - "github.com"
+      - "gitlab.com"
+    blocked_patterns:
+      - "rm -rf"
+      - "sudo"
+      - "> /dev/null"

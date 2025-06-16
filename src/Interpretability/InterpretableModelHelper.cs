@@ -22,7 +22,7 @@ namespace AiDotNet.Interpretability
         /// Default implementation for GetGlobalFeatureImportanceAsync.
         /// </summary>
         public static async Task<Dictionary<int, T>> GetGlobalFeatureImportanceAsync<T>(
-            IModel<object, object, ModelMetaData<T>> model,
+            IModel<object, object, ModelMetadata<T>> model,
             HashSet<InterpretationMethod> enabledMethods)
         {
             if (!enabledMethods.Contains(InterpretationMethod.FeatureImportance))
@@ -32,7 +32,7 @@ namespace AiDotNet.Interpretability
 
             var ops = MathHelper.GetNumericOperations<T>();
             var importance = new Dictionary<int, T>();
-            var metadata = model.GetModelMetaData();
+            var metadata = model.GetModelMetadata();
             
             for (int i = 0; i < metadata.FeatureCount; i++)
             {
@@ -46,7 +46,7 @@ namespace AiDotNet.Interpretability
         /// Default implementation for GetLocalFeatureImportanceAsync.
         /// </summary>
         public static async Task<Dictionary<int, T>> GetLocalFeatureImportanceAsync<T, TInput>(
-            IModel<TInput, object, ModelMetaData<T>> model,
+            IModel<TInput, object, ModelMetadata<T>> model,
             HashSet<InterpretationMethod> enabledMethods,
             TInput input)
         {
@@ -63,7 +63,7 @@ namespace AiDotNet.Interpretability
         /// Default implementation for GetShapValuesAsync.
         /// </summary>
         public static async Task<Matrix<T>> GetShapValuesAsync<T>(
-            IModel<object, object, ModelMetaData<T>> model,
+            IModel<object, object, ModelMetadata<T>> model,
             HashSet<InterpretationMethod> enabledMethods)
         {
             if (!enabledMethods.Contains(InterpretationMethod.SHAP))
@@ -72,7 +72,7 @@ namespace AiDotNet.Interpretability
             }
 
             var ops = MathHelper.GetNumericOperations<T>();
-            var metadata = model.GetModelMetaData();
+            var metadata = model.GetModelMetadata();
             var shapValues = new Matrix<T>(1, metadata.FeatureCount);
             
             for (int i = 0; i < metadata.FeatureCount; i++)
@@ -136,10 +136,10 @@ namespace AiDotNet.Interpretability
         /// Default implementation for GetModelSpecificInterpretabilityAsync.
         /// </summary>
         public static async Task<Dictionary<string, object>> GetModelSpecificInterpretabilityAsync<T>(
-            IModel<object, object, ModelMetaData<T>> model)
+            IModel<object, object, ModelMetadata<T>> model)
         {
             var result = new Dictionary<string, object>();
-            var metadata = model.GetModelMetaData();
+            var metadata = model.GetModelMetadata();
             
             result["ModelType"] = metadata.ModelType.ToString();
             result["FeatureCount"] = metadata.FeatureCount;
@@ -152,11 +152,11 @@ namespace AiDotNet.Interpretability
         /// Default implementation for GenerateTextExplanationAsync.
         /// </summary>
         public static async Task<string> GenerateTextExplanationAsync<T, TInput, TOutput>(
-            IModel<TInput, TOutput, ModelMetaData<T>> model,
+            IModel<TInput, TOutput, ModelMetadata<T>> model,
             TInput input,
             TOutput prediction)
         {
-            var metadata = model.GetModelMetaData();
+            var metadata = model.GetModelMetadata();
             return await Task.FromResult($"Model {metadata.ModelType} predicted output based on {metadata.FeatureCount} features.");
         }
 

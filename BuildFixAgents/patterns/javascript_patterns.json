@@ -1,0 +1,24 @@
+{
+  "language": "javascript",
+  "version": "1.0",
+  "errors": [
+    {
+      "code": "ReferenceError",
+      "description": "Variable not defined",
+      "pattern": "(\\w+) is not defined",
+      "fix_strategy": "declare_or_import"
+    },
+    {
+      "code": "SyntaxError",
+      "description": "Unexpected token",
+      "pattern": "Unexpected token (\\w+)",
+      "fix_strategy": "fix_syntax"
+    },
+    {
+      "code": "TypeError",
+      "description": "Type error",
+      "pattern": "Cannot read property '(\\w+)' of undefined",
+      "fix_strategy": "add_null_check"
+    }
+  ]
+}

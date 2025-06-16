@@ -334,9 +334,9 @@ public class OnlineNaiveBayes<T> : OnlineModelBase<T, Vector<T>, T>
     }
     
     /// <inheritdoc/>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.OnlineNaiveBayes,
             FeatureCount = _numFeatures,

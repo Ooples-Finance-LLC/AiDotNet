@@ -955,7 +955,7 @@ public class GARCHModel<T> : TimeSeriesModelBase<T>
     /// <summary>
     /// Returns metadata about the model, including its type, parameters, and configuration.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns detailed metadata about the GARCH model, including its type, current parameters (omega, alpha, beta),
@@ -978,9 +978,9 @@ public class GARCHModel<T> : TimeSeriesModelBase<T>
     /// - Storing model details in a database or registry
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.GARCHModel,
             AdditionalInfo = new Dictionary<string, object>

@@ -363,9 +363,9 @@ namespace AiDotNet.NeuralNetworks.DiffusionModels
         /// <summary>
         /// Gets model metadata including latent diffusion specific information
         /// </summary>
-        public override ModelMetaData<double> GetModelMetaData()
+        public override ModelMetadata<double> GetModelMetadata()
         {
-            var baseMetadata = base.GetModelMetaData();
+            var baseMetadata = base.GetModelMetadata();
             
             // Add latent diffusion specific information
             baseMetadata.AdditionalInfo["LatentChannels"] = _latentChannels;

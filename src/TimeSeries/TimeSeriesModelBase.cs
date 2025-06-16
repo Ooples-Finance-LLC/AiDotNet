@@ -846,7 +846,7 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>, IGradientTra
     /// <summary>
     /// Gets metadata about the time series model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method provides comprehensive metadata about the model, including its type,
@@ -869,7 +869,7 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>, IGradientTra
     /// It's like a complete summary of everything important about the model.
     /// </para>
     /// </remarks>
-    public abstract ModelMetaData<T> GetModelMetaData();
+    public abstract ModelMetadata<T> GetModelMetadata();
 
     /// <summary>
     /// Gets the trainable parameters of the model as a vector.
@@ -1616,7 +1616,7 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>, IGradientTra
     protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
     protected Vector<int> _sensitiveFeatures;
     protected readonly List<FairnessMetric> _fairnessMetrics = new();
-    protected IModel<Matrix<T>, Vector<T>, ModelMetaData<T>> _baseModel;
+    protected IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> _baseModel;
 
     /// <summary>
     /// Gets the global feature importance across all predictions.
@@ -1709,7 +1709,7 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>, IGradientTra
     /// <summary>
     /// Sets the base model for interpretability analysis.
     /// </summary>
-    public virtual void SetBaseModel(IModel<Matrix<T>, Vector<T>, ModelMetaData<T>> model)
+    public virtual void SetBaseModel(IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> model)
     {
         _baseModel = model ?? throw new ArgumentNullException(nameof(model));
     }

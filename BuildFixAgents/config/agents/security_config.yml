@@ -1,0 +1,35 @@
+# Security Agent Configuration
+agent:
+  name: "security"
+  type: "scanner"
+  priority: 3
+  
+scanning:
+  secret_detection:
+    enabled: true
+    patterns:
+      - "password"
+      - "apikey"
+      - "secret"
+      - "token"
+      - "connectionstring"
+    exclude_files:
+      - "*.md"
+      - "*.txt"
+      
+  vulnerability_scan:
+    enabled: true
+    check_dependencies: true
+    check_code_patterns: true
+    severity_threshold: "medium"
+    
+  compliance:
+    enabled: false
+    standards:
+      - "OWASP"
+      - "CWE"
+      
+reports:
+  format: "json"
+  output_dir: "security_reports"
+  include_recommendations: true

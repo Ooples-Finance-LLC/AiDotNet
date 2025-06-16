@@ -685,15 +685,15 @@ public class DeepBoltzmannMachine<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the Deep Boltzmann Machine model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// This method returns metadata about the DBM, including the model type, number of layers,
     /// layer sizes, and training parameters. This information can be useful for model management
     /// and serialization.
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.DeepBoltzmannMachine,
             AdditionalInfo = new Dictionary<string, object>

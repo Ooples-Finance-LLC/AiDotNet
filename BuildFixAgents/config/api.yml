@@ -1,0 +1,51 @@
+# API Configuration
+api:
+  enabled: true
+  port: 8080
+  host: "0.0.0.0"
+  
+  # Authentication
+  auth:
+    enabled: false
+    type: "api_key"  # api_key, jwt, oauth
+    api_key: "change-me-in-production"
+    
+  # CORS
+  cors:
+    enabled: true
+    origins: ["*"]
+    methods: ["GET", "POST", "PUT", "DELETE"]
+    
+  # Rate limiting
+  rate_limit:
+    enabled: true
+    requests_per_minute: 60
+    burst: 10
+    
+  # API endpoints
+  endpoints:
+    - path: "/api/v1/status"
+      methods: ["GET"]
+      description: "System status"
+      
+    - path: "/api/v1/agents"
+      methods: ["GET", "POST"]
+      description: "Agent management"
+      
+    - path: "/api/v1/metrics"
+      methods: ["GET"]
+      description: "System metrics"
+      
+    - path: "/api/v1/experiments"
+      methods: ["GET", "POST", "PUT"]
+      description: "A/B testing experiments"
+      
+    - path: "/api/v1/plugins"
+      methods: ["GET", "POST", "DELETE"]
+      description: "Plugin management"
+      
+  # WebSocket
+  websocket:
+    enabled: true
+    path: "/ws"
+    heartbeat: 30

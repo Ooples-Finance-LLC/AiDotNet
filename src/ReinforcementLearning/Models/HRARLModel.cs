@@ -547,9 +547,9 @@ namespace AiDotNet.ReinforcementLearning.Models
         /// Gets the metadata for this model.
         /// </summary>
         /// <returns>The model metadata.</returns>
-        public override ModelMetaData<T> GetModelMetaData()
+        public override ModelMetadata<T> GetModelMetadata()
         {
-            var metadata = base.GetModelMetaData();
+            var metadata = base.GetModelMetadata();
 
             metadata.ModelType = ModelType.HRARLModel;
             metadata.Description = "A multi-level reinforcement learning model that explicitly considers financial risk";

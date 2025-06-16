@@ -463,9 +463,9 @@ public abstract class NonLinearRegressionModelBase<T> : INonLinearRegression<T>
     /// can be useful for understanding the model's complexity and for debugging purposes.
     /// </para>
     /// </remarks>
-    public virtual ModelMetaData<T> GetModelMetaData()
+    public virtual ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = GetModelType(),
             AdditionalInfo = new Dictionary<string, object>
@@ -979,7 +979,7 @@ public abstract class NonLinearRegressionModelBase<T> : INonLinearRegression<T>
     protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
     protected Vector<int> _sensitiveFeatures;
     protected readonly List<FairnessMetric> _fairnessMetrics = new();
-    protected IModel<Matrix<T>, Vector<T>, ModelMetaData<T>> _baseModel;
+    protected IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> _baseModel;
 
     /// <summary>
     /// Gets the global feature importance across all predictions.
@@ -1072,7 +1072,7 @@ public abstract class NonLinearRegressionModelBase<T> : INonLinearRegression<T>
     /// <summary>
     /// Sets the base model for interpretability analysis.
     /// </summary>
-    public virtual void SetBaseModel(IModel<Matrix<T>, Vector<T>, ModelMetaData<T>> model)
+    public virtual void SetBaseModel(IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> model)
     {
         _baseModel = model ?? throw new ArgumentNullException(nameof(model));
     }

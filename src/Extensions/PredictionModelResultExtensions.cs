@@ -57,7 +57,7 @@ public static class PredictionModelResultExtensions
                 // Get model metadata
                 try
                 {
-                    var metadata = model.Model.GetModelMetaData();
+                    var metadata = model.Model.GetModelMetadata();
                     diagnostics.AppendLine($"Model Metadata Type: {metadata.ModelType}");
                 }
                 catch (Exception ex)

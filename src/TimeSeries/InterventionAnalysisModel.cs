@@ -732,7 +732,7 @@ public class InterventionAnalysisModel<T> : TimeSeriesModelBase<T>
     /// <summary>
     /// Returns metadata about the model, including its type, parameters, and configuration.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns detailed metadata about the intervention analysis model, including its type, 
@@ -756,9 +756,9 @@ public class InterventionAnalysisModel<T> : TimeSeriesModelBase<T>
     /// - Understanding the relative importance of different interventions
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.InterventionAnalysisModel,
             AdditionalInfo = new Dictionary<string, object>

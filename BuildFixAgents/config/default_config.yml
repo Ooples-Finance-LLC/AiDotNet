@@ -1,0 +1,102 @@
+# Default Configuration for Build Fix Agent System
+# This file contains default settings that can be overridden by project-specific config
+
+# General Settings
+general:
+  project_name: "Auto-detected"
+  dotnet_version: "auto"  # auto, net6.0, net7.0, net8.0, netcoreapp3.1, net462
+  max_concurrent_agents: 3
+  timeout_minutes: 30
+  auto_commit: false
+  auto_pr: false
+  
+# Build Settings
+build:
+  configuration: "Debug"  # Debug, Release
+  verbosity: "minimal"    # quiet, minimal, normal, detailed, diagnostic
+  restore_packages: true
+  clean_before_build: false
+  parallel_build: true
+  treat_warnings_as_errors: false
+  
+# Agent Configuration
+agents:
+  error_fix:
+    enabled: true
+    max_retries: 3
+    batch_size: 10
+    priority_errors:
+      - "CS0246"  # Type or namespace not found
+      - "CS0103"  # Name does not exist
+      - "CS1061"  # Does not contain definition
+  
+  tester:
+    enabled: true
+    run_unit_tests: true
+    run_integration_tests: false
+    test_timeout: 300
+    continue_on_failure: true
+    
+  performance:
+    enabled: false
+    profile_duration: 60
+    memory_threshold_mb: 1000
+    cpu_threshold_percent: 80
+    
+  architect:
+    enabled: false
+    analyze_patterns: true
+    suggest_refactoring: true
+    check_dependencies: true
+    
+  security:
+    enabled: false
+    scan_secrets: true
+    check_vulnerabilities: true
+    audit_dependencies: true
+    
+# Error Handling
+error_handling:
+  backup_before_fix: true
+  rollback_on_failure: true
+  max_file_backups: 5
+  ignore_patterns:
+    - "*/bin/*"
+    - "*/obj/*"
+    - "*/packages/*"
+    - "*/node_modules/*"
+    
+# Notifications
+notifications:
+  enabled: false
+  channels:
+    - type: "console"
+      level: "info"  # debug, info, warning, error
+    - type: "file"
+      path: "logs/notifications.log"
+      level: "debug"
+      
+# Performance Tuning
+performance:
+  hardware_detection: true
+  dynamic_scaling: true
+  memory_limit_percent: 80
+  cpu_cores_limit: 0  # 0 means use all available
+  
+# Git Integration
+git:
+  enabled: true
+  branch_prefix: "buildfix"
+  commit_prefix: "🔧 [BuildFix]"
+  auto_stage: true
+  push_to_remote: false
+  create_pr_draft: true
+  
+# Telemetry
+telemetry:
+  enabled: false
+  anonymous: true
+  metrics:
+    - "build_time"
+    - "errors_fixed"
+    - "agent_performance"

@@ -33,8 +33,8 @@ namespace AiDotNet.Interpretability
         public abstract Task<TOutput> PredictAsync(TInput input);
         public abstract void Train(TInput inputs, TOutput targets);
         public abstract Task TrainAsync(TInput inputs, TOutput targets);
-        public abstract ModelMetaData<T> GetModelMetaData();
-        public abstract void SetModelMetaData(ModelMetaData<T> metadata);
+        public abstract ModelMetadata<T> GetModelMetadata();
+        public abstract void SetModelMetadata(ModelMetadata<T> metadata);
         public abstract void Save(string filePath);
         public abstract void Load(string filePath);
         public abstract void Dispose();
@@ -49,7 +49,7 @@ namespace AiDotNet.Interpretability
 
             // Default implementation using permutation importance
             var importance = new Dictionary<int, T>();
-            var metadata = GetModelMetaData();
+            var metadata = GetModelMetadata();
             
             for (int i = 0; i < metadata.FeatureCount; i++)
             {
@@ -78,7 +78,7 @@ namespace AiDotNet.Interpretability
             }
 
             // Placeholder implementation - derived classes should override
-            var metadata = GetModelMetaData();
+            var metadata = GetModelMetadata();
             var shapValues = new Matrix<T>(1, metadata.FeatureCount);
             
             for (int i = 0; i < metadata.FeatureCount; i++)
@@ -126,7 +126,7 @@ namespace AiDotNet.Interpretability
         {
             // Default implementation returns basic model info
             var result = new Dictionary<string, object>();
-            var metadata = GetModelMetaData();
+            var metadata = GetModelMetadata();
             
             result["ModelType"] = metadata.ModelType.ToString();
             result["FeatureCount"] = metadata.FeatureCount;
@@ -138,7 +138,7 @@ namespace AiDotNet.Interpretability
         public virtual async Task<string> GenerateTextExplanationAsync(TInput input, TOutput prediction)
         {
             // Default implementation
-            var metadata = GetModelMetaData();
+            var metadata = GetModelMetadata();
             return await Task.FromResult($"Model {metadata.ModelType} predicted output based on {metadata.FeatureCount} features.");
         }
 
@@ -175,7 +175,7 @@ namespace AiDotNet.Interpretability
             return await Task.FromResult(new AnchorExplanation<T>());
         }
 
-        public virtual void SetBaseModel(IModel<TInput, TOutput, ModelMetaData<T>> model)
+        public virtual void SetBaseModel(IModel<TInput, TOutput, ModelMetadata<T>> model)
         {
             _baseModel = model ?? throw new ArgumentNullException(nameof(model));
         }

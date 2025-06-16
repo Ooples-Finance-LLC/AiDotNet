@@ -508,9 +508,9 @@ public class TransferNeuralNetwork<T> : TransferLearningModelBase<T, Tensor<T>, 
         return _baseNetwork.Predict(input);
     }
     
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var baseMetadata = _baseNetwork.GetModelMetaData();
+        var baseMetadata = _baseNetwork.GetModelMetadata();
         baseMetadata.AdditionalInfo["TransferInfo"] = GetTransferInfo();
         baseMetadata.AdditionalInfo["FrozenLayers"] = GetFrozenLayers().ToList();
         return baseMetadata;

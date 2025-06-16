@@ -212,9 +212,9 @@ public class TransferRandomForest<T> : TransferLearningModelBase<T, Matrix<T>, V
         return _baseForest.Predict(input);
     }
     
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var baseMetadata = _baseForest.GetModelMetaData();
+        var baseMetadata = _baseForest.GetModelMetadata();
         baseMetadata.AdditionalInfo["TransferInfo"] = GetTransferInfo();
         baseMetadata.AdditionalInfo["FrozenTrees"] = _frozenTreeIndices.Count;
         return baseMetadata;

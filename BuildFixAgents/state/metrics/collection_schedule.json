@@ -1,0 +1,19 @@
+{
+  "schedules": [
+    {
+      "metric": "system_resources",
+      "interval": 60,
+      "priority": "high"
+    },
+    {
+      "metric": "application_performance",
+      "interval": 300,
+      "priority": "medium"
+    },
+    {
+      "metric": "quality_metrics",
+      "interval": 600,
+      "priority": "low"
+    }
+  ]
+}

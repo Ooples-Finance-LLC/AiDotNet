@@ -616,9 +616,9 @@ namespace AiDotNet.NeuralNetworks.DiffusionModels
             return new DiffusionModel(_timesteps, _betaStart, _betaEnd, Architecture.CacheName);
         }
         
-        public override ModelMetaData<double> GetModelMetaData()
+        public override ModelMetadata<double> GetModelMetadata()
         {
-            var metadata = new ModelMetaData<double>
+            var metadata = new ModelMetadata<double>
             {
                 ModelType = ModelType.NeuralNetwork,
                 FeatureCount = (_noisePredictor is NeuralNetworkBase<double> nn ? nn.GetParameterCount() : _noisePredictor?.GetParameters().Length ?? 0),

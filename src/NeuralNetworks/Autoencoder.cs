@@ -634,15 +634,15 @@ public class Autoencoder<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the autoencoder model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// This method returns metadata about the autoencoder, including the model type, input/output dimensions,
     /// encoded size, and layer configuration. This information is useful for model management, serialization,
     /// and transfer learning.
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.Autoencoder,
             AdditionalInfo = new Dictionary<string, object>

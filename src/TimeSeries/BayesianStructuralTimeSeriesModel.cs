@@ -1292,7 +1292,7 @@ public class BayesianStructuralTimeSeriesModel<T> : TimeSeriesModelBase<T>
     /// <summary>
     /// Gets metadata about the trained model, including its type, components, and configuration.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method provides comprehensive information about the model, including its type, parameters, components,
@@ -1313,10 +1313,10 @@ public class BayesianStructuralTimeSeriesModel<T> : TimeSeriesModelBase<T>
     /// - Understanding which components are most important in your forecasts
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         var bstsOptions = (BayesianStructuralTimeSeriesOptions<T>)Options;
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.BayesianStructuralTimeSeriesModel,
             AdditionalInfo = new Dictionary<string, object>

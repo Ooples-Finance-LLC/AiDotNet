@@ -1,0 +1,5 @@
+[
+    {"error_code": "CS0246", "file": "test.cs", "line": 10},
+    {"error_code": "CS0246", "file": "test2.cs", "line": 20},
+    {"error_code": "CS0101", "file": "duplicate.cs", "line": 5}
+]

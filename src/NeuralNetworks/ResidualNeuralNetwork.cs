@@ -388,7 +388,7 @@ public class ResidualNeuralNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the Residual Neural Network model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata that describes the Residual Neural Network, including its type,
@@ -409,11 +409,11 @@ public class ResidualNeuralNetwork<T> : NeuralNetworkBase<T>
     /// - Reproducing your model setup later
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         var layerSizes = Layers.Select(layer => layer.GetOutputShape()[0]).ToList();
         
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.ResidualNeuralNetwork,
             AdditionalInfo = new Dictionary<string, object>

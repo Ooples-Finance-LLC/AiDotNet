@@ -349,7 +349,7 @@ public class RecurrentNeuralNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the Recurrent Neural Network model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata that describes the RNN, including its type, architecture details,
@@ -372,9 +372,9 @@ public class RecurrentNeuralNetwork<T> : NeuralNetworkBase<T>
     /// Think of it like a spec sheet for a car, listing all its important features and capabilities.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.RecurrentNeuralNetwork,
             FeatureCount = Architecture.GetInputShape()[0],

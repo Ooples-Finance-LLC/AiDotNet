@@ -324,9 +324,9 @@ namespace AiDotNet.MultimodalAI
         /// <summary>
         /// Gets model metadata
         /// </summary>
-        public ModelMetaData<T> GetModelMetaData()
+        public ModelMetadata<T> GetModelMetadata()
         {
-            return new ModelMetaData<T>
+            return new ModelMetadata<T>
             {
                 ModelType = Enums.ModelType.CustomEnsemble,
                 FeatureCount = _modalityEncoders.Sum(e => e.Value.OutputDimension),
@@ -661,7 +661,7 @@ namespace AiDotNet.MultimodalAI
         protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
         protected Vector<int> _sensitiveFeatures;
         protected readonly List<FairnessMetric> _fairnessMetrics = new();
-        protected IModel<Dictionary<string, object>, Vector<T>, ModelMetaData<T>> _baseModel;
+        protected IModel<Dictionary<string, object>, Vector<T>, ModelMetadata<T>> _baseModel;
 
         /// <summary>
         /// Gets the global feature importance across all predictions.
@@ -754,7 +754,7 @@ namespace AiDotNet.MultimodalAI
         /// <summary>
         /// Sets the base model for interpretability analysis.
         /// </summary>
-        public virtual void SetBaseModel(IModel<Dictionary<string, object>, Vector<T>, ModelMetaData<T>> model)
+        public virtual void SetBaseModel(IModel<Dictionary<string, object>, Vector<T>, ModelMetadata<T>> model)
         {
         _baseModel = model ?? throw new ArgumentNullException(nameof(model));
         }

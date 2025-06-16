@@ -1,0 +1,14 @@
+{
+  "model_type": "pattern_recognition",
+  "confidence_threshold": 0.8,
+  "min_samples_required": 3,
+  "learning_rate": 0.1,
+  "features": [
+    "error_code",
+    "file_type",
+    "fix_strategy",
+    "success_rate",
+    "execution_time",
+    "agent_used"
+  ]
+}

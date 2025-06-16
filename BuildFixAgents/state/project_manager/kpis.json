@@ -1,0 +1,29 @@
+{
+  "kpis": {
+    "error_fix_rate": {
+      "target": 95,
+      "current": 0,
+      "unit": "percent"
+    },
+    "execution_time": {
+      "target": 120,
+      "current": 0,
+      "unit": "seconds"
+    },
+    "agent_efficiency": {
+      "target": 80,
+      "current": 0,
+      "unit": "percent"
+    },
+    "code_quality": {
+      "target": 90,
+      "current": 0,
+      "unit": "score"
+    },
+    "system_reliability": {
+      "target": 99.9,
+      "current": 0,
+      "unit": "percent"
+    }
+  }
+}

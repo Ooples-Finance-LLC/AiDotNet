@@ -1,0 +1,91 @@
+{
+  "version": "2.0",
+  "generated_at": "2025-06-16T14:47:30Z",
+  "agents": {
+    "architect": {
+      "name": "Architect Agent V2",
+      "script": "architect_agent_v2.sh",
+      "role": "planning",
+      "status": "active"
+    },
+    "performance": {
+      "name": "Performance Analyzer",
+      "script": "performance_agent_v2.sh",
+      "role": "optimization",
+      "status": "complete"
+    },
+    "testing": {
+      "name": "Quality Assurance",
+      "script": "testing_agent_v2.sh",
+      "role": "validation",
+      "status": "pending"
+    },
+    "developer_1": {
+      "name": "Core Fix Developer",
+      "script": "dev_agent_core_fix.sh",
+      "role": "implementation",
+      "focus": "file_modifications",
+      "status": "complete"
+    },
+    "developer_2": {
+      "name": "Pattern Developer",
+      "script": "dev_agent_patterns.sh",
+      "role": "implementation",
+      "focus": "pattern_library",
+      "status": "complete"
+    },
+    "developer_3": {
+      "name": "State Manager",
+      "script": "dev_agent_state.sh",
+      "role": "implementation",
+      "focus": "state_management",
+      "status": "complete"
+    },
+    "developer_4": {
+      "name": "Integration Developer",
+      "script": "dev_agent_integration.sh",
+      "role": "implementation",
+      "focus": "api_integration",
+      "status": "pending"
+    },
+    "developer_5": {
+      "name": "UX Developer",
+      "script": "dev_agent_ux.sh",
+      "role": "implementation",
+      "focus": "user_experience",
+      "status": "pending"
+    },
+    "project_manager": {
+      "name": "Project Manager",
+      "status": "active",
+      "role": "oversight"
+    },
+    "scrum_master": {
+      "name": "Scrum Master",
+      "status": "active",
+      "role": "facilitator"
+    },
+    "metrics_collector": {
+      "name": "Metrics Collector",
+      "status": "active",
+      "role": "monitoring"
+    },
+    "learning": {
+      "name": "Learning Agent",
+      "status": "active",
+      "role": "improvement"
+    }
+  },
+  "communication": {
+    "protocol": "file_based_json",
+    "message_dir": "/home/ooples/AiDotNet/BuildFixAgents/state/architecture/messages",
+    "state_dir": "/home/ooples/AiDotNet/BuildFixAgents/state/architecture/state"
+  },
+  "priorities": [
+    "core_fix_implementation",
+    "error_counting_fix",
+    "pattern_implementation",
+    "performance_optimization",
+    "testing_validation"
+  ]
+}

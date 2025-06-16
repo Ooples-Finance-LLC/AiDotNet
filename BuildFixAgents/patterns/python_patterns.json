@@ -1,0 +1,30 @@
+{
+  "language": "python",
+  "version": "1.0",
+  "errors": [
+    {
+      "code": "NameError",
+      "description": "Name not defined",
+      "pattern": "name '(\\w+)' is not defined",
+      "fix_strategy": "import_or_define"
+    },
+    {
+      "code": "ImportError",
+      "description": "Module not found",
+      "pattern": "No module named '(\\w+)'",
+      "fix_strategy": "install_or_fix_import"
+    },
+    {
+      "code": "SyntaxError",
+      "description": "Invalid syntax",
+      "pattern": "invalid syntax",
+      "fix_strategy": "fix_syntax"
+    },
+    {
+      "code": "IndentationError",
+      "description": "Incorrect indentation",
+      "pattern": "unexpected indent|expected an indented block",
+      "fix_strategy": "fix_indentation"
+    }
+  ]
+}

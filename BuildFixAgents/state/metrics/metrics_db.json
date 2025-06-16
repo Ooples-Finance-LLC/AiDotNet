@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "start_time": "2025-06-16T14:47:30Z",
+  "collection_interval": 60,
+  "metrics": {
+    "system": {
+      "cpu": [],
+      "memory": [],
+      "disk": [],
+      "network": []
+    },
+    "application": {
+      "errors_fixed": [],
+      "execution_times": [],
+      "agent_performance": [],
+      "success_rates": []
+    },
+    "quality": {
+      "code_coverage": [],
+      "test_results": [],
+      "build_times": []
+    }
+  },
+  "alerts": []
+}

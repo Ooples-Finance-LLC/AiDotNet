@@ -1,0 +1,56 @@
+# Compliance & Audit Configuration
+compliance:
+  standards:
+    - name: "GDPR"
+      enabled: true
+      checks:
+        - personal_data_protection
+        - data_retention_policy
+        - user_consent_tracking
+        
+    - name: "HIPAA"
+      enabled: false
+      checks:
+        - phi_encryption
+        - access_controls
+        - audit_logging
+        
+    - name: "SOC2"
+      enabled: true
+      checks:
+        - security_controls
+        - availability_monitoring
+        - confidentiality_measures
+        
+    - name: "ISO27001"
+      enabled: false
+      checks:
+        - risk_assessment
+        - security_policies
+        - incident_management
+
+audit:
+  retention_days: 365
+  encrypt_logs: true
+  sign_logs: true
+  
+  events_to_audit:
+    - code_changes
+    - error_fixes
+    - security_scans
+    - config_changes
+    - user_actions
+    - api_calls
+    
+approval_workflow:
+  enabled: true
+  required_for:
+    - production_deployment
+    - security_fixes
+    - config_changes
+    
+  approvers:
+    - role: "lead_developer"
+      email: "lead@company.com"
+    - role: "security_officer"
+      email: "security@company.com"

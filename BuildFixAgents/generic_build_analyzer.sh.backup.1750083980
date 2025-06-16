@@ -1,0 +1,541 @@
+#!/bin/bash
+
+# Generic Build Error Analyzer and Agent Creator
+# Multi-language support with dynamic error analysis and agent creation
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source debug utilities
+if [[ -f "$SCRIPT_DIR/debug_utils.sh" ]]; then
+    source "$SCRIPT_DIR/debug_utils.sh"
+fi
+# Accept project dir as parameter, but handle commands too
+if [[ "$1" == "main" || "$1" == "analyze" || "$1" == "generate" ]]; then
+    PROJECT_DIR="$(pwd)"
+    COMMAND="$1"
+else
+    PROJECT_DIR="${1:-$(pwd)}"
+    COMMAND="${2:-main}"
+fi
+LOG_FILE="$SCRIPT_DIR/agent_coordination.log"
+BUILD_OUTPUT_FILE="$SCRIPT_DIR/build_output.txt"
+ERROR_ANALYSIS_FILE="$SCRIPT_DIR/error_analysis.json"
+AGENT_SPEC_FILE="$SCRIPT_DIR/state/agent_specifications.json"
+
+# Source AI integration if available
+if [[ -f "$SCRIPT_DIR/ai_integration.sh" ]]; then
+    source "$SCRIPT_DIR/ai_integration.sh"
+fi
+
+# Initialize logging
+log_message() {
+    local message="$1"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "[$timestamp] BUILD_ANALYZER: $message" | tee -a "$LOG_FILE"
+}
+
+# Detect project language
+detect_language() {
+    start_timer "language_detection"
+    debug "Detecting language for project: $PROJECT_DIR"
+    local lang="unknown"
+    
+    # Check for various project files
+    if timeout 5s find "$PROJECT_DIR" -maxdepth 3 -name "*.csproj" -o -name "*.sln" 2>/dev/null | head -1 | grep -q .; then
+        lang="csharp"
+    elif [[ -f "$PROJECT_DIR/package.json" ]]; then
+        if [[ -f "$PROJECT_DIR/tsconfig.json" ]]; then
+            lang="typescript"
+        else
+            lang="javascript"
+        fi
+    elif [[ -f "$PROJECT_DIR/requirements.txt" ]] || [[ -f "$PROJECT_DIR/setup.py" ]] || [[ -f "$PROJECT_DIR/pyproject.toml" ]]; then
+        lang="python"
+    elif [[ -f "$PROJECT_DIR/go.mod" ]]; then
+        lang="go"
+    elif [[ -f "$PROJECT_DIR/Cargo.toml" ]]; then
+        lang="rust"
+    elif [[ -f "$PROJECT_DIR/pom.xml" ]] || [[ -f "$PROJECT_DIR/build.gradle" ]]; then
+        lang="java"
+    elif [[ -f "$PROJECT_DIR/CMakeLists.txt" ]] || [[ -f "$PROJECT_DIR/Makefile" ]]; then
+        lang="cpp"
+    fi
+    
+    # Save detected language for other scripts
+    mkdir -p "$SCRIPT_DIR/state"
+    echo "$lang" > "$SCRIPT_DIR/state/detected_language.txt"
+    
+    verbose "Detected language: $lang"
+    end_timer "language_detection"
+    echo "$lang"
+}
+
+# Get build command for language
+get_build_command() {
+    local lang="$1"
+    
+    case "$lang" in
+        csharp)
+            echo "dotnet build"
+            ;;
+        javascript)
+            if [[ -f "$PROJECT_DIR/package.json" ]] && grep -q '"build":' "$PROJECT_DIR/package.json"; then
+                echo "npm run build"
+            else
+                echo "npm test"
+            fi
+            ;;
+        typescript)
+            echo "npm run build"
+            ;;
+        python)
+            if [[ -f "$PROJECT_DIR/tox.ini" ]]; then
+                echo "tox"
+            elif [[ -f "$PROJECT_DIR/setup.py" ]]; then
+                echo "python setup.py test"
+            else
+                echo "python -m py_compile"
+            fi
+            ;;
+        go)
+            echo "go build ./..."
+            ;;
+        rust)
+            echo "cargo build"
+            ;;
+        java)
+            if [[ -f "$PROJECT_DIR/pom.xml" ]]; then
+                echo "mvn compile"
+            elif [[ -f "$PROJECT_DIR/build.gradle" ]]; then
+                echo "gradle build"
+            else
+                echo "javac"
+            fi
+            ;;
+        cpp)
+            if [[ -f "$PROJECT_DIR/CMakeLists.txt" ]]; then
+                echo "cmake --build build"
+            elif [[ -f "$PROJECT_DIR/Makefile" ]]; then
+                echo "make"
+            else
+                echo "g++ -fsyntax-only"
+            fi
+            ;;
+        *)
+            echo "make"
+            ;;
+    esac
+}
+
+# Run build and capture all errors
+capture_build_errors() {
+    local language="${1:-$(detect_language)}"
+    local build_cmd=$(get_build_command "$language")
+    
+    log_message "Detected language: $language"
+    log_message "Running build command: $build_cmd"
+    
+    rm -f "$BUILD_OUTPUT_FILE"
+    
+    # Run the build command with timeout
+    cd "$PROJECT_DIR"
+    log_message "Running build with 180s timeout..."
+    if timeout 180s bash -c "$build_cmd" > "$BUILD_OUTPUT_FILE" 2>&1; then
+        log_message "Build succeeded with no errors"
+        return 0
+    else
+        log_message "Build failed - analyzing errors..."
+        return 1
+    fi
+}
+
+# Analyze error patterns and categorize them
+analyze_error_patterns() {
+    local language="${1:-$(detect_language)}"
+    log_message "Analyzing error patterns for $language..."
+    
+    # Initialize JSON structure
+    echo "{" > "$ERROR_ANALYSIS_FILE"
+    echo "  \"analysis_timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"," >> "$ERROR_ANALYSIS_FILE"
+    echo "  \"language\": \"$language\"," >> "$ERROR_ANALYSIS_FILE"
+    echo "  \"error_categories\": {" >> "$ERROR_ANALYSIS_FILE"
+    
+    # Call language-specific analyzer
+    case "$language" in
+        csharp)
+            analyze_csharp_errors
+            ;;
+        python)
+            analyze_python_errors
+            ;;
+        javascript|typescript)
+            analyze_js_ts_errors "$language"
+            ;;
+        go)
+            analyze_go_errors
+            ;;
+        rust)
+            analyze_rust_errors
+            ;;
+        java)
+            analyze_java_errors
+            ;;
+        cpp)
+            analyze_cpp_errors
+            ;;
+        *)
+            analyze_generic_errors
+            ;;
+    esac
+    
+    # Close JSON structure
+    echo "" >> "$ERROR_ANALYSIS_FILE"
+    echo "  }" >> "$ERROR_ANALYSIS_FILE"
+    echo "}" >> "$ERROR_ANALYSIS_FILE"
+}
+
+# C# error analysis
+analyze_csharp_errors() {
+    # Extract all unique error codes
+    local error_codes=$(grep -oE 'error CS[0-9]{4}' "$BUILD_OUTPUT_FILE" | sort -u | sed 's/error //')
+    
+    
+    # Categorize errors by their characteristics
+    local first_category=true
+    
+    # Category 1: Member/Type Definition Errors (CS0101, CS0102, CS0111, etc.)
+    local definition_errors=$(echo "$error_codes" | grep -E 'CS010[1-9]|CS011[0-9]' || true)
+    if [[ -n "$definition_errors" ]]; then
+        [[ "$first_category" == "false" ]] && echo "," >> "$ERROR_ANALYSIS_FILE"
+        echo "    \"definition_conflicts\": {" >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"description\": \"Duplicate definitions, member conflicts, and naming issues\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"error_codes\": [$(echo "$definition_errors" | sed 's/^/"/' | sed 's/$/"/' | tr '\n' ',' | sed 's/,$//')]," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"count\": $(echo "$definition_errors" | wc -l)," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"severity\": \"high\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"suggested_approach\": \"Remove duplicates, resolve naming conflicts\"" >> "$ERROR_ANALYSIS_FILE"
+        echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+        first_category=false
+    fi
+    
+    # Category 2: Type Resolution Errors (CS0246, CS0234, CS0104, etc.)
+    local type_errors=$(echo "$error_codes" | grep -E 'CS024[0-9]|CS023[0-9]|CS010[4]' || true)
+    if [[ -n "$type_errors" ]]; then
+        [[ "$first_category" == "false" ]] && echo "," >> "$ERROR_ANALYSIS_FILE"
+        echo "    \"type_resolution\": {" >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"description\": \"Missing types, namespace issues, ambiguous references\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"error_codes\": [$(echo "$type_errors" | sed 's/^/"/' | sed 's/$/"/' | tr '\n' ',' | sed 's/,$//')]," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"count\": $(echo "$type_errors" | wc -l)," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"severity\": \"high\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"suggested_approach\": \"Add using statements, resolve ambiguities, check references\"" >> "$ERROR_ANALYSIS_FILE"
+        echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+        first_category=false
+    fi
+    
+    # Category 3: Interface Implementation Errors (CS0535, CS0738, etc.)
+    local interface_errors=$(echo "$error_codes" | grep -E 'CS053[0-9]|CS073[0-9]' || true)
+    if [[ -n "$interface_errors" ]]; then
+        [[ "$first_category" == "false" ]] && echo "," >> "$ERROR_ANALYSIS_FILE"
+        echo "    \"interface_implementation\": {" >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"description\": \"Missing interface members, incorrect implementations\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"error_codes\": [$(echo "$interface_errors" | sed 's/^/"/' | sed 's/$/"/' | tr '\n' ',' | sed 's/,$//')]," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"count\": $(echo "$interface_errors" | wc -l)," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"severity\": \"medium\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"suggested_approach\": \"Implement missing members, fix signatures\"" >> "$ERROR_ANALYSIS_FILE"
+        echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+        first_category=false
+    fi
+    
+    # Category 4: Inheritance/Override Errors (CS0115, CS0534, CS0462, etc.)
+    local inheritance_errors=$(echo "$error_codes" | grep -E 'CS011[5]|CS053[4]|CS046[0-9]' || true)
+    if [[ -n "$inheritance_errors" ]]; then
+        [[ "$first_category" == "false" ]] && echo "," >> "$ERROR_ANALYSIS_FILE"
+        echo "    \"inheritance_override\": {" >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"description\": \"Override signature mismatches, abstract member issues\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"error_codes\": [$(echo "$inheritance_errors" | sed 's/^/"/' | sed 's/$/"/' | tr '\n' ',' | sed 's/,$//')]," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"count\": $(echo "$inheritance_errors" | wc -l)," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"severity\": \"medium\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"suggested_approach\": \"Fix method signatures, implement abstract members\"" >> "$ERROR_ANALYSIS_FILE"
+        echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+        first_category=false
+    fi
+    
+    # Category 5: Generic/Constraint Errors (CS0305, CS0453, CS8377, etc.)
+    local generic_errors=$(echo "$error_codes" | grep -E 'CS030[0-9]|CS045[0-9]|CS837[0-9]' || true)
+    if [[ -n "$generic_errors" ]]; then
+        [[ "$first_category" == "false" ]] && echo "," >> "$ERROR_ANALYSIS_FILE"
+        echo "    \"generic_constraints\": {" >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"description\": \"Generic type constraints, nullable issues, type parameter problems\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"error_codes\": [$(echo "$generic_errors" | sed 's/^/"/' | sed 's/$/"/' | tr '\n' ',' | sed 's/,$//')]," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"count\": $(echo "$generic_errors" | wc -l)," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"severity\": \"medium\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"suggested_approach\": \"Adjust constraints, fix nullable types, update generics\"" >> "$ERROR_ANALYSIS_FILE"
+        echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+        first_category=false
+    fi
+    
+    # Add any uncategorized errors
+    local all_categorized=$(echo "$definition_errors $type_errors $interface_errors $inheritance_errors $generic_errors" | tr ' ' '\n' | sort -u)
+    local uncategorized=$(comm -23 <(echo "$error_codes" | sort) <(echo "$all_categorized" | sort) || true)
+    if [[ -n "$uncategorized" ]]; then
+        [[ "$first_category" == "false" ]] && echo "," >> "$ERROR_ANALYSIS_FILE"
+        echo "    \"uncategorized\": {" >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"description\": \"Other errors that need investigation\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"error_codes\": [$(echo "$uncategorized" | sed 's/^/"/' | sed 's/$/"/' | tr '\n' ',' | sed 's/,$//')]," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"count\": $(echo "$uncategorized" | wc -l)," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"severity\": \"low\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"suggested_approach\": \"Manual investigation required\"" >> "$ERROR_ANALYSIS_FILE"
+        echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+    fi
+    
+    echo "" >> "$ERROR_ANALYSIS_FILE"
+    echo "  }," >> "$ERROR_ANALYSIS_FILE"
+    
+    # Add summary statistics
+    local total_errors=$(grep -c 'error CS' "$BUILD_OUTPUT_FILE" || echo "0")
+    local unique_files=$(grep 'error CS' "$BUILD_OUTPUT_FILE" | cut -d'(' -f1 | sort -u | wc -l)
+    
+    echo "  \"summary\": {" >> "$ERROR_ANALYSIS_FILE"
+    echo "    \"total_error_instances\": $total_errors," >> "$ERROR_ANALYSIS_FILE"
+    echo "    \"unique_error_codes\": $(echo "$error_codes" | wc -l)," >> "$ERROR_ANALYSIS_FILE"
+    echo "    \"affected_files\": $unique_files" >> "$ERROR_ANALYSIS_FILE"
+    echo "  }" >> "$ERROR_ANALYSIS_FILE"
+    echo "}" >> "$ERROR_ANALYSIS_FILE"
+    
+    log_message "Error analysis complete - found $(echo "$error_codes" | wc -l) unique error types"
+}
+
+# Generate agent specifications based on error analysis
+generate_agent_specifications() {
+    local language=$(jq -r '.language' "$ERROR_ANALYSIS_FILE" 2>/dev/null || echo "unknown")
+    log_message "Generating agent specifications for $language..."
+    
+    # Read the error analysis - get category names from the JSON
+    local categories=$(jq -r '.error_categories | keys[]' "$ERROR_ANALYSIS_FILE" 2>/dev/null || grep -B3 '"description":' "$ERROR_ANALYSIS_FILE" | grep '": {$' | sed 's/.*"\([^"]*\)": {$/\1/')
+    
+    # Create agent specifications
+    cat > "$AGENT_SPEC_FILE" << 'EOF'
+{
+  "agent_specifications": [],
+  "coordination_strategy": "priority_based",
+  "max_agents": 4
+}
+EOF
+    
+    echo "{" > "$AGENT_SPEC_FILE"
+    echo "  \"generated_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"," >> "$AGENT_SPEC_FILE"
+    echo "  \"agent_specifications\": [" >> "$AGENT_SPEC_FILE"
+    
+    local agent_id=1
+    local first_agent=true
+    
+    # Create agents for each category with significant errors
+    while IFS= read -r category; do
+        [[ -z "$category" ]] && continue
+        
+        # Get error count for this category
+        local count=$(grep -A3 "\"$category\":" "$ERROR_ANALYSIS_FILE" | grep '"count":' | grep -oE '[0-9]+' | head -1)
+        [[ -z "$count" || "$count" -eq 0 ]] && continue
+        
+        # Get error codes for this category
+        local codes=$(grep -A2 "\"$category\":" "$ERROR_ANALYSIS_FILE" | grep '"error_codes":' | grep -oE 'CS[0-9]{4}' | tr '\n' ' ')
+        
+        [[ "$first_agent" == "false" ]] && echo "," >> "$AGENT_SPEC_FILE"
+        
+        echo "    {" >> "$AGENT_SPEC_FILE"
+        echo "      \"agent_id\": \"agent_${agent_id}\"," >> "$AGENT_SPEC_FILE"
+        echo "      \"name\": \"${category}_specialist\"," >> "$AGENT_SPEC_FILE"
+        echo "      \"specialization\": \"$category\"," >> "$AGENT_SPEC_FILE"
+        echo "      \"target_errors\": [$(echo "$codes" | tr ' ' '\n' | grep -v '^$' | sed 's/^/"/' | sed 's/$/"/' | tr '\n' ',' | sed 's/,$//')]," >> "$AGENT_SPEC_FILE"
+        echo "      \"priority\": $((5 - agent_id))," >> "$AGENT_SPEC_FILE"
+        echo "      \"estimated_workload\": $count" >> "$AGENT_SPEC_FILE"
+        echo -n "    }" >> "$AGENT_SPEC_FILE"
+        
+        first_agent=false
+        agent_id=$((agent_id + 1))
+        
+        # Limit to max agents
+        [[ $agent_id -gt 4 ]] && break
+    done <<< "$categories"
+    
+    echo "" >> "$AGENT_SPEC_FILE"
+    echo "  ]," >> "$AGENT_SPEC_FILE"
+    echo "  \"coordination_strategy\": \"dynamic_workload_balancing\"," >> "$AGENT_SPEC_FILE"
+    echo "  \"max_concurrent_agents\": 3" >> "$AGENT_SPEC_FILE"
+    echo "}" >> "$AGENT_SPEC_FILE"
+    
+    log_message "Generated specifications for $((agent_id - 1)) specialized agents"
+}
+
+# Display analysis results
+display_analysis() {
+    log_message "=== BUILD ERROR ANALYSIS COMPLETE ==="
+    
+    echo ""
+    echo "Error Category Breakdown:"
+    echo "------------------------"
+    
+    # Parse and display each category
+    local categories=$(grep -A5 '"description"' "$ERROR_ANALYSIS_FILE" | grep -B1 '"error_codes"' | grep -oE '"[^"]+": {' | sed 's/": {//' | sed 's/"//g')
+    
+    while IFS= read -r category; do
+        [[ -z "$category" ]] && continue
+        
+        local desc=$(grep -A1 "\"$category\":" "$ERROR_ANALYSIS_FILE" | grep '"description":' | cut -d'"' -f4)
+        local count=$(grep -A3 "\"$category\":" "$ERROR_ANALYSIS_FILE" | grep '"count":' | grep -oE '[0-9]+' | head -1)
+        local codes=$(grep -A2 "\"$category\":" "$ERROR_ANALYSIS_FILE" | grep '"error_codes":' | grep -oE 'CS[0-9]{4}' | tr '\n' ', ' | sed 's/, $//')
+        
+        echo ""
+        echo "Category: ${category//_/ }"
+        echo "  Description: $desc"
+        echo "  Error Codes: $codes"
+        echo "  Total Errors: $count"
+    done <<< "$categories"
+    
+    echo ""
+    echo "Generated Agent Specifications:"
+    echo "------------------------------"
+    
+    # Display agent assignments
+    local agents=$(grep -A5 '"agent_id"' "$AGENT_SPEC_FILE" | grep '"name":' | cut -d'"' -f4)
+    local i=1
+    while IFS= read -r agent; do
+        [[ -z "$agent" ]] && continue
+        echo "Agent $i: $agent"
+        i=$((i + 1))
+    done <<< "$agents"
+}
+
+# Python error analysis
+analyze_python_errors() {
+    local error_types=$(grep -E "(SyntaxError|IndentationError|ImportError|NameError|TypeError|ValueError|AttributeError)" "$BUILD_OUTPUT_FILE" | grep -oE "^[A-Za-z]+Error" | sort -u)
+    
+    local first_category=true
+    
+    # Import errors
+    if grep -q "ImportError\|ModuleNotFoundError" "$BUILD_OUTPUT_FILE"; then
+        [[ "$first_category" == "false" ]] && echo "," >> "$ERROR_ANALYSIS_FILE"
+        echo "    \"import_errors\": {" >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"description\": \"Module import failures and missing dependencies\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"count\": $(grep -c "ImportError\|ModuleNotFoundError" "$BUILD_OUTPUT_FILE")," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"severity\": \"high\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"suggested_approach\": \"Install missing packages, fix import paths\"" >> "$ERROR_ANALYSIS_FILE"
+        echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+        first_category=false
+    fi
+    
+    # Syntax errors
+    if grep -q "SyntaxError" "$BUILD_OUTPUT_FILE"; then
+        [[ "$first_category" == "false" ]] && echo "," >> "$ERROR_ANALYSIS_FILE"
+        echo "    \"syntax_errors\": {" >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"description\": \"Python syntax violations\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"count\": $(grep -c "SyntaxError" "$BUILD_OUTPUT_FILE")," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"severity\": \"high\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"suggested_approach\": \"Fix syntax, check indentation\"" >> "$ERROR_ANALYSIS_FILE"
+        echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+        first_category=false
+    fi
+}
+
+# JavaScript/TypeScript error analysis
+analyze_js_ts_errors() {
+    local language="$1"
+    local first_category=true
+    
+    # TypeScript specific errors
+    if [[ "$language" == "typescript" ]] && grep -q "error TS" "$BUILD_OUTPUT_FILE"; then
+        local ts_errors=$(grep -oE 'error TS[0-9]+' "$BUILD_OUTPUT_FILE" | sort -u)
+        echo "    \"typescript_errors\": {" >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"description\": \"TypeScript type checking errors\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"error_codes\": [$(echo "$ts_errors" | sed 's/error /"/; s/$/"/' | tr '\n' ',' | sed 's/,$//')]}," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"count\": $(echo "$ts_errors" | wc -l)," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"severity\": \"high\"" >> "$ERROR_ANALYSIS_FILE"
+        echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+        first_category=false
+    fi
+    
+    # JavaScript runtime errors
+    if grep -q "ReferenceError\|TypeError\|SyntaxError" "$BUILD_OUTPUT_FILE"; then
+        [[ "$first_category" == "false" ]] && echo "," >> "$ERROR_ANALYSIS_FILE"
+        echo "    \"runtime_errors\": {" >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"description\": \"JavaScript runtime errors\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"count\": $(grep -cE "ReferenceError|TypeError|SyntaxError" "$BUILD_OUTPUT_FILE")," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"severity\": \"high\"" >> "$ERROR_ANALYSIS_FILE"
+        echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+    fi
+}
+
+# Go error analysis
+analyze_go_errors() {
+    local first_category=true
+    
+    if grep -q "undefined:" "$BUILD_OUTPUT_FILE"; then
+        echo "    \"undefined_symbols\": {" >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"description\": \"Undefined functions, variables, or types\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"count\": $(grep -c "undefined:" "$BUILD_OUTPUT_FILE")," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"severity\": \"high\"" >> "$ERROR_ANALYSIS_FILE"
+        echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+        first_category=false
+    fi
+    
+    if grep -q "cannot use" "$BUILD_OUTPUT_FILE"; then
+        [[ "$first_category" == "false" ]] && echo "," >> "$ERROR_ANALYSIS_FILE"
+        echo "    \"type_errors\": {" >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"description\": \"Type mismatches and conversion errors\"," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"count\": $(grep -c "cannot use" "$BUILD_OUTPUT_FILE")," >> "$ERROR_ANALYSIS_FILE"
+        echo "      \"severity\": \"high\"" >> "$ERROR_ANALYSIS_FILE"
+        echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+    fi
+}
+
+# Generic error analysis for unknown languages
+analyze_generic_errors() {
+    local error_count=$(grep -ciE "error|Error:|failed|Failed" "$BUILD_OUTPUT_FILE" || echo "0")
+    
+    echo "    \"generic_errors\": {" >> "$ERROR_ANALYSIS_FILE"
+    echo "      \"description\": \"Unspecified build errors\"," >> "$ERROR_ANALYSIS_FILE"
+    echo "      \"count\": $error_count," >> "$ERROR_ANALYSIS_FILE"
+    echo "      \"severity\": \"unknown\"" >> "$ERROR_ANALYSIS_FILE"
+    echo -n "    }" >> "$ERROR_ANALYSIS_FILE"
+}
+
+# Main execution
+main() {
+    log_message "=== GENERIC BUILD ERROR ANALYZER STARTING ==="
+    
+    # Phase 1: Capture build errors
+    if ! capture_build_errors; then
+        # Phase 2: Analyze error patterns
+        analyze_error_patterns
+        
+        # Phase 3: Generate agent specifications
+        generate_agent_specifications
+        
+        # Phase 4: Display results
+        display_analysis
+        
+        log_message "Analysis complete. Agent specifications saved to: $AGENT_SPEC_FILE"
+        log_message "Next step: Run generic_agent_coordinator.sh to deploy agents"
+    else
+        log_message "No errors found - build is clean!"
+    fi
+}
+
+# Handle command line arguments
+case "${COMMAND:-main}" in
+    "main")
+        main
+        ;;
+    "analyze")
+        analyze_error_patterns
+        display_analysis
+        ;;
+    "generate")
+        generate_agent_specifications
+        ;;
+    *)
+        echo "Usage: $0 {main|analyze|generate}"
+        exit 1
+        ;;
+esac

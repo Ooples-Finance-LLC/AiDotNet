@@ -700,7 +700,7 @@ public class SARIMAModel<T> : TimeSeriesModelBase<T>
     /// <summary>
     /// Gets metadata about the model, including its type, parameters, and configuration.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// <b>For Beginners:</b>
@@ -712,9 +712,9 @@ public class SARIMAModel<T> : TimeSeriesModelBase<T>
     /// - Saving model metadata along with predictions
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.SARIMAModel,
             AdditionalInfo = new Dictionary<string, object>

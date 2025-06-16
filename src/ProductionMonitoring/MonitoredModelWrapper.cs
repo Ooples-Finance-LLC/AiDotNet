@@ -28,8 +28,8 @@ namespace AiDotNet.ProductionMonitoring
             this.ops = MathHelper.GetNumericOperations<T>();
             
             // Copy metadata from wrapped model
-            var wrappedMetadata = model.GetModelMetaData();
-            this.ModelMetaData = new ModelMetaData<T>
+            var wrappedMetadata = model.GetModelMetadata();
+            this.ModelMetadata = new ModelMetadata<T>
             {
                 ModelType = wrappedMetadata.ModelType,
                 FeatureCount = wrappedMetadata.FeatureCount,
@@ -38,7 +38,7 @@ namespace AiDotNet.ProductionMonitoring
             };
         }
         
-        public ModelMetaData<T> ModelMetaData { get; set; }
+        public ModelMetadata<T> ModelMetadata { get; set; }
         
         public async Task<TOutput> PredictAsync(TInput inputs)
         {
@@ -117,9 +117,9 @@ namespace AiDotNet.ProductionMonitoring
         }
         
         // IModel interface implementation
-        public ModelMetaData<T> GetModelMetaData()
+        public ModelMetadata<T> GetModelMetadata()
         {
-            return ModelMetaData;
+            return ModelMetadata;
         }
         
         // IModelSerializer implementation
@@ -233,7 +233,7 @@ namespace AiDotNet.ProductionMonitoring
             return await wrappedModel.GetLocalFeatureImportanceAsync(input);
         }
         
-        public void SetBaseModel(IModel<TInput, TOutput, ModelMetaData<T>> model)
+        public void SetBaseModel(IModel<TInput, TOutput, ModelMetadata<T>> model)
         {
             wrappedModel.SetBaseModel(model);
         }

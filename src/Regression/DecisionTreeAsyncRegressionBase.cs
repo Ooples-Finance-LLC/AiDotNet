@@ -184,7 +184,7 @@ public abstract class AsyncDecisionTreeRegressionModelBase<T> : IAsyncTreeBasedM
     /// It's like getting a report card for your model, showing how well it learned and what it learned.
     /// </para>
     /// </remarks>
-    public abstract ModelMetaData<T> GetModelMetaData();
+    public abstract ModelMetadata<T> GetModelMetadata();
 
     /// <summary>
     /// Asynchronously calculates the importance of each feature in the model.
@@ -925,7 +925,7 @@ public abstract class AsyncDecisionTreeRegressionModelBase<T> : IAsyncTreeBasedM
     protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
     protected Vector<int> _sensitiveFeatures;
     protected readonly List<FairnessMetric> _fairnessMetrics = new();
-    protected IModel<Matrix<T>, Vector<T>, ModelMetaData<T>> _baseModel;
+    protected IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> _baseModel;
 
     /// <summary>
     /// Gets the global feature importance across all predictions.
@@ -1018,7 +1018,7 @@ public abstract class AsyncDecisionTreeRegressionModelBase<T> : IAsyncTreeBasedM
     /// <summary>
     /// Sets the base model for interpretability analysis.
     /// </summary>
-    public virtual void SetBaseModel(IModel<Matrix<T>, Vector<T>, ModelMetaData<T>> model)
+    public virtual void SetBaseModel(IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> model)
     {
         _baseModel = model ?? throw new ArgumentNullException(nameof(model));
     }

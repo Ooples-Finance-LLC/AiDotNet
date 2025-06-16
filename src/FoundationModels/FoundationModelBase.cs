@@ -439,9 +439,9 @@ public abstract class FoundationModelBase<T> : Interpretability.InterpretableMod
     /// <summary>
     /// Gets model metadata
     /// </summary>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = _modelType,
             FeatureCount = VocabularySize, // For foundation models, vocabulary size represents feature space
@@ -682,7 +682,7 @@ public abstract class FoundationModelBase<T> : Interpretability.InterpretableMod
         await Task.Run(() => Train(input, expectedOutput));
     }
     
-    public override void SetModelMetaData(ModelMetaData<T> metadata)
+    public override void SetModelMetadata(ModelMetadata<T> metadata)
     {
         // Update relevant fields from the provided metadata
         if (metadata.ModelType != ModelType.Unknown)

@@ -247,13 +247,13 @@ namespace AiDotNet.AutoML
         /// <summary>
         /// Gets model metadata
         /// </summary>
-        public virtual ModelMetaData<T> GetModelMetaData()
+        public virtual ModelMetadata<T> GetModelMetadata()
         {
-            return new ModelMetaData<T>
+            return new ModelMetadata<T>
             {
                 ModelType = Type,
                 Description = $"AutoML with {_candidateModels.Count} candidate models",
-                FeatureCount = BestModel?.GetModelMetaData().FeatureCount ?? 0,
+                FeatureCount = BestModel?.GetModelMetadata().FeatureCount ?? 0,
                 Complexity = _trialHistory.Count,
                 AdditionalInfo = new Dictionary<string, object>
                 {
@@ -441,7 +441,7 @@ namespace AiDotNet.AutoML
             return await BestModel.GetAnchorExplanationAsync(input, threshold);
         }
         
-        public virtual void SetBaseModel(IModel<TInput, TOutput, ModelMetaData<T>> model)
+        public virtual void SetBaseModel(IModel<TInput, TOutput, ModelMetadata<T>> model)
         {
             if (BestModel != null)
                 BestModel.SetBaseModel(model);

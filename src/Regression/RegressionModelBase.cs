@@ -280,9 +280,9 @@ public abstract class RegressionModelBase<T> : IRegressionModel<T>
     /// comparing different models.
     /// </para>
     /// </remarks>
-    public virtual ModelMetaData<T> GetModelMetaData()
+    public virtual ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = GetModelType(),
             FeatureCount = Coefficients.Length,
@@ -1127,7 +1127,7 @@ public abstract class RegressionModelBase<T> : IRegressionModel<T>
     protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
     protected Vector<int> _sensitiveFeatures;
     protected readonly List<FairnessMetric> _fairnessMetrics = new();
-    protected IModel<Matrix<T>, Vector<T>, ModelMetaData<T>> _baseModel;
+    protected IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> _baseModel;
 
     /// <summary>
     /// Gets the global feature importance across all predictions.
@@ -1220,7 +1220,7 @@ public abstract class RegressionModelBase<T> : IRegressionModel<T>
     /// <summary>
     /// Sets the base model for interpretability analysis.
     /// </summary>
-    public virtual void SetBaseModel(IModel<Matrix<T>, Vector<T>, ModelMetaData<T>> model)
+    public virtual void SetBaseModel(IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> model)
     {
         _baseModel = model ?? throw new ArgumentNullException(nameof(model));
     }

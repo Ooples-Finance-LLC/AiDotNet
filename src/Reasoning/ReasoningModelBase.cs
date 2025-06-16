@@ -280,9 +280,9 @@ namespace AiDotNet.Reasoning
         /// <summary>
         /// Gets model metadata.
         /// </summary>
-        public ModelMetaData<T> GetModelMetaData()
+        public ModelMetadata<T> GetModelMetadata()
         {
-            return new ModelMetaData<T>
+            return new ModelMetadata<T>
             {
                 ModelType = GetModelType(),
                 FeatureCount = GetActiveFeatureIndices().Count(),
@@ -457,7 +457,7 @@ namespace AiDotNet.Reasoning
         protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
         protected Vector<int> _sensitiveFeatures;
         protected readonly List<FairnessMetric> _fairnessMetrics = new();
-        protected IModel<Tensor<T>, Tensor<T>, ModelMetaData<T>> _baseModel;
+        protected IModel<Tensor<T>, Tensor<T>, ModelMetadata<T>> _baseModel;
 
         /// <summary>
         /// Gets the global feature importance across all predictions.
@@ -550,7 +550,7 @@ namespace AiDotNet.Reasoning
         /// <summary>
         /// Sets the base model for interpretability analysis.
         /// </summary>
-        public virtual void SetBaseModel(IModel<Tensor<T>, Tensor<T>, ModelMetaData<T>> model)
+        public virtual void SetBaseModel(IModel<Tensor<T>, Tensor<T>, ModelMetadata<T>> model)
         {
         _baseModel = model ?? throw new ArgumentNullException(nameof(model));
         }

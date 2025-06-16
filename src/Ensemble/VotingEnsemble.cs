@@ -413,7 +413,7 @@ public class VotingEnsemble<T, TInput, TOutput> : EnsembleModelBase<T, TInput, T
     /// <summary>
     /// Gets the model metadata.
     /// </summary>
-    public override ModelMetadata<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         var metadata = new ModelMetadata<T>
         {
@@ -423,7 +423,7 @@ public class VotingEnsemble<T, TInput, TOutput> : EnsembleModelBase<T, TInput, T
         // Set feature count from first model if available
         if (_baseModels.Count > 0)
         {
-            var firstModelMetadata = _baseModels[0].GetModelMetaData();
+            var firstModelMetadata = _baseModels[0].GetModelMetadata();
             metadata.FeatureCount = firstModelMetadata.FeatureCount;
         }
         
@@ -441,7 +441,7 @@ public class VotingEnsemble<T, TInput, TOutput> : EnsembleModelBase<T, TInput, T
         metadata.Complexity = 0;
         foreach (var model in _baseModels)
         {
-            var modelMeta = model.GetModelMetaData();
+            var modelMeta = model.GetModelMetadata();
             metadata.Complexity += modelMeta.Complexity;
         }
         
@@ -451,7 +451,7 @@ public class VotingEnsemble<T, TInput, TOutput> : EnsembleModelBase<T, TInput, T
     /// <summary>
     /// Sets the model metadata.
     /// </summary>
-    public override void SetModelMetaData(ModelMetadata<T> metadata)
+    public override void SetModelMetadata(ModelMetadata<T> metadata)
     {
         if (metadata == null)
         {
@@ -484,9 +484,9 @@ public class VotingEnsemble<T, TInput, TOutput> : EnsembleModelBase<T, TInput, T
         // Propagate metadata to base models if needed
         foreach (var model in _baseModels)
         {
-            var modelMeta = model.GetModelMetaData();
+            var modelMeta = model.GetModelMetadata();
             modelMeta.FeatureCount = metadata.FeatureCount;
-            model.SetModelMetaData(modelMeta);
+            model.SetModelMetadata(modelMeta);
         }
     }
     
@@ -579,7 +579,7 @@ public class VotingEnsemble<T, TInput, TOutput> : EnsembleModelBase<T, TInput, T
                 }
                 
                 // Save metadata
-                var metadata = GetModelMetaData();
+                var metadata = GetModelMetadata();
                 writer.Write(metadata.FeatureCount);
                 writer.Write(metadata.TargetCount);
                 writer.Write(metadata.Complexity);
@@ -779,7 +779,7 @@ public class VotingEnsemble<T, TInput, TOutput> : EnsembleModelBase<T, TInput, T
             throw new InvalidOperationException("No models in ensemble. Add models before computing feature importance.");
         }
 
-        var metadata = GetModelMetaData();
+        var metadata = GetModelMetadata();
         var aggregatedImportance = new Dictionary<int, T>();
         
         // Initialize importance scores
@@ -852,7 +852,7 @@ public class VotingEnsemble<T, TInput, TOutput> : EnsembleModelBase<T, TInput, T
             throw new InvalidOperationException("No models in ensemble.");
         }
 
-        var metadata = GetModelMetaData();
+        var metadata = GetModelMetadata();
         var aggregatedImportance = new Dictionary<int, T>();
         
         // Initialize
@@ -925,7 +925,7 @@ public class VotingEnsemble<T, TInput, TOutput> : EnsembleModelBase<T, TInput, T
             throw new InvalidOperationException("No models in ensemble.");
         }
 
-        var metadata = GetModelMetaData();
+        var metadata = GetModelMetadata();
         
         // For ensemble models, we can't directly compute SHAP values
         // Instead, we'll aggregate SHAP values from individual models
@@ -1099,7 +1099,7 @@ public class VotingEnsemble<T, TInput, TOutput> : EnsembleModelBase<T, TInput, T
     public override async Task<Dictionary<string, object>> GetModelSpecificInterpretabilityAsync()
     {
         var result = new Dictionary<string, object>();
-        var metadata = GetModelMetaData();
+        var metadata = GetModelMetadata();
         
         // Basic ensemble information
         result["EnsembleType"] = "VotingEnsemble";
@@ -1165,7 +1165,7 @@ public class VotingEnsemble<T, TInput, TOutput> : EnsembleModelBase<T, TInput, T
     /// </summary>
     public override async Task<string> GenerateTextExplanationAsync(TInput input, TOutput prediction)
     {
-        var metadata = GetModelMetaData();
+        var metadata = GetModelMetadata();
         var explanation = new System.Text.StringBuilder();
         
         explanation.AppendLine($"Voting Ensemble Prediction Explanation");

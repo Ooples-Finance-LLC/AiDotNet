@@ -1,0 +1,6 @@
+[
+    {"error_code": "CS0246", "fix_type": "add_using", "fix_successful": true, "fix_duration": 30},
+    {"error_code": "CS0246", "fix_type": "add_reference", "fix_successful": true, "fix_duration": 45},
+    {"error_code": "CS0101", "fix_type": "rename_class", "fix_successful": true, "fix_duration": 25},
+    {"error_code": "CS0115", "fix_type": "add_override", "fix_successful": false, "fix_duration": 60}
+]

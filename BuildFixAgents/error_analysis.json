@@ -1,0 +1,21 @@
+{
+  "analysis_timestamp": "2025-06-16T14:33:55Z",
+  "language": "csharp",
+  "error_categories": {
+    "definition_conflicts": {
+      "description": "Duplicate definitions, member conflicts, and naming issues",
+      "error_codes": ["CS0101","CS0111"],
+      "count": 2,
+      "severity": "high",
+      "suggested_approach": "Remove duplicates, resolve naming conflicts"
+    }
+  },
+  "summary": {
+    "total_error_instances": 24,
+    "unique_error_codes": 2,
+    "affected_files": 4
+  }
+}
+
+  }
+}

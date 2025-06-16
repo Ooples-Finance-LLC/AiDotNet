@@ -1,0 +1,51 @@
+# Integration Hub Configuration
+integrations:
+  jira:
+    enabled: false
+    url: ""
+    username: ""
+    api_token: ""
+    project_key: ""
+    issue_type: "Bug"
+    
+  slack:
+    enabled: false
+    webhook_url: ""
+    channel: "#build-errors"
+    username: "Build Fix Agent"
+    icon_emoji: ":robot_face:"
+    
+  teams:
+    enabled: false
+    webhook_url: ""
+    
+  github:
+    enabled: false
+    token: ""
+    repo: ""
+    
+  azure_devops:
+    enabled: false
+    organization: ""
+    project: ""
+    token: ""
+    
+  datadog:
+    enabled: false
+    api_key: ""
+    app_key: ""
+    
+  pagerduty:
+    enabled: false
+    api_key: ""
+    service_id: ""
+
+notification_rules:
+  - trigger: "build_failure"
+    integrations: ["slack", "teams"]
+    
+  - trigger: "security_issue"
+    integrations: ["slack", "pagerduty", "jira"]
+    
+  - trigger: "fix_completed"
+    integrations: ["slack", "jira"]

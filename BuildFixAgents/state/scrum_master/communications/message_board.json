@@ -1,0 +1,11 @@
+{
+  "messages": [],
+  "announcements": [
+    {
+      "from": "scrum_master",
+      "message": "Sprint 1 is active. Focus on production readiness.",
+      "priority": "high",
+      "timestamp": "2025-06-16T14:47:30Z"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+# Advanced Caching Configuration
+cache:
+  enabled: true
+  
+  backends:
+    memory:
+      enabled: true
+      max_size_mb: 512
+      eviction_policy: "lru"  # lru, lfu, fifo
+      
+    redis:
+      enabled: false
+      host: "localhost"
+      port: 6379
+      password: ""
+      db: 0
+      cluster_mode: false
+      
+    disk:
+      enabled: true
+      max_size_gb: 10
+      path: "./state/cache/disk"
+      
+  layers:
+    - name: "hot"
+      backend: "memory"
+      ttl_seconds: 300
+      
+    - name: "warm"
+      backend: "disk"
+      ttl_seconds: 3600
+      
+    - name: "cold"
+      backend: "disk"
+      ttl_seconds: 86400
+      
+  invalidation:
+    smart_invalidation: true
+    dependency_tracking: true
+    
+  preloading:
+    enabled: true
+    patterns:
+      - "error_analysis_*"
+      - "build_output_*"
+      - "fix_patterns_*"
+      
+  compression:
+    enabled: true
+    threshold_bytes: 1024
+    algorithm: "gzip"
+    
+  monitoring:
+    track_hit_rate: true
+    alert_on_low_hit_rate: 0.5
+    report_interval: 300

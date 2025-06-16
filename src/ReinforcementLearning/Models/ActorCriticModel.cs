@@ -272,9 +272,9 @@ namespace AiDotNet.ReinforcementLearning.Models
         /// Gets the metadata for this model.
         /// </summary>
         /// <returns>The model metadata.</returns>
-        public override ModelMetaData<T> GetModelMetaData()
+        public override ModelMetadata<T> GetModelMetadata()
         {
-            var metadata = base.GetModelMetaData();
+            var metadata = base.GetModelMetadata();
             
             metadata.ModelType = ModelType.ActorCriticModel;
             metadata.Description = "Actor-Critic reinforcement learning algorithm";
@@ -293,15 +293,6 @@ namespace AiDotNet.ReinforcementLearning.Models
             return metadata;
         }
         
-        /// <summary>
-        /// Gets the metadata for this model (backward compatibility).
-        /// </summary>
-        /// <returns>The model metadata.</returns>
-        public override ModelMetaData<T> GetModelMetadata()
-        {
-            // Just call the base implementation
-            return base.GetModelMetadata();
-        }
 
         /// <summary>
         /// Saves the model to the specified path.

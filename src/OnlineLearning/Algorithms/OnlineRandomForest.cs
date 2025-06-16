@@ -296,15 +296,15 @@ public class OnlineRandomForest<T> : OnlineModelBase<T, Vector<T>, T>
     }
     
     /// <inheritdoc/>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         var totalNodes = _trees.Sum(t => 
         {
-            var meta = t.GetModelMetaData();
+            var meta = t.GetModelMetadata();
             return (int)meta.AdditionalInfo["DecisionNodes"] + (int)meta.AdditionalInfo["ActiveLeaves"];
         });
         
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.OnlineRandomForest,
             FeatureCount = _numFeatures,

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Fix Agent Dashboard</title>
+    <link rel="stylesheet" href="static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h1>🔧 Build Fix Agent</h1>
+            </div>
+            <div class="nav-menu">
+                <a href="#" @click="currentView='overview'" :class="{active: currentView=='overview'}">Overview</a>
+                <a href="#" @click="currentView='agents'" :class="{active: currentView=='agents'}">Agents</a>
+                <a href="#" @click="currentView='metrics'" :class="{active: currentView=='metrics'}">Metrics</a>
+                <a href="#" @click="currentView='experiments'" :class="{active: currentView=='experiments'}">A/B Tests</a>
+                <a href="#" @click="currentView='plugins'" :class="{active: currentView=='plugins'}">Plugins</a>
+                <a href="#" @click="currentView='collaboration'" :class="{active: currentView=='collaboration'}">Collaboration</a>
+                <a href="#" @click="currentView='settings'" :class="{active: currentView=='settings'}">Settings</a>
+            </div>
+        </nav>
+        
+        <main class="container">
+            <!-- Overview View -->
+            <div v-if="currentView === 'overview'" class="view-content">
+                <h2>System Overview</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card" :class="systemStatus.status">
+                        <div class="stat-value">{{ systemStatus.status }}</div>
+                        <div class="stat-label">System Status</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ stats.activeAgents }}</div>
+                        <div class="stat-label">Active Agents</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ stats.errorsFixed }}</div>
+                        <div class="stat-label">Errors Fixed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">{{ stats.successRate }}%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+                
+                <div class="recent-activity">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list">
+                        <div v-for="activity in recentActivity" :key="activity.id" class="activity-item">
+                            <span class="activity-time">{{ formatTime(activity.timestamp) }}</span>
+                            <span class="activity-type" :class="activity.type">{{ activity.type }}</span>
+                            <span class="activity-message">{{ activity.message }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Agents View -->
+            <div v-if="currentView === 'agents'" class="view-content">
+                <h2>Agent Management</h2>
+                
+                <div class="actions-bar">
+                    <button @click="startAllAgents" class="btn btn-primary">Start All</button>
+                    <button @click="stopAllAgents" class="btn btn-secondary">Stop All</button>
+                    <button @click="refreshAgents" class="btn btn-secondary">Refresh</button>
+                </div>
+                
+                <div class="agents-grid">
+                    <div v-for="agent in agents" :key="agent.id" class="agent-card" :class="agent.status">
+                        <div class="agent-header">
+                            <h3>{{ agent.name }}</h3>
+                            <span class="agent-status">{{ agent.status }}</span>
+                        </div>
+                        <div class="agent-stats">
+                            <div>Tasks: {{ agent.tasksCompleted }}/{{ agent.tasksTotal }}</div>
+                            <div>Success: {{ agent.successRate }}%</div>
+                            <div>Uptime: {{ agent.uptime }}</div>
+                        </div>
+                        <div class="agent-actions">
+                            <button @click="toggleAgent(agent)" class="btn btn-small">
+                                {{ agent.status === 'running' ? 'Stop' : 'Start' }}
+                            </button>
+                            <button @click="viewAgentLogs(agent)" class="btn btn-small">Logs</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Metrics View -->
+            <div v-if="currentView === 'metrics'" class="view-content">
+                <h2>Performance Metrics</h2>
+                
+                <div class="metrics-filters">
+                    <select v-model="metricsTimeRange">
+                        <option value="1h">Last Hour</option>
+                        <option value="6h">Last 6 Hours</option>
+                        <option value="24h">Last 24 Hours</option>
+                        <option value="7d">Last 7 Days</option>
+                    </select>
+                    <button @click="exportMetrics" class="btn btn-secondary">Export</button>
+                </div>
+                
+                <div class="metrics-charts">
+                    <div class="chart-container">
+                        <canvas id="cpuChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="memoryChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="errorRateChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="throughputChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Experiments View -->
+            <div v-if="currentView === 'experiments'" class="view-content">
+                <h2>A/B Testing Experiments</h2>
+                
+                <div class="actions-bar">
+                    <button @click="createExperiment" class="btn btn-primary">New Experiment</button>
+                </div>
+                
+                <div class="experiments-list">
+                    <div v-for="exp in experiments" :key="exp.id" class="experiment-card">
+                        <div class="exp-header">
+                            <h3>{{ exp.name }}</h3>
+                            <span class="exp-status" :class="exp.status">{{ exp.status }}</span>
+                        </div>
+                        <p>{{ exp.hypothesis }}</p>
+                        <div class="exp-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{width: exp.progress + '%'}"></div>
+                            </div>
+                            <span>{{ exp.progress }}% complete</span>
+                        </div>
+                        <div class="exp-results" v-if="exp.results">
+                            <div v-for="variant in exp.results.variants" :key="variant.id">
+                                {{ variant.name }}: {{ variant.successRate }}% success
+                            </div>
+                        </div>
+                        <div class="exp-actions">
+                            <button @click="viewExperiment(exp)" class="btn btn-small">View</button>
+                            <button @click="stopExperiment(exp)" v-if="exp.status === 'running'" class="btn btn-small">Stop</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Plugins View -->
+            <div v-if="currentView === 'plugins'" class="view-content">
+                <h2>Plugin Management</h2>
+                
+                <div class="actions-bar">
+                    <button @click="installPlugin" class="btn btn-primary">Install Plugin</button>
+                    <button @click="browseMarketplace" class="btn btn-secondary">Browse Marketplace</button>
+                </div>
+                
+                <div class="plugins-grid">
+                    <div v-for="plugin in plugins" :key="plugin.id" class="plugin-card">
+                        <div class="plugin-header">
+                            <h3>{{ plugin.name }}</h3>
+                            <span class="plugin-version">v{{ plugin.version }}</span>
+                        </div>
+                        <p>{{ plugin.description }}</p>
+                        <div class="plugin-meta">
+                            <span>By {{ plugin.author }}</span>
+                            <span>{{ plugin.downloads }} downloads</span>
+                        </div>
+                        <div class="plugin-actions">
+                            <button @click="togglePlugin(plugin)" class="btn btn-small">
+                                {{ plugin.enabled ? 'Disable' : 'Enable' }}
+                            </button>
+                            <button @click="configurePlugin(plugin)" class="btn btn-small">Configure</button>
+                            <button @click="uninstallPlugin(plugin)" class="btn btn-small btn-danger">Uninstall</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Collaboration View -->
+            <div v-if="currentView === 'collaboration'" class="view-content">
+                <h2>Real-time Collaboration</h2>
+                
+                <div class="collab-tabs">
+                    <button @click="collabTab='sessions'" :class="{active: collabTab=='sessions'}">Sessions</button>
+                    <button @click="collabTab='active'" :class="{active: collabTab=='active'}">Active Session</button>
+                    <button @click="collabTab='tools'" :class="{active: collabTab=='tools'}">Tools</button>
+                </div>
+                
+                <!-- Sessions Tab -->
+                <div v-if="collabTab === 'sessions'" class="collab-content">
+                    <div class="actions-bar">
+                        <button @click="createCollabSession" class="btn btn-primary">New Session</button>
+                        <button @click="refreshSessions" class="btn btn-secondary">Refresh</button>
+                    </div>
+                    
+                    <div class="sessions-list">
+                        <div v-for="session in collabSessions" :key="session.id" class="session-card">
+                            <div class="session-header">
+                                <h3>{{ session.name }}</h3>
+                                <span class="session-status" :class="session.status">{{ session.status }}</span>
+                            </div>
+                            <div class="session-info">
+                                <div>Participants: {{ session.participants.length }}</div>
+                                <div>Created: {{ formatTime(session.created_at) }}</div>
+                                <div>Creator: {{ session.creator }}</div>
+                            </div>
+                            <div class="session-actions">
+                                <button @click="joinSession(session)" class="btn btn-small">Join</button>
+                                <button @click="viewSession(session)" class="btn btn-small">View</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Active Session Tab -->
+                <div v-if="collabTab === 'active' && activeSession" class="collab-content">
+                    <div class="session-workspace">
+                        <div class="workspace-header">
+                            <h3>{{ activeSession.name }}</h3>
+                            <button @click="leaveSession" class="btn btn-secondary">Leave Session</button>
+                        </div>
+                        
+                        <div class="workspace-panels">
+                            <!-- Participants Panel -->
+                            <div class="participants-panel">
+                                <h4>Participants</h4>
+                                <div v-for="participant in activeSession.participants" :key="participant.id" class="participant">
+                                    <span class="participant-avatar">{{ participant.name.charAt(0).toUpperCase() }}</span>
+                                    <span class="participant-name">{{ participant.name }}</span>
+                                    <span class="participant-status" :class="participant.status">●</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Code Editor Panel -->
+                            <div class="editor-panel">
+                                <div class="editor-tabs">
+                                    <div v-for="file in activeSession.files" :key="file.id" 
+                                         class="editor-tab" 
+                                         :class="{active: activeFile === file}"
+                                         @click="selectFile(file)">
+                                        {{ file.name }}
+                                    </div>
+                                </div>
+                                <div class="editor-content">
+                                    <textarea v-model="activeFile.content" 
+                                              @input="handleCodeChange"
+                                              class="code-editor"
+                                              :disabled="!canEdit">
+                                    </textarea>
+                                    <div class="editor-cursors">
+                                        <div v-for="cursor in otherCursors" 
+                                             :key="cursor.userId"
+                                             class="cursor"
+                                             :style="{top: cursor.line + 'px', left: cursor.column + 'px'}"
+                                             :data-user="cursor.userName">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Chat Panel -->
+                            <div class="chat-panel">
+                                <h4>Chat</h4>
+                                <div class="chat-messages">
+                                    <div v-for="msg in chatMessages" :key="msg.id" class="chat-message">
+                                        <span class="chat-user">{{ msg.user }}:</span>
+                                        <span class="chat-text">{{ msg.text }}</span>
+                                        <span class="chat-time">{{ formatTime(msg.timestamp) }}</span>
+                                    </div>
+                                </div>
+                                <div class="chat-input">
+                                    <input v-model="chatInput" 
+                                           @keyup.enter="sendChatMessage" 
+                                           placeholder="Type a message...">
+                                    <button @click="sendChatMessage" class="btn btn-small">Send</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tools Tab -->
+                <div v-if="collabTab === 'tools'" class="collab-content">
+                    <div class="tools-grid">
+                        <div class="tool-card">
+                            <h3>🖥️ Terminal Sharing</h3>
+                            <p>Share your terminal session with team members</p>
+                            <button @click="shareTerminal" class="btn btn-primary">Share Terminal</button>
+                        </div>
+                        
+                        <div class="tool-card">
+                            <h3>🐞 Collaborative Debugging</h3>
+                            <p>Debug together with shared breakpoints and watches</p>
+                            <button @click="startDebugSession" class="btn btn-primary">Start Debug Session</button>
+                        </div>
+                        
+                        <div class="tool-card">
+                            <h3>👥 Pair Programming</h3>
+                            <p>Take turns as driver and navigator</p>
+                            <button @click="startPairProgramming" class="btn btn-primary">Start Pairing</button>
+                        </div>
+                        
+                        <div class="tool-card">
+                            <h3>📊 Activity Monitor</h3>
+                            <p>Track session activity and changes</p>
+                            <button @click="monitorActivity" class="btn btn-primary">Monitor Activity</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Settings View -->
+            <div v-if="currentView === 'settings'" class="view-content">
+                <h2>Settings</h2>
+                
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label>Max Concurrent Agents</label>
+                        <input type="number" v-model="settings.maxConcurrentAgents" min="1" max="10">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Auto Commit</label>
+                        <input type="checkbox" v-model="settings.autoCommit">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Auto Pull Request</label>
+                        <input type="checkbox" v-model="settings.autoPR">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Security Scanning</label>
+                        <input type="checkbox" v-model="settings.securityEnabled">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Telemetry</label>
+                        <input type="checkbox" v-model="settings.telemetryEnabled">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>API Key</label>
+                        <input type="password" v-model="settings.apiKey" placeholder="Enter API key">
+                    </div>
+                    
+                    <button @click="saveSettings" class="btn btn-primary">Save Settings</button>
+                </div>
+            </div>
+        </main>
+        
+        <!-- WebSocket Status -->
+        <div class="ws-status" :class="wsConnected ? 'connected' : 'disconnected'">
+            {{ wsConnected ? 'Connected' : 'Disconnected' }}
+        </div>
+    </div>
+    
+    <script src="static/app.js"></script>
+</body>
+</html>

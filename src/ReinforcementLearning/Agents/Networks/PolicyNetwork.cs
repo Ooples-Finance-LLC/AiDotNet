@@ -785,9 +785,9 @@ public class PolicyNetwork<T> : NeuralNetworkBase<T>
         _optimizer.Optimize(optimizationInput);
     }
 
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.NeuralNetwork,
             FeatureCount = _stateSize,

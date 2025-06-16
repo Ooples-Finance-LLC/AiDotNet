@@ -281,7 +281,7 @@ public class FeedForwardNeuralNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Retrieves metadata about the feed-forward neural network model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the network.</returns>
+    /// <returns>A ModelMetadata object containing information about the network.</returns>
     /// <remarks>
     /// <para>
     /// This method collects and returns various pieces of information about the network's structure and configuration.
@@ -292,9 +292,9 @@ public class FeedForwardNeuralNetwork<T> : NeuralNetworkBase<T>
     /// the network is set up. This can be useful for documentation or debugging purposes.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.FeedForwardNetwork,
             AdditionalInfo = new Dictionary<string, object>

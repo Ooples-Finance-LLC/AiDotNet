@@ -473,7 +473,7 @@ public class HopfieldNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the Hopfield network model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata about the Hopfield network, including its model type, size,
@@ -493,9 +493,9 @@ public class HopfieldNetwork<T> : NeuralNetworkBase<T>
     /// - Analyzing the network's properties
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.HopfieldNetwork,
             AdditionalInfo = new Dictionary<string, object>

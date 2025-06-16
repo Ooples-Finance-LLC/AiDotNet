@@ -1,0 +1,16 @@
+{
+  "generated_at": "2025-06-16T12:49:38Z",
+  "agent_specifications": [
+    {
+      "agent_id": "quick_fix_agent",
+      "name": "pattern_based_fixer",
+      "specialization": "all",
+      "target_errors": ["CS0101", "CS0111", "CS0462"],
+      "priority": 1,
+      "estimated_workload": 10,
+      "mode": "pattern_based"
+    }
+  ],
+  "coordination_strategy": "immediate",
+  "max_concurrent_agents": 1
+}

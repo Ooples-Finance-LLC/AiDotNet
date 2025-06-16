@@ -658,7 +658,7 @@ public class ARIMAModel<T> : TimeSeriesModelBase<T>
     /// <summary>
     /// Gets metadata about the model, including its type, parameters, and configuration.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// For Beginners:
     /// This method provides a summary of your model's settings and what it has learned.
@@ -674,9 +674,9 @@ public class ARIMAModel<T> : TimeSeriesModelBase<T>
     /// - Comparing different models to see which performs best
     /// - Understanding what patterns the model has identified in your data
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.ARIMAModel,
             AdditionalInfo = new Dictionary<string, object>

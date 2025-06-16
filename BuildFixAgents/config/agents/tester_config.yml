@@ -1,0 +1,28 @@
+# Tester Agent Configuration  
+agent:
+  name: "tester"
+  type: "quality"
+  priority: 2
+  
+settings:
+  test_frameworks:
+    - "MSTest"
+    - "NUnit"
+    - "xUnit"
+  parallel_execution: true
+  stop_on_failure: false
+  
+test_discovery:
+  patterns:
+    - "*Test.dll"
+    - "*Tests.dll" 
+    - "*Spec.dll"
+  exclude:
+    - "*.Integration.Tests.dll"
+    
+coverage:
+  enabled: true
+  minimum_percent: 80
+  exclude_patterns:
+    - "*/Migrations/*"
+    - "*/Generated/*"

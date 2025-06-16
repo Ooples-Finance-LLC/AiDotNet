@@ -322,7 +322,7 @@ public class ConvolutionalNeuralNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Retrieves metadata about the convolutional neural network model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the network.</returns>
+    /// <returns>A ModelMetadata object containing information about the network.</returns>
     /// <remarks>
     /// <para>
     /// This method collects and returns various pieces of information about the network's structure and configuration.
@@ -333,9 +333,9 @@ public class ConvolutionalNeuralNetwork<T> : NeuralNetworkBase<T>
     /// the network is set up.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.ConvolutionalNeuralNetwork,
             AdditionalInfo = new Dictionary<string, object>

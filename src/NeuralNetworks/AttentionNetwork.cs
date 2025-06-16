@@ -300,7 +300,7 @@ public class AttentionNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the Attention Network model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata that describes the Attention Network, including its type, architecture details,
@@ -318,9 +318,9 @@ public class AttentionNetwork<T> : NeuralNetworkBase<T>
     /// or comparing different network configurations.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.AttentionNetwork,
             AdditionalInfo = new Dictionary<string, object>

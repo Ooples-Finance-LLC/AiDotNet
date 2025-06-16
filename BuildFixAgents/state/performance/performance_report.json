@@ -1,0 +1,58 @@
+{
+  "timestamp": "2025-06-16T14:47:30Z",
+  "bottlenecks": [
+    {
+      "component": "generic_error_agent.sh",
+      "issue": "No actual fixes implemented",
+      "severity": "critical"
+    },
+    {
+      "component": "autofix.sh",
+      "issue": "Inefficient error counting",
+      "severity": "high"
+    },
+    {
+      "component": "generic_build_analyzer.sh",
+      "issue": "Redundant builds",
+      "severity": "medium"
+    },
+    {
+      "component": "enhanced_coordinator.sh",
+      "issue": "Sequential processing",
+      "severity": "medium"
+    }
+  ],
+  "recommendations": [],
+  "metrics": {}
+}
+{
+  "bottlenecks": [
+    {
+      "component": "dotnet_build",
+      "time": 32.993221674,
+      "severity": "high",
+      "impact": "Consumes 50% of batch execution time",
+      "location": "get_error_count function"
+    },
+    {
+      "component": "generic_error_agent.sh",
+      "issue": "No actual fixes implemented",
+      "severity": "critical"
+    },
+    {
+      "component": "autofix.sh",
+      "issue": "Inefficient error counting",
+      "severity": "high"
+    },
+    {
+      "component": "generic_build_analyzer.sh",
+      "issue": "Redundant builds",
+      "severity": "medium"
+    },
+    {
+      "component": "enhanced_coordinator.sh",
+      "issue": "Sequential processing",
+      "severity": "medium"
+    }
+  ]
+}

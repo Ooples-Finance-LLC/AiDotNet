@@ -781,8 +781,8 @@ public abstract class NeuralNetworkBase<T> : INeuralNetworkModel<T>
     /// <summary>
     /// Gets the metadata for this neural network model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
-    public abstract ModelMetaData<T> GetModelMetaData();
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
+    public abstract ModelMetadata<T> GetModelMetadata();
 
     /// <summary>
     /// Resets the internal state of the different layers, clearing any remembered information.
@@ -1277,7 +1277,7 @@ public abstract class NeuralNetworkBase<T> : INeuralNetworkModel<T>
     protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
     protected Vector<int> _sensitiveFeatures;
     protected readonly List<FairnessMetric> _fairnessMetrics = new();
-    protected IModel<Tensor<T>, Tensor<T>, ModelMetaData<T>> _baseModel;
+    protected IModel<Tensor<T>, Tensor<T>, ModelMetadata<T>> _baseModel;
 
     /// <summary>
     /// Gets the global feature importance across all predictions.
@@ -1370,7 +1370,7 @@ public abstract class NeuralNetworkBase<T> : INeuralNetworkModel<T>
     /// <summary>
     /// Sets the base model for interpretability analysis.
     /// </summary>
-    public virtual void SetBaseModel(IModel<Tensor<T>, Tensor<T>, ModelMetaData<T>> model)
+    public virtual void SetBaseModel(IModel<Tensor<T>, Tensor<T>, ModelMetadata<T>> model)
     {
         _baseModel = model ?? throw new ArgumentNullException(nameof(model));
     }

@@ -1,0 +1,40 @@
+{
+  "sprint": 1,
+  "start_time": "2025-06-16T14:47:30Z",
+  "duration_minutes": 120,
+  "goal": "Make BuildFixAgents production-ready with file modification capabilities",
+  "stories": [
+    {
+      "id": "US001",
+      "title": "As a developer, I want agents to fix errors automatically",
+      "points": 8,
+      "status": "in_progress",
+      "tasks": [
+        {"id": "T001", "description": "Integrate file modification", "assignee": "dev_agent_integration", "status": "done"},
+        {"id": "T002", "description": "Test error fixing", "assignee": "qa_agent", "status": "pending"}
+      ]
+    },
+    {
+      "id": "US002",
+      "title": "As a user, I want fast error detection",
+      "points": 5,
+      "status": "in_progress",
+      "tasks": [
+        {"id": "T003", "description": "Optimize error counting", "assignee": "dev_agent_state", "status": "done"},
+        {"id": "T004", "description": "Implement caching", "assignee": "dev_agent_state", "status": "done"}
+      ]
+    },
+    {
+      "id": "US003",
+      "title": "As a system, I want to learn from fixes",
+      "points": 13,
+      "status": "todo",
+      "tasks": [
+        {"id": "T005", "description": "Create learning agent", "assignee": "learning_agent", "status": "todo"},
+        {"id": "T006", "description": "Implement feedback loop", "assignee": "learning_agent", "status": "todo"}
+      ]
+    }
+  ],
+  "velocity": 0,
+  "burndown": []
+}

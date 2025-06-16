@@ -1300,7 +1300,7 @@ public class GenerativeAdversarialNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the GAN model, including information about both generator and discriminator components.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the GAN.</returns>
+    /// <returns>A ModelMetadata object containing information about the GAN.</returns>
     /// <remarks>
     /// <para>
     /// This method returns comprehensive metadata about the GAN, including its architecture, training state,
@@ -1320,9 +1320,9 @@ public class GenerativeAdversarialNetwork<T> : NeuralNetworkBase<T>
     /// comparing experimental results, and documenting your work.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.GenerativeAdversarialNetwork,
             AdditionalInfo = new Dictionary<string, object>
@@ -1330,8 +1330,8 @@ public class GenerativeAdversarialNetwork<T> : NeuralNetworkBase<T>
                 { "GeneratorParameters", Generator.GetParameterCount() },
                 { "DiscriminatorParameters", Discriminator.GetParameterCount() },
                 { "TotalParameters", Generator.GetParameterCount() + Discriminator.GetParameterCount() },
-                { "GeneratorArchitecture", Generator.GetModelMetaData() },
-                { "DiscriminatorArchitecture", Discriminator.GetModelMetaData() },
+                { "GeneratorArchitecture", Generator.GetModelMetadata() },
+                { "DiscriminatorArchitecture", Discriminator.GetModelMetadata() },
                 { "OptimizationType", "Adam" }
             },
             ModelData = this.Serialize()

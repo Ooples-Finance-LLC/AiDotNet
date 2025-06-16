@@ -352,9 +352,9 @@ public class QRDQNModel<T> : ReinforcementLearningModelBase<T>
     /// Gets the metadata for this model.
     /// </summary>
     /// <returns>The model metadata.</returns>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = base.GetModelMetaData();
+        var metadata = base.GetModelMetadata();
         
         metadata.ModelType = ModelType.QRDQNModel; // QR-DQN uses neural networks
         metadata.Description = "Distributional reinforcement learning for risk-sensitive decision making";

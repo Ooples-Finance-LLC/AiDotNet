@@ -396,15 +396,4 @@ namespace AiDotNet.FederatedLearning.Aggregation
         }
     }
 
-    /// <summary>
-    /// Aggregation quality metrics
-    /// </summary>
-    public class AggregationMetrics
-    {
-        public double AverageParameterVariance { get; set; }
-        public int ParticipatingClients { get; set; }
-        public int ParameterCount { get; set; }
-        public double AggregationTime { get; set; }
-        public Dictionary<string, double> PerParameterVariance { get; set; } = new Dictionary<string, double>();
-    }
 }

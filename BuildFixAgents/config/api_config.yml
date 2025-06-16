@@ -1,0 +1,45 @@
+# API Configuration for AI-Powered Build Fix Agent
+# Configure your preferred AI service here
+
+ai_service:
+  # Options: claude, openai, none (for pattern-only mode)
+  provider: none
+  
+  # Claude API Configuration
+  claude:
+    api_key: ""  # Your Anthropic API key
+    model: "claude-3-sonnet-20240229"  # or claude-3-opus-20240229, claude-3-haiku-20240307
+    max_tokens: 4096
+    temperature: 0.2  # Lower for more deterministic fixes
+    
+  # OpenAI API Configuration  
+  openai:
+    api_key: ""  # Your OpenAI API key
+    model: "gpt-4-turbo-preview"  # or gpt-3.5-turbo
+    max_tokens: 4096
+    temperature: 0.2
+    
+  # API Request Settings
+  request:
+    timeout: 30  # seconds
+    max_retries: 3
+    retry_delay: 2  # seconds
+    
+# Feature Flags
+features:
+  use_ai_analysis: true  # Use AI for error analysis
+  use_ai_fixes: true     # Use AI for generating fixes
+  fallback_to_patterns: true  # Use pattern matching if AI fails
+  parallel_ai_requests: false  # Process multiple errors in parallel (requires higher rate limits)
+  
+# Cost Control
+cost_control:
+  max_requests_per_run: 50  # Limit API calls per build fix session
+  estimate_before_fix: true  # Show cost estimate before proceeding
+  daily_limit: 100  # Maximum API calls per day
+  
+# Logging
+logging:
+  log_ai_requests: true
+  log_ai_responses: true
+  ai_log_file: "logs/ai_interactions.log"

@@ -1,0 +1,79 @@
+# Advanced Security Suite Configuration
+security:
+  scanning:
+    secrets_detection: true
+    vulnerability_scanning: true
+    dependency_checking: true
+    code_analysis: true
+    
+  secrets:
+    patterns:
+      - name: "AWS Access Key"
+        regex: "AKIA[0-9A-Z]{16}"
+        severity: "critical"
+        
+      - name: "AWS Secret Key"
+        regex: "(?i)aws_secret[_]?access[_]?key.*['\"]?[0-9a-zA-Z/+=]{40}['\"]?"
+        severity: "critical"
+        
+      - name: "GitHub Token"
+        regex: "ghp_[0-9a-zA-Z]{36}"
+        severity: "critical"
+        
+      - name: "Private Key"
+        regex: "-----BEGIN (RSA|DSA|EC|OPENSSH) PRIVATE KEY-----"
+        severity: "critical"
+        
+      - name: "Generic API Key"
+        regex: "(?i)(api[_]?key|apikey).*['\"]?[0-9a-zA-Z]{32,}['\"]?"
+        severity: "high"
+        
+      - name: "Generic Secret"
+        regex: "(?i)(secret|password|passwd|pwd).*['\"]?[0-9a-zA-Z]{8,}['\"]?"
+        severity: "high"
+        
+      - name: "Database Connection String"
+        regex: "(?i)(mongodb|postgres|mysql|mssql|oracle)://[^\\s]+"
+        severity: "high"
+        
+      - name: "JWT Token"
+        regex: "ey[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*"
+        severity: "medium"
+        
+  vulnerabilities:
+    cve_feeds:
+      - "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-recent.json.gz"
+      
+    severity_thresholds:
+      block_on: "critical"
+      warn_on: "high"
+      
+  dependency_check:
+    languages:
+      - csharp: "dotnet list package --vulnerable"
+      - javascript: "npm audit"
+      - python: "pip-audit"
+      - java: "dependency-check"
+      
+  code_analysis:
+    rules:
+      - name: "SQL Injection"
+        pattern: "SELECT.*FROM.*WHERE.*\\+"
+        severity: "critical"
+        
+      - name: "Command Injection"
+        pattern: "Process\\.Start|system\\(|exec\\("
+        severity: "high"
+        
+      - name: "Path Traversal"
+        pattern: "\\.\\.\\/|\\.\\.\\\\"
+        severity: "high"
+        
+      - name: "Hardcoded Credentials"
+        pattern: "password\\s*=\\s*[\"'][^\"']+[\"']"
+        severity: "high"
+        
+  reporting:
+    format: "json"
+    include_recommendations: true
+    send_notifications: true

@@ -384,9 +384,9 @@ public class GaussianProcessRegression<T> : NonLinearRegressionModelBase<T>
     /// ```
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = base.GetModelMetaData();
+        var metadata = base.GetModelMetadata();
         metadata.AdditionalInfo["NoiseLevel"] = Options.NoiseLevel;
         metadata.AdditionalInfo["OptimizeHyperparameters"] = Options.OptimizeHyperparameters;
         metadata.AdditionalInfo["MaxIterations"] = Options.MaxIterations;

@@ -795,7 +795,7 @@ public class SpikingNeuralNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the spiking neural network.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the network.</returns>
+    /// <returns>A ModelMetadata object containing information about the network.</returns>
     /// <remarks>
     /// <para>
     /// This method returns comprehensive metadata about the spiking neural network, including its
@@ -817,7 +817,7 @@ public class SpikingNeuralNetwork<T> : NeuralNetworkBase<T>
     /// - Reproducing results in future experiments
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         // Collect layer types
         Dictionary<string, int> layerTypes = new Dictionary<string, int>();
@@ -846,7 +846,7 @@ public class SpikingNeuralNetwork<T> : NeuralNetworkBase<T>
             ? _vectorActivation.GetType().Name 
             : (_scalarActivation != null ? _scalarActivation.GetType().Name : "None");
         
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.SpikingNeuralNetwork,
             AdditionalInfo = new Dictionary<string, object>

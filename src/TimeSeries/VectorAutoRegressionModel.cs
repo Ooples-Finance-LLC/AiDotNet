@@ -1084,7 +1084,7 @@ public class VectorAutoRegressionModel<T> : TimeSeriesModelBase<T>
     /// <summary>
     /// Gets metadata about the VAR model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method provides comprehensive metadata about the VAR model, including configuration
@@ -1104,9 +1104,9 @@ public class VectorAutoRegressionModel<T> : TimeSeriesModelBase<T>
     /// models. It provides a complete snapshot of the model's structure and parameters.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.VARModel,
             AdditionalInfo = new Dictionary<string, object>

@@ -1,0 +1,15 @@
+{
+  "project": "BuildFixAgents",
+  "version": "2.0",
+  "status": "active",
+  "start_time": "2025-06-16T14:47:30Z",
+  "phases": {
+    "planning": {"status": "complete", "completion": 100},
+    "development": {"status": "active", "completion": 85},
+    "testing": {"status": "active", "completion": 60},
+    "deployment": {"status": "pending", "completion": 0}
+  },
+  "milestones": [],
+  "blockers": [],
+  "risks": []
+}

@@ -183,7 +183,7 @@ public class PruningCompressor<TModel, TInput, TOutput> :
         }
 
         // Check if model is pruned
-        if (!(model is IPrunedModel<double, TInput, TOutput> prunedModel))
+        if (!(model is AiDotNet.Interfaces.IPrunedModel<double, TInput, TOutput> prunedModel))
         {
             throw new ArgumentException(
                 $"Model of type {model.GetType().Name} is not a pruned model. " +
@@ -387,7 +387,7 @@ public class PruningCompressor<TModel, TInput, TOutput> :
         base.PopulateAdditionalMetrics(metrics, originalModel, compressedModel);
 
         // Add pruning-specific metrics
-        if (compressedModel is IPrunedModel<double, TInput, TOutput> prunedModel)
+        if (compressedModel is AiDotNet.Interfaces.IPrunedModel<double, TInput, TOutput> prunedModel)
         {
             metrics["SparsityLevel"] = prunedModel.SparsityLevel;
             metrics["PruningMethod"] = _pruningMethod.ToString();
@@ -779,81 +779,6 @@ public interface IPrunableModel<TModel, TInput, TOutput>
 }
 
 /// <summary>
-/// Interface for models that are pruned.
-/// </summary>
-/// <remarks>
-/// <para>
-/// This interface should be implemented by models that have been pruned.
-/// </para>
-/// <para><b>For Beginners:</b> This marks a model as being pruned.
-/// 
-/// A pruned model:
-/// - Uses sparse matrices internally
-/// - Knows how to efficiently compute with sparse weights
-/// - May have special methods for serialization and inference
-/// </para>
-/// </remarks>
-/// <typeparam name="T">The numeric type used for calculations (e.g., double, float).</typeparam>
-/// <typeparam name="TInput">The input type for the model.</typeparam>
-/// <typeparam name="TOutput">The output type for the model.</typeparam>
-public interface IPrunedModel<T, TInput, TOutput> : IFullModel<T, TInput, TOutput>
-    where T : unmanaged
-{
-    /// <summary>
-    /// Gets the overall sparsity level of the model.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The sparsity level is the fraction of weights that are zero.
-    /// A value of 0.7 means 70% of the weights are zero.
-    /// </para>
-    /// <para><b>For Beginners:</b> This tells what percentage of connections were removed.
-    /// 
-    /// For example:
-    /// - A value of 0.7 means 70% of weights are zero (pruned)
-    /// - Higher values mean more compression but potentially less accuracy
-    /// </para>
-    /// </remarks>
-    double SparsityLevel { get; }
-
-    /// <summary>
-    /// Gets the sparsity level of each layer in the model.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Maps layer names to their individual sparsity levels.
-    /// </para>
-    /// <para><b>For Beginners:</b> This shows how much each layer was pruned.
-    /// 
-    /// Different layers often have different sparsity levels:
-    /// - Some layers might be pruned more (e.g., 80% zeros)
-    /// - Others might be pruned less (e.g., 40% zeros)
-    /// - This information helps understand the pruning distribution
-    /// </para>
-    /// </remarks>
-    IDictionary<string, double> LayerSparsityLevels { get; }
-
-    /// <summary>
-    /// Serializes the pruned model to a binary writer.
-    /// </summary>
-    /// <param name="writer">The binary writer to write to.</param>
-    /// <remarks>
-    /// <para>
-    /// This method writes the pruned model's data to a binary stream in a format
-    /// that efficiently represents sparse matrices.
-    /// </para>
-    /// <para><b>For Beginners:</b> This saves the pruned model to a stream.
-    /// 
-    /// The method efficiently writes:
-    /// - Only the non-zero weights and their positions
-    /// - The sparsity structure
-    /// - Any model-specific configuration
-    /// </para>
-    /// </remarks>
-    void SerializePruned(BinaryWriter writer);
-}
-
-/// <summary>
 /// Represents a single pruned parameter from a model.
 /// </summary>
 /// <remarks>
@@ -1097,131 +1022,4 @@ public enum PruningSchedule
     Iterative = 2
 }
 
-/// <summary>
-/// Static registry for pruned model factory methods.
-/// </summary>
-/// <remarks>
-/// <para>
-/// This class maintains a registry of factory methods for deserializing pruned models
-/// of different types.
-/// </para>
-/// <para><b>For Beginners:</b> This keeps track of ways to create different pruned models.
-/// 
-/// Since different model types need different deserialization approaches, this registry:
-/// - Maps model types to their appropriate factory methods
-/// - Allows the deserializer to work with any supported model type
-/// - Can be extended to support new model types
-/// </para>
-/// </remarks>
-public static class PrunedModelFactoryRegistry
-{
-    private static readonly Dictionary<Type, object> _factories = 
-        new Dictionary<Type, object>();
-    
-    /// <summary>
-    /// Registers a factory for a specific model type.
-    /// </summary>
-    /// <typeparam name="TModel">The type of model.</typeparam>
-    /// <typeparam name="TInput">The input type for the model.</typeparam>
-    /// <typeparam name="TOutput">The output type for the model.</typeparam>
-    /// <param name="factory">The factory to register.</param>
-    /// <remarks>
-    /// <para>
-    /// This method registers a factory that can create pruned models of the specified type.
-    /// </para>
-    /// <para><b>For Beginners:</b> This adds a new model type to the registry.
-    /// 
-    /// When adding support for a new model type:
-    /// 1. Create a factory that knows how to deserialize that pruned model type
-    /// 2. Register it using this method
-    /// 3. The pruning system can now work with that model type
-    /// </para>
-    /// </remarks>
-    public static void RegisterFactory<TModel, TInput, TOutput>(
-        IPrunedModelFactory<TModel, TInput, TOutput> factory)
-        where TModel : class, IFullModel<double, TInput, TOutput>
-    {
-        _factories[typeof(TModel)] = factory;
-    }
-    
-    /// <summary>
-    /// Gets a factory for a specific model type.
-    /// </summary>
-    /// <typeparam name="TModel">The type of model.</typeparam>
-    /// <typeparam name="TInput">The input type for the model.</typeparam>
-    /// <typeparam name="TOutput">The output type for the model.</typeparam>
-    /// <returns>The registered factory, or null if no factory is registered for the type.</returns>
-    /// <remarks>
-    /// <para>
-    /// This method retrieves a factory that can create pruned models of the specified type.
-    /// </para>
-    /// <para><b>For Beginners:</b> This finds the right factory for a model type.
-    /// 
-    /// When deserializing a model:
-    /// 1. We need to know how to create that specific pruned model type
-    /// 2. This method finds the factory that knows how to do that
-    /// 3. The factory then handles the model-specific deserialization
-    /// </para>
-    /// </remarks>
-    public static IPrunedModelFactory<TModel, TInput, TOutput>? GetFactory<TModel, TInput, TOutput>()
-        where TModel : class, IFullModel<double, TInput, TOutput>
-    {
-        if (_factories.TryGetValue(typeof(TModel), out var factory))
-        {
-            return (IPrunedModelFactory<TModel, TInput, TOutput>)factory;
-        }
-        
-        return null;
-    }
-}
 
-/// <summary>
-/// Interface for factories that can create pruned models.
-/// </summary>
-/// <remarks>
-/// <para>
-/// This interface defines methods for creating pruned models from serialized data.
-/// </para>
-/// <para><b>For Beginners:</b> This defines how to create pruned models from saved data.
-/// 
-/// A factory implementing this interface knows:
-/// - How to read the serialized data for a specific model type
-/// - How to reconstruct the pruned model from that data
-/// - How to set up the sparse matrices and structures
-/// </para>
-/// </remarks>
-/// <typeparam name="TModel">The type of model.</typeparam>
-/// <typeparam name="TInput">The input type for the model.</typeparam>
-/// <typeparam name="TOutput">The output type for the model.</typeparam>
-public interface IPrunedModelFactory<TModel, TInput, TOutput>
-    where TModel : class, IFullModel<double, TInput, TOutput>
-{
-    /// <summary>
-    /// Deserializes a pruned model from a binary reader.
-    /// </summary>
-    /// <param name="reader">The binary reader containing the serialized model.</param>
-    /// <param name="method">The pruning method used.</param>
-    /// <param name="structuredPruning">Whether structured pruning was used.</param>
-    /// <param name="schedule">The pruning schedule used.</param>
-    /// <param name="sparsityLevel">The overall sparsity level achieved.</param>
-    /// <returns>The deserialized pruned model.</returns>
-    /// <remarks>
-    /// <para>
-    /// This method reads serialized data and constructs a pruned model from it.
-    /// </para>
-    /// <para><b>For Beginners:</b> This rebuilds a pruned model from saved data.
-    /// 
-    /// The factory reads the serialized data and:
-    /// 1. Creates the appropriate pruned model instance
-    /// 2. Sets up the sparse weight matrices
-    /// 3. Configures the model for efficient inference
-    /// 4. Returns a fully functional pruned model
-    /// </para>
-    /// </remarks>
-    TModel DeserializePrunedModel(
-        BinaryReader reader,
-        PruningMethod method,
-        bool structuredPruning,
-        PruningSchedule schedule,
-        double sparsityLevel);
-}

@@ -1091,7 +1091,7 @@ public class NEAT<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the NEAT model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the NEAT model.</returns>
+    /// <returns>A ModelMetadata object containing information about the NEAT model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns comprehensive metadata about the NEAT model, including its architecture,
@@ -1113,7 +1113,7 @@ public class NEAT<T> : NeuralNetworkBase<T>
     /// - Understanding the evolved solution
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         // Get the best genome
         var bestGenome = GetBestGenome();
@@ -1131,7 +1131,7 @@ public class NEAT<T> : NeuralNetworkBase<T>
         double avgNodes = nodeCounts.Average();
         int maxNodes = nodeCounts.Max();
     
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.NEAT,
             AdditionalInfo = new Dictionary<string, object>

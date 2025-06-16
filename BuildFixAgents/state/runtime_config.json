@@ -1,0 +1,11 @@
+{
+  "project_name": "AiDotNet",
+  "dotnet_version": "net8.0  # auto, net6.0, net7.0, net8.0, netcoreapp3.1, net462",
+  "max_concurrent_agents": 3,
+  "timeout_minutes": 30,
+  "build_configuration": "Debug  # Debug, Release",
+  "build_verbosity": "minimal    # quiet, minimal, normal, detailed, diagnostic",
+  "auto_commit": false,
+  "auto_pr": false,
+  "timestamp": "2025-06-14T21:48:14Z"
+}

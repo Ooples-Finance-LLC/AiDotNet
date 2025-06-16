@@ -1,0 +1,18 @@
+{
+  "language": "java",
+  "version": "1.0",
+  "errors": [
+    {
+      "code": "cannot find symbol",
+      "description": "Symbol not found",
+      "pattern": "cannot find symbol.*symbol:\\s+(\\w+)\\s+(\\w+)",
+      "fix_strategy": "import_or_declare"
+    },
+    {
+      "code": "incompatible types",
+      "description": "Type mismatch",
+      "pattern": "incompatible types: (\\w+) cannot be converted to (\\w+)",
+      "fix_strategy": "add_cast_or_change_type"
+    }
+  ]
+}

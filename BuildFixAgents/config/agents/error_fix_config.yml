@@ -1,0 +1,35 @@
+# Error Fix Agent Configuration
+agent:
+  name: "error_fix"
+  type: "worker"
+  priority: 1
+  
+settings:
+  max_retries: 3
+  retry_delay: 5
+  batch_size: 10
+  parallel_fixes: false
+  
+error_patterns:
+  - pattern: "CS0246"
+    description: "Type or namespace not found"
+    fix_strategy: "add_using"
+    priority: 1
+  - pattern: "CS0103" 
+    description: "Name does not exist"
+    fix_strategy: "resolve_reference"
+    priority: 1
+  - pattern: "CS1061"
+    description: "Does not contain definition" 
+    fix_strategy: "add_member"
+    priority: 2
+    
+fix_strategies:
+  add_using:
+    search_assemblies: true
+    search_nuget: false
+    common_namespaces:
+      - "System"
+      - "System.Collections.Generic"
+      - "System.Linq"
+      - "System.Threading.Tasks"

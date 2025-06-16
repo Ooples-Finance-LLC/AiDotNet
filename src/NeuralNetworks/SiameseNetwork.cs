@@ -410,7 +410,7 @@ public class SiameseNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the Siamese Network.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the network.</returns>
+    /// <returns>A ModelMetadata object containing information about the network.</returns>
     /// <remarks>
     /// <para>
     /// This method returns comprehensive metadata about the Siamese network, including information
@@ -422,10 +422,10 @@ public class SiameseNetwork<T> : NeuralNetworkBase<T>
     /// is useful for documentation, debugging, and understanding the network's configuration.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         // Prepare Siamese-specific information
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.SiameseNetwork,
             AdditionalInfo = new Dictionary<string, object>

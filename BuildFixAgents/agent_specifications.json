@@ -1,0 +1,23 @@
+{
+  "generated_at": "2025-06-16T12:49:44Z",
+  "agent_specifications": [
+    {
+      "agent_id": "agent_1",
+      "name": "definition_conflicts_specialist",
+      "specialization": "definition_conflicts",
+      "target_errors": ["CS0101","CS0111"],
+      "priority": 4,
+      "estimated_workload": 2
+    },
+    {
+      "agent_id": "agent_2",
+      "name": "definition_conflicts_specialist",
+      "specialization": "definition_conflicts",
+      "target_errors": ["CS0101","CS0111"],
+      "priority": 3,
+      "estimated_workload": 2
+    }
+  ],
+  "coordination_strategy": "dynamic_workload_balancing",
+  "max_concurrent_agents": 3
+}

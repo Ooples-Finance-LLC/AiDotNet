@@ -1,0 +1,58 @@
+{
+  "tasks": {
+    "critical": [
+      {
+        "id": "T001",
+        "title": "Implement file modification",
+        "assignee": "developer_1",
+        "status": "pending",
+        "description": "Add actual code modification to generic_error_agent.sh",
+        "acceptance_criteria": [
+          "Can modify files based on patterns",
+          "Creates backups before changes",
+          "Validates changes compile"
+        ]
+      },
+      {
+        "id": "T002",
+        "title": "Fix error counting",
+        "assignee": "developer_3",
+        "status": "pending",
+        "description": "Handle multi-target builds correctly",
+        "acceptance_criteria": [
+          "Counts unique errors only",
+          "Handles all target frameworks",
+          "Updates state correctly"
+        ]
+      },
+      {
+        "id": "T003",
+        "title": "Implement C# patterns",
+        "assignee": "developer_2",
+        "status": "pending",
+        "description": "Complete pattern fixes for CS0101, CS0111, CS0462",
+        "acceptance_criteria": [
+          "Patterns match real code",
+          "Fixes compile successfully",
+          "Handles edge cases"
+        ]
+      }
+    ],
+    "high": [
+      {
+        "id": "T004",
+        "title": "Performance profiling",
+        "assignee": "performance",
+        "status": "pending",
+        "description": "Profile and optimize slow operations"
+      },
+      {
+        "id": "T005",
+        "title": "Integration testing",
+        "assignee": "testing",
+        "status": "pending",
+        "description": "Create comprehensive test suite"
+      }
+    ]
+  }
+}

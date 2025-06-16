@@ -1,0 +1,40 @@
+{
+  "dependencies": {
+    "file_modification": {
+      "depends_on": [],
+      "required_by": ["error_fixing", "pattern_application"],
+      "status": "complete",
+      "critical": true
+    },
+    "pattern_library": {
+      "depends_on": ["error_analysis"],
+      "required_by": ["error_fixing"],
+      "status": "complete",
+      "critical": true
+    },
+    "state_management": {
+      "depends_on": [],
+      "required_by": ["agent_coordination", "error_tracking"],
+      "status": "complete",
+      "critical": true
+    },
+    "error_detection": {
+      "depends_on": ["build_analysis"],
+      "required_by": ["error_fixing"],
+      "status": "complete",
+      "critical": true
+    },
+    "agent_coordination": {
+      "depends_on": ["state_management"],
+      "required_by": ["parallel_processing"],
+      "status": "active",
+      "critical": false
+    },
+    "performance_optimization": {
+      "depends_on": ["metrics_collection"],
+      "required_by": ["production_readiness"],
+      "status": "pending",
+      "critical": false
+    }
+  }
+}

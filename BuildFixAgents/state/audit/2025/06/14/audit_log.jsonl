@@ -1,0 +1,32 @@
+{
+  "id": "f2b3af00-4c87-4f88-b9ee-d5fc87cc1dd3",
+  "timestamp": "2025-06-14T22:28:04.510Z",
+  "event_type": "test",
+  "action": "action",
+  "details": "Test",
+  "user": "system",
+  "severity": "info",
+  "environment": {
+    "host": "YAMLaptop",
+    "ip": "172.18.240.125",
+    "pid": null,
+    "working_dir": "/home/ooples/AiDotNet/BuildFixAgents"
+  },
+  "signature": "17443b4f7d3daaf80a8b61d2fc45bea6deec5ad9788d2fd21774cc4fc4dd058b"
+}
+{
+  "id": "ca7bf938-bc7d-40ce-9260-8dfed4d5985d",
+  "timestamp": "2025-06-14T22:28:04.816Z",
+  "event_type": "security_scan",
+  "action": "secrets_scan",
+  "details": "Started secrets scan on test_quick/security",
+  "user": "system",
+  "severity": "info",
+  "environment": {
+    "host": "YAMLaptop",
+    "ip": "172.18.240.125",
+    "pid": null,
+    "working_dir": "/home/ooples/AiDotNet/BuildFixAgents"
+  },
+  "signature": "7ed6a8ff59e5510449af6858121282253135de4f54c3cf2e7396a8edf786a7f6"
+}
