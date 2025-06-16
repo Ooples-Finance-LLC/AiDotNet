@@ -1,29 +1,30 @@
-# BuildFixAgents Developer Guide
+# ZeroDev + BuildFixAgents Developer Guide
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-2.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-3.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/Status-Production_Ready-green.svg" alt="Status">
-  <img src="https://img.shields.io/badge/AI_Powered-Self_Improving-purple.svg" alt="AI">
+  <img src="https://img.shields.io/badge/AI_Powered-Zero_Coding-purple.svg" alt="AI">
 </p>
 
-## 🚀 Welcome to BuildFixAgents
+## 🚀 Welcome to ZeroDev
 
-BuildFixAgents is an autonomous, self-improving multi-agent system that automatically detects and fixes build errors in software projects. This guide will help you understand, use, and contribute to the project.
+ZeroDev is an AI-powered development system that transforms ideas into fully functional applications with zero manual coding. It includes BuildFixAgents for automatic error resolution but goes far beyond to provide complete project generation, feature implementation, and full development lifecycle management.
 
 ## 📋 Table of Contents
 
 1. [Quick Start](#quick-start)
-2. [Architecture Overview](#architecture-overview)
-3. [Core Components](#core-components)
-4. [Feature Map](#feature-map)
-5. [Workflows](#workflows)
-6. [Agent System](#agent-system)
-7. [API Reference](#api-reference)
-8. [Development Setup](#development-setup)
-9. [Contributing](#contributing)
-10. [Roadmap](#roadmap)
-11. [Troubleshooting](#troubleshooting)
-12. [FAQ](#faq)
+2. [ZeroDev Features](#zerodev-features)
+3. [Architecture Overview](#architecture-overview)
+4. [Core Components](#core-components)
+5. [Feature Map](#feature-map)
+6. [Workflows](#workflows)
+7. [Agent System](#agent-system)
+8. [API Reference](#api-reference)
+9. [Development Setup](#development-setup)
+10. [Contributing](#contributing)
+11. [Roadmap](#roadmap)
+12. [Troubleshooting](#troubleshooting)
+13. [FAQ](#faq)
 
 ---
 
@@ -43,16 +44,59 @@ chmod +x *.sh
 ```
 
 ### Basic Usage
-```bash
-# Run the self-improving system (recommended)
-./start_self_improving_system.sh auto
 
-# Run specific fix
+#### ZeroDev - Complete Development
+```bash
+# Create new project from description
+zerodev new "Create a REST API for task management"
+
+# Add features to existing project
+zerodev add "Add user authentication with OAuth"
+
+# Full development from idea
+zerodev develop "Build an e-commerce platform"
+
+# Interactive development
+zerodev chat
+```
+
+#### BuildFixAgents - Error Fixing
+```bash
+# Fix build errors automatically
+zerodev fix
+# or
 ./autofix.sh
 
-# Interactive mode
-./start_self_improving_system.sh
+# Run self-improving system
+./start_self_improving_system.sh auto
 ```
+
+---
+
+## 🎯 ZeroDev Features
+
+### Project Generation
+- **Natural Language Input**: Describe your project in plain English
+- **Complete Structure**: Generates folders, files, configs, and boilerplate
+- **Multi-Language**: Supports JS, Python, Java, C#, Go, Rust
+- **Best Practices**: Implements industry standards automatically
+
+### Feature Implementation
+- **Smart Integration**: Adds features to existing codebases seamlessly
+- **Context Aware**: Understands your project structure and patterns
+- **Dependency Management**: Handles package installations
+- **Code Consistency**: Maintains your coding style
+
+### Full Development
+- **End-to-End**: From idea to deployment-ready application
+- **Architecture Design**: Creates scalable system architectures
+- **Testing Included**: Generates test suites automatically
+- **Documentation**: Creates comprehensive docs
+
+### Interactive Mode
+- **Conversational**: Natural language development experience
+- **Iterative**: Build complex systems step by step
+- **Intelligent**: Understands context and requirements
 
 ---
 
@@ -91,7 +135,35 @@ chmod +x *.sh
 
 ## 🔧 Core Components
 
-### 1. **Coordinator System**
+### 1. **ZeroDev Entry Point** (NEW!)
+- **File**: `zerodev.sh`
+- **Purpose**: Main interface for all development activities
+- **Commands**:
+  - `new` - Generate complete projects
+  - `add` - Add features to existing projects
+  - `develop` - Full development from idea
+  - `fix` - Classic error fixing
+  - `chat` - Interactive development
+
+### 2. **Project Generation System** (NEW!)
+- **File**: `project_generator_agent.sh`
+- **Purpose**: Creates complete projects from descriptions
+- **Features**:
+  - Analyzes natural language descriptions
+  - Determines optimal tech stack
+  - Generates complete file structure
+  - Implements basic functionality
+
+### 3. **Feature Implementation** (NEW!)
+- **File**: `feature_implementation_agent.sh`
+- **Purpose**: Adds features to existing codebases
+- **Capabilities**:
+  - Context-aware integration
+  - Dependency management
+  - Code style matching
+  - Seamless integration
+
+### 4. **Coordinator System**
 - **File**: `enhanced_coordinator_v2.sh`
 - **Purpose**: Orchestrates all agents and manages execution flow
 - **Key Functions**:
@@ -100,7 +172,7 @@ chmod +x *.sh
   - Result aggregation
   - State synchronization
 
-### 2. **Error Detection Engine**
+### 5. **Error Detection Engine**
 - **Files**: 
   - `generic_error_agent.sh` - Main error detection
   - `unified_error_counter.sh` - Error counting with caching
@@ -473,40 +545,40 @@ cp templates/agent_template.sh my_new_agent.sh
 
 ## 🗓️ Roadmap
 
-### Phase 1: Core Enhancement (Q1 2025) ✅
-- [x] Multi-agent architecture
-- [x] Self-improvement system
-- [x] Pattern learning
-- [x] Metrics collection
-- [x] Performance optimization
+### Phase 1: ZeroDev Core (Q1 2025) ✅
+- [x] Project generation from descriptions
+- [x] Feature addition to existing projects
+- [x] Natural language understanding
+- [x] Multi-language support
+- [x] Interactive development mode
 
-### Phase 2: Integration & UX (Q2 2025) 🚧
-- [ ] IDE plugins (VS Code, IntelliJ)
-- [ ] Web dashboard improvements
-- [ ] Real-time monitoring
-- [ ] Cloud deployment support
-- [ ] Docker containerization
+### Phase 2: Enhanced Generation (Q2 2025) 🚧
+- [ ] Advanced project templates
+- [ ] Microservices generation
+- [ ] Mobile app support
+- [ ] Database schema generation
+- [ ] API documentation generation
 
 ### Phase 3: AI Enhancement (Q3 2025) 📋
-- [ ] LLM integration for complex fixes
-- [ ] Predictive error detection
-- [ ] Automated pattern generation
-- [ ] Natural language error explanations
-- [ ] Code quality suggestions
+- [ ] GPT-4 integration for smarter generation
+- [ ] Voice-controlled development
+- [ ] Automatic optimization suggestions
+- [ ] Test generation from requirements
+- [ ] Architecture recommendations
 
 ### Phase 4: Enterprise Features (Q4 2025) 📋
-- [ ] Multi-repository support
-- [ ] Team collaboration features
-- [ ] Compliance reporting
-- [ ] Security scanning integration
-- [ ] Custom rule engines
+- [ ] Team project generation
+- [ ] Corporate template library
+- [ ] Compliance code generation
+- [ ] Security-first development
+- [ ] Multi-cloud deployment
 
 ### Future Vision (2026+)
-- [ ] Full CI/CD integration
-- [ ] Automated code review
-- [ ] Performance profiling
-- [ ] Dependency management
-- [ ] Cross-language refactoring
+- [ ] Visual programming interface
+- [ ] AI pair programming
+- [ ] Automatic refactoring
+- [ ] Cross-platform generation
+- [ ] Self-evolving codebase
 
 ---
 
@@ -564,20 +636,20 @@ export TRACE=true
 
 ## ❓ FAQ
 
-### Q: How does BuildFixAgents differ from traditional linters?
-A: BuildFixAgents doesn't just detect issues - it automatically fixes them using intelligent pattern matching and learns from each fix to improve over time.
+### Q: How is ZeroDev different from code generators?
+A: ZeroDev uses AI to understand natural language descriptions and generates complete, production-ready applications. It goes beyond templates to create custom solutions based on your specific requirements.
 
-### Q: Can I use this in production?
-A: Yes! The system includes safety features like automatic backups and validation. Always test in a staging environment first.
+### Q: Can ZeroDev work with my existing project?
+A: Yes! ZeroDev can analyze your existing codebase and seamlessly add new features while maintaining your coding style and patterns.
 
-### Q: How do I add support for my language/framework?
-A: Create a pattern file in the `patterns/` directory following the template, then register it with the pattern manager.
+### Q: What languages and frameworks are supported?
+A: ZeroDev supports JavaScript/TypeScript, Python, Java, C#/.NET, Go, and Rust with popular frameworks like React, Express, FastAPI, Spring Boot, and more.
 
-### Q: What's the performance impact?
-A: Minimal during normal operation. The system uses intelligent caching and only runs when build errors are detected.
+### Q: How does the AI understand what I want?
+A: ZeroDev uses advanced NLP to parse your descriptions, identify key requirements, and map them to appropriate implementations. The more specific you are, the better the results.
 
-### Q: Can multiple developers use this simultaneously?
-A: Yes, the system uses file locking and state management to handle concurrent usage safely.
+### Q: Is the generated code production-ready?
+A: Yes! ZeroDev follows best practices, includes error handling, implements security measures, and generates clean, maintainable code that's ready for production use.
 
 ---
 
@@ -598,6 +670,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 <p align="center">
-  <i>Built with ❤️ by the BuildFixAgents Team</i><br>
-  <i>Making builds better, one fix at a time</i>
+  <i>Built with ❤️ by the ZeroDev Team</i><br>
+  <i>From idea to implementation - Zero coding required</i>
 </p>
