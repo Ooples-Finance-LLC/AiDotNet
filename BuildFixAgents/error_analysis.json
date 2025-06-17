@@ -1,19 +1,40 @@
 {
-  "analysis_timestamp": "2025-06-16T14:33:55Z",
+  "analysis_timestamp": "2025-06-16T15:29:07Z",
   "language": "csharp",
   "error_categories": {
     "definition_conflicts": {
       "description": "Duplicate definitions, member conflicts, and naming issues",
-      "error_codes": ["CS0101","CS0111"],
-      "count": 2,
+      "error_codes": ["CS0103","CS0104","CS0117","CS0119"],
+      "count": 4,
       "severity": "high",
       "suggested_approach": "Remove duplicates, resolve naming conflicts"
+    },
+    "type_resolution": {
+      "description": "Missing types, namespace issues, ambiguous references",
+      "error_codes": ["CS0104","CS0234","CS0246"],
+      "count": 3,
+      "severity": "high",
+      "suggested_approach": "Add using statements, resolve ambiguities, check references"
+    },
+    "generic_constraints": {
+      "description": "Generic type constraints, nullable issues, type parameter problems",
+      "error_codes": ["CS0305","CS0453"],
+      "count": 2,
+      "severity": "medium",
+      "suggested_approach": "Adjust constraints, fix nullable types, update generics"
+    },
+    "uncategorized": {
+      "description": "Other errors that need investigation",
+      "error_codes": ["CS0019","CS0029","CS0030","CS0121","CS0122","CS0165","CS0191","CS0200","CS0266","CS0403","CS0411","CS0413","CS0414","CS0704","CS1061","CS1501","CS1503","CS1660","CS1729","CS1739","CS1929","CS1950","CS1998","CS4012","CS4032","CS4034","CS7036","CS8129","CS8130","CS8600","CS8601","CS8602","CS8603","CS8604","CS8618","CS8619","CS8621","CS8629","CS8714","CS8917","CS8978"],
+      "count": 41,
+      "severity": "low",
+      "suggested_approach": "Manual investigation required"
     }
   },
   "summary": {
-    "total_error_instances": 24,
-    "unique_error_codes": 2,
-    "affected_files": 4
+    "total_error_instances": 4372,
+    "unique_error_codes": 49,
+    "affected_files": 126
   }
 }
 

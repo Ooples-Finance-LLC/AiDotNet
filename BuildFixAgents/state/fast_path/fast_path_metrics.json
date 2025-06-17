@@ -1,0 +1,8 @@
+{
+            "total_routed": 0,
+            "fast_path_hits": 0,
+            "fast_path_misses": 0,
+            "time_saved_ms": 0,
+            "success_count": 0,
+            "failure_count": 0
+        }

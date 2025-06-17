@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "allocations": {},
+  "pending_requests": [],
+  "total_allocated": {
+    "cpu": 0,
+    "memory_mb": 0,
+    "file_handles": 0,
+    "disk_io_mb": 0
+  }
+}

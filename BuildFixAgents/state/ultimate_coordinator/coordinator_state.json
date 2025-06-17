@@ -1,0 +1,20 @@
+{
+    "mode": "minimal",
+    "start_time": "2025-06-16T22:25:12-04:00",
+    "features": {
+        "caching": true,
+        "chunking": true,
+        "streaming": true,
+        "incremental": true
+    },
+    "max_concurrent": 2,
+    "agents": {},
+    "metrics": {
+        "total_agents": 0,
+        "completed": 0,
+        "failed": 0,
+        "cached": 0,
+        "chunks_processed": 0
+    },
+    "status": "initializing"
+}

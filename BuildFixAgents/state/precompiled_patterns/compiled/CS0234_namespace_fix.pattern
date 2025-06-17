@@ -1,0 +1,40 @@
+#!/bin/bash
+ERROR_CODE="CS0234"
+PATTERN_NAME="namespace_fix"
+
+# Pre-mapped common namespaces
+declare -A NAMESPACE_MAP=(
+    ["List"]="System.Collections.Generic"
+    ["Dictionary"]="System.Collections.Generic"
+    ["Task"]="System.Threading.Tasks"
+    ["CancellationToken"]="System.Threading"
+    ["Linq"]="System.Linq"
+    ["HttpClient"]="System.Net.Http"
+    ["JsonSerializer"]="System.Text.Json"
+    ["ILogger"]="Microsoft.Extensions.Logging"
+    ["DbContext"]="Microsoft.EntityFrameworkCore"
+)
+
+apply_pattern() {
+    local files=("$@")
+    
+    for file in "${files[@]}"; do
+        # Extract missing types
+        local missing_types=$(grep -h "error CS0234:" build_output.txt | \
+            grep "$file" | \
+            grep -oE "type or namespace name '[^']+'" | \
+            sed "s/type or namespace name '\\([^']*\\)'/\\1/" | sort -u)
+        
+        # Add using statements
+        for type in $missing_types; do
+            if [[ -n "${NAMESPACE_MAP[$type]}" ]]; then
+                local namespace="${NAMESPACE_MAP[$type]}"
+                if ! grep -q "using $namespace;" "$file"; then
+                    sed -i "1i\\using $namespace;" "$file"
+                fi
+            fi
+        done
+    done
+}
+
+export -f apply_pattern

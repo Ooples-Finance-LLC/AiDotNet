@@ -281,3 +281,26 @@ trap cleanup EXIT
 
 # Execute
 main "$@"
+# Enhanced agent deployment
+deploy_agents_from_spec() {
+    local spec_file="${1:-$SCRIPT_DIR/state/agent_specifications.json}"
+    
+    if [[ ! -f "$spec_file" ]]; then
+        echo "No agent specifications found"
+        return 1
+    fi
+    
+    # Deploy each specified agent
+    jq -c '.agent_specifications[]' "$spec_file" | while read -r agent_spec; do
+        local agent_id=$(echo "$agent_spec" | jq -r '.agent_id')
+        local target_errors=$(echo "$agent_spec" | jq -r '.target_errors | join(" ")')
+        
+        echo "Deploying $agent_id for errors: $target_errors"
+        
+        # Run agent in background
+        bash "$SCRIPT_DIR/generic_error_agent.sh" "$agent_id" "$spec_file" "$target_errors" &
+    done
+    
+    # Wait for all agents
+    wait
+}

@@ -1,0 +1,20 @@
+{
+    "system": {
+        "cpu_cores": 16,
+        "memory_mb": 7620,
+        "max_file_handles": 1048576
+    },
+    "limits": {
+        "cpu_percent": 80,
+        "memory_percent": 75,
+        "memory_mb": 5715,
+        "file_handles": 838860,
+        "disk_io_mb": 100
+    },
+    "reservations": {
+        "system": {
+            "cpu_percent": 20,
+            "memory_mb": 1024
+        }
+    }
+}

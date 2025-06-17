@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Set script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STATE_DIR="${STATE_DIR:-$SCRIPT_DIR/state}"
+
 # Unified Error Counter
 # Provides consistent error counting across all BuildFixAgents components
 

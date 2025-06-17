@@ -1,0 +1,41 @@
+#!/bin/bash
+ERROR_CODE="CS8618"
+PATTERN_NAME="nullable_fix"
+
+# Pre-compiled sed expressions
+declare -A NULLABLE_PATTERNS=(
+    ["string_property"]='s/\(public\|private\|protected\|internal\) string \([A-Za-z0-9_]*\) { get; set; }/\1 string \2 { get; set; } = string.Empty;/g'
+    ["list_property"]='s/\(public\|private\|protected\|internal\) List<\([^>]*\)> \([A-Za-z0-9_]*\) { get; set; }/\1 List<\2> \3 { get; set; } = new();/g'
+    ["array_property"]='s/\(public\|private\|protected\|internal\) \([A-Za-z0-9_]*\)\[\] \([A-Za-z0-9_]*\) { get; set; }/\1 \2[] \3 { get; set; } = Array.Empty<\2>();/g'
+    ["reference_nullable"]='s/\(public\|private\|protected\|internal\) \([A-Z][A-Za-z0-9_]*\) \([A-Za-z0-9_]*\) { get; set; }/\1 \2? \3 { get; set; }/g'
+)
+
+apply_pattern() {
+    local files=("$@")
+    
+    # Create combined sed script for efficiency
+    local sed_script=$(mktemp)
+    for pattern in "${NULLABLE_PATTERNS[@]}"; do
+        echo "$pattern" >> "$sed_script"
+    done
+    
+    # Apply in parallel
+    printf '%s\0' "${files[@]}" | xargs -0 -P 8 -I {} sed -i -f "$sed_script" {}
+    
+    rm -f "$sed_script"
+}
+
+# Batch mode
+apply_pattern_batch() {
+    local error_file="$1"
+    
+    # Extract unique files with CS8618 errors
+    local files=($(grep "error CS8618:" "$error_file" | cut -d: -f1 | sort -u))
+    
+    if [[ ${#files[@]} -gt 0 ]]; then
+        apply_pattern "${files[@]}"
+    fi
+}
+
+export -f apply_pattern
+export -f apply_pattern_batch

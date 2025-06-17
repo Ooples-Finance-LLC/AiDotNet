@@ -1,0 +1,48 @@
+{
+    "version": "1.0",
+    "routes": {
+        "CS0101": {
+            "name": "Duplicate Definition",
+            "handler": "fast_fix_duplicate",
+            "pattern": "deterministic",
+            "success_rate": 0.95,
+            "avg_time_ms": 50
+        },
+        "CS8618": {
+            "name": "Nullable Reference",
+            "handler": "fast_fix_nullable",
+            "pattern": "predictable",
+            "success_rate": 0.98,
+            "avg_time_ms": 30
+        },
+        "CS0234": {
+            "name": "Missing Namespace",
+            "handler": "fast_fix_namespace",
+            "pattern": "lookup",
+            "success_rate": 0.92,
+            "avg_time_ms": 40
+        },
+        "CS0103": {
+            "name": "Name Not Found",
+            "handler": "fast_fix_undefined",
+            "pattern": "typo",
+            "success_rate": 0.88,
+            "avg_time_ms": 60
+        },
+        "CS1061": {
+            "name": "Missing Member",
+            "handler": "fast_fix_member",
+            "pattern": "extension",
+            "success_rate": 0.85,
+            "avg_time_ms": 70
+        },
+        "CS0246": {
+            "name": "Type Not Found",
+            "handler": "fast_fix_type",
+            "pattern": "import",
+            "success_rate": 0.90,
+            "avg_time_ms": 45
+        }
+    },
+    "custom_routes": {}
+}

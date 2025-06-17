@@ -1,0 +1,21 @@
+{
+    "version": "1.0",
+    "update_interval": 5,
+    "retention_hours": 24,
+    "alerts": {
+        "enabled": true,
+        "thresholds": {
+            "cpu": 80,
+            "memory": 85,
+            "errors": 50
+        }
+    },
+    "widgets": [
+        "system_overview",
+        "agent_performance",
+        "error_analysis",
+        "cache_efficiency",
+        "resource_usage",
+        "timeline"
+    ]
+}

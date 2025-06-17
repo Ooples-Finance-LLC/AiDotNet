@@ -1,0 +1,53 @@
+Script started on 2025-06-16 11:56:16-04:00 [<not executed on terminal>]
+[1m[0;33m
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║     BuildFixAgents - Self-Improving Multi-Agent System      ║
+║                                                              ║
+║     🤖 Autonomous | 🧠 Learning | 🚀 Production Ready        ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+[0m
+[1;33mChecking prerequisites...[0m
+
+[0;36m=== Initializing Self-Improving System ===[0m
+
+[1;33mStep 1: Initializing Enhanced Coordinator...[0m
+[1m[0;33m╔════════════════════════════════════════╗[0m
+[1m[0;33m║   Enhanced Coordinator v2.0            ║[0m
+[1m[0;33m║   Self-Improving Multi-Agent System    ║[0m
+[1m[0;33m╚════════════════════════════════════════╝[0m
+[1m[0;33m=== Enhanced Coordinator v2 Initializing ===[0m
+
+[1;33mDeploying Management Layer...[0m
+
+[0;36mLevel 1 - Strategic Management:[0m
+  Deploying Architect Agent... [0;32m✓[0m
+  Deploying Project Manager... [0;32m✓[0m
+  Deploying Scrum Master... [0;32m✓[0m
+[0;32m✓ Enhanced coordinator initialized[0m
+
+[1;33mStep 2: Deploying Multi-Agent Network...[0m
+[1m[0;33m╔════════════════════════════════════════╗[0m
+[1m[0;33m║   Enhanced Coordinator v2.0            ║[0m
+[1m[0;33m║   Self-Improving Multi-Agent System    ║[0m
+[1m[0;33m╚════════════════════════════════════════╝[0m
+
+[1;33mDeploying Management Layer...[0m
+
+[0;36mLevel 1 - Strategic Management:[0m
+  Deploying Architect Agent... [0;32m✓[0m
+  Deploying Project Manager... [0;32m✓[0m
+  Deploying Scrum Master... [0;32m✓[0m
+
+[0;36mLevel 2 - Operational Management:[0m
+  Deploying Performance Agent... [0;32m✓[0m
+  Deploying Metrics Collector... [0;32m✓[0m
+  Deploying Learning Agent... [0;32m✓[0m
+
+[0;36mLevel 3 - Implementation Layer:[0m
+  Deploying dev_agent_core_fix... [0;32m✓[0m
+  Deploying dev_agent_patterns... [0;32m✓[0m
+  Deploying dev_agent_state... [0;32m✓[0m
+  Deploying dev_agent_integration... 
+Script done on 2025-06-16 11:56:19-04:00 [COMMAND_EXIT_CODE="1"]

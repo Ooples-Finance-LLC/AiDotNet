@@ -1,0 +1,4 @@
+[20:26:34] Test started at Mon Jun 16 20:26:34 EDT 2025
+[20:26:34] Test output directory: /home/ooples/AiDotNet/BuildFixAgents/test_results/comprehensive_20250616_202634
+[20:26:34] 
+[0;34m=== Testing Core Build Fix Agents ===[0m

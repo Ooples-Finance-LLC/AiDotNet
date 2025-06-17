@@ -1,0 +1,9 @@
+{
+  "total_connections": 0,
+  "active_connections": 3,
+  "idle_connections": 0,
+  "failed_connections": 0,
+  "reused_connections": 0,
+  "connection_wait_time_ms": 0,
+  "pool_efficiency": 0
+}

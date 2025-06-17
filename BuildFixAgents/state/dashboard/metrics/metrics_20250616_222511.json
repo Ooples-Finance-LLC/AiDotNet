@@ -1,0 +1,51 @@
+{
+    "timestamp": "2025-06-16T22:25:11-04:00",
+    "system": {
+    "cpu_percent": 0.0,
+    "memory": {
+        "used_mb": 1064,
+        "total_mb": 7620,
+        "percent": 13.96
+    },
+    "disk_percent": 1,
+    "load_average": "0.09, 0.14, 0.18",
+    "processes": 45
+},
+    "agents": {
+    "total": 0,
+    "active": 0,
+    "completed": 0,
+    "failed": 0,
+    "success_rate": 0,
+    "average_duration_seconds": 0
+},
+    "errors": {
+    "total_errors": 0,
+    "unique_error_types": 0,
+    "top_errors": [],
+    "errors_per_minute": 0
+},
+    "cache": {
+    "hits": 2,
+    "misses": 4,
+    "hit_rate": 33.33,
+    "size_mb": 1,
+    "entries": 6
+},
+    "pools": {
+  "total_connections": 0,
+  "active_connections": 3,
+  "idle_connections": 0,
+  "failed_connections": 0,
+  "reused_connections": 0,
+  "connection_wait_time_ms": 0,
+  "pool_efficiency": 0
+},
+    "performance": {
+    "build_analysis_time": 0,
+    "fix_application_time": 0,
+    "total_execution_time": 257,
+    "errors_fixed": 0,
+    "throughput_per_minute": 0
+}
+}

@@ -2,8 +2,13 @@
 
 # Master Fix Coordinator - Orchestrates all agents to fix BuildFixAgents
 # Uses the complete multi-agent system to repair itself
+# Supports phase-based execution for 2-minute timeout compliance
 
 set -euo pipefail
+
+# Parse command line arguments
+PHASE="${1:-all}"
+BATCH="${2:-1}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
@@ -35,13 +40,57 @@ echo -e "${NC}"
 # Make all scripts executable
 chmod +x "$SCRIPT_DIR"/*.sh 2>/dev/null || true
 
+# Handle phase-based execution for 2-minute timeout
+case "$PHASE" in
+    "analysis"|"1")
+        echo -e "${BOLD}${CYAN}=== Running Phase 1: Analysis Only ===${NC}"
+        PHASES=("1")
+        ;;
+    "planning"|"2")
+        echo -e "${BOLD}${CYAN}=== Running Phase 2: Planning Only ===${NC}"
+        PHASES=("2")
+        ;;
+    "deploy"|"3")
+        echo -e "${BOLD}${CYAN}=== Running Phase 3: Deploy Agents Only ===${NC}"
+        PHASES=("3")
+        ;;
+    "fix"|"4")
+        echo -e "${BOLD}${CYAN}=== Running Phase 4: Apply Fixes (Batch $BATCH) ===${NC}"
+        PHASES=("4")
+        ;;
+    "qa"|"5")
+        echo -e "${BOLD}${CYAN}=== Running Phase 5: Quality Assurance Only ===${NC}"
+        PHASES=("5")
+        ;;
+    "test"|"6")
+        echo -e "${BOLD}${CYAN}=== Running Phase 6: Testing Only ===${NC}"
+        PHASES=("6")
+        ;;
+    "report"|"7")
+        echo -e "${BOLD}${CYAN}=== Running Phase 7: Generate Reports Only ===${NC}"
+        PHASES=("7")
+        ;;
+    "all")
+        echo -e "${BOLD}${YELLOW}WARNING: Running all phases may exceed 2-minute timeout!${NC}"
+        echo -e "${BOLD}${YELLOW}Consider running phases separately with --phase option${NC}"
+        PHASES=("1" "2" "3" "4" "5" "6" "7")
+        ;;
+esac
+
 # Phase 1: Deploy Management Agents
+if [[ " ${PHASES[@]} " =~ " 1 " ]] || [[ "$PHASE" == "all" ]]; then
 echo -e "\n${BOLD}${CYAN}=== Phase 1: Deploying Management Agents ===${NC}"
 
 # 1. Architect Agent - Planning
 echo -e "\n${YELLOW}1. Architect Agent - Creating repair plan...${NC}"
 if [[ -f "$SCRIPT_DIR/architect_agent_v2.sh" ]]; then
     bash "$SCRIPT_DIR/architect_agent_v2.sh" plan
+fi
+
+# 1.5. Visionary Agent - Strategic Vision
+echo -e "\n${YELLOW}1.5. Visionary Agent - Analyzing strategic opportunities...${NC}"
+if [[ -f "$SCRIPT_DIR/visionary_agent.sh" ]]; then
+    bash "$SCRIPT_DIR/visionary_agent.sh" analyze
 fi
 
 # 2. Project Manager - Tracking
@@ -57,7 +106,10 @@ if [[ -f "$SCRIPT_DIR/scrum_master_agent.sh" ]]; then
     bash "$SCRIPT_DIR/scrum_master_agent.sh" remove-blockers
 fi
 
+fi # End Phase 1
+
 # Phase 2: Deploy Analysis Agents
+if [[ " ${PHASES[@]} " =~ " 2 " ]] || [[ "$PHASE" == "all" ]]; then
 echo -e "\n${BOLD}${CYAN}=== Phase 2: Deploying Analysis Agents ===${NC}"
 
 # 4. Performance Agent - Find bottlenecks
@@ -80,6 +132,9 @@ if [[ -f "$SCRIPT_DIR/learning_agent.sh" ]]; then
     bash "$SCRIPT_DIR/learning_agent.sh" analyze
 fi
 
+fi # End Phase 2
+
+if [[ " ${PHASES[@]} " =~ " 3 " ]] || [[ "$PHASE" == "all" ]]; then
 # Phase 3: Deploy Fix Agents
 echo -e "\n${BOLD}${CYAN}=== Phase 3: Deploying Fix Agents ===${NC}"
 
@@ -101,6 +156,9 @@ if [[ -f "$SCRIPT_DIR/fix_agent_deployment.sh" ]]; then
     bash "$SCRIPT_DIR/fix_agent_deployment.sh"
 fi
 
+fi # End Phase 3
+
+if [[ " ${PHASES[@]} " =~ " 4 " ]] || [[ "$PHASE" == "all" ]]; then
 # Phase 4: Deploy Developer Agents
 echo -e "\n${BOLD}${CYAN}=== Phase 4: Deploying Developer Agents ===${NC}"
 
@@ -125,6 +183,9 @@ if [[ -f "$SCRIPT_DIR/dev_agent_integration.sh" ]]; then
     bash "$SCRIPT_DIR/dev_agent_integration.sh"
 fi
 
+fi # End Phase 4
+
+if [[ " ${PHASES[@]} " =~ " 5 " ]] || [[ "$PHASE" == "all" ]]; then
 # Phase 5: Quality Assurance
 echo -e "\n${BOLD}${CYAN}=== Phase 5: Quality Assurance ===${NC}"
 
@@ -141,6 +202,9 @@ if [[ -f "$SCRIPT_DIR/qa_agent_final.sh" ]]; then
     bash "$SCRIPT_DIR/qa_agent_final.sh"
 fi
 
+fi # End Phase 5
+
+if [[ " ${PHASES[@]} " =~ " 6 " ]] || [[ "$PHASE" == "all" ]]; then
 # Phase 6: Test the Fixed System
 echo -e "\n${BOLD}${CYAN}=== Phase 6: Testing Fixed System ===${NC}"
 
@@ -162,6 +226,9 @@ if bash "$SCRIPT_DIR/generic_build_analyzer.sh" "$PROJECT_DIR"; then
     fi
 fi
 
+fi # End Phase 6
+
+if [[ " ${PHASES[@]} " =~ " 7 " ]] || [[ "$PHASE" == "all" ]]; then
 # Phase 7: Generate Reports
 echo -e "\n${BOLD}${CYAN}=== Phase 7: Generating Reports ===${NC}"
 
@@ -183,6 +250,7 @@ if [[ -f "$SCRIPT_DIR/enhanced_coordinator_v2.sh" ]]; then
     bash "$SCRIPT_DIR/enhanced_coordinator_v2.sh" report
 fi
 
+fi # End Phase 7
 # Final Summary
 echo -e "\n${BOLD}${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BOLD}${GREEN}║                    REPAIR COMPLETE                             ║${NC}"

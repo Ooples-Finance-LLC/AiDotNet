@@ -127,7 +127,7 @@ public class QuantizedParameter<T> where T : unmanaged
     /// - Dequantization uses the appropriate scale for each channel
     /// </para>
     /// </remarks>
-    public Vector<T> ChannelScales { get; set; }
+    public Vector<T>? ChannelScales { get; set; }
 
     /// <summary>
     /// Gets or sets the per-channel zero points for per-channel asymmetric quantization.
@@ -143,5 +143,5 @@ public class QuantizedParameter<T> where T : unmanaged
     /// - This vector contains one zero point per channel
     /// </para>
     /// </remarks>
-    public Vector<int> ChannelZeroPoints { get; set; }
+    public Vector<int>? ChannelZeroPoints { get; set; }
 }

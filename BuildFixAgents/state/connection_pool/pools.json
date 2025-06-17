@@ -1,0 +1,74 @@
+{
+  "version": "1.0",
+  "pools": {
+    "test_http": {
+      "connections": [
+        {
+          "id": "test_http_http_1",
+          "config_file": "/home/ooples/AiDotNet/BuildFixAgents/state/connection_pool/connections/test_http/conn_1.conf",
+          "status": "active",
+          "acquired_by": "test_user",
+          "acquired_at": 1750126405.998491
+        },
+        {
+          "id": "test_http_http_2",
+          "config_file": "/home/ooples/AiDotNet/BuildFixAgents/state/connection_pool/connections/test_http/conn_2.conf",
+          "status": "active",
+          "acquired_by": "test_user",
+          "acquired_at": 1750126690.367769
+        },
+        {
+          "id": "test_http_http_3",
+          "config_file": "/home/ooples/AiDotNet/BuildFixAgents/state/connection_pool/connections/test_http/conn_3.conf",
+          "status": "active",
+          "acquired_by": "test_user",
+          "acquired_at": 1750127110.922901
+        },
+        {
+          "id": "test_http_http_1",
+          "config_file": "/home/ooples/AiDotNet/BuildFixAgents/state/connection_pool/connections/test_http/conn_1.conf",
+          "status": "idle",
+          "acquired_by": null
+        },
+        {
+          "id": "test_http_http_2",
+          "config_file": "/home/ooples/AiDotNet/BuildFixAgents/state/connection_pool/connections/test_http/conn_2.conf",
+          "status": "active",
+          "acquired_by": "test_user",
+          "acquired_at": 1750126690.36778
+        },
+        {
+          "id": "test_http_http_3",
+          "config_file": "/home/ooples/AiDotNet/BuildFixAgents/state/connection_pool/connections/test_http/conn_3.conf",
+          "status": "active",
+          "acquired_by": "test_user",
+          "acquired_at": 1750127110.922913
+        },
+        {
+          "id": "test_http_http_1",
+          "config_file": "/home/ooples/AiDotNet/BuildFixAgents/state/connection_pool/connections/test_http/conn_1.conf",
+          "status": "idle",
+          "acquired_by": null
+        },
+        {
+          "id": "test_http_http_2",
+          "config_file": "/home/ooples/AiDotNet/BuildFixAgents/state/connection_pool/connections/test_http/conn_2.conf",
+          "status": "idle",
+          "acquired_by": null
+        },
+        {
+          "id": "test_http_http_3",
+          "config_file": "/home/ooples/AiDotNet/BuildFixAgents/state/connection_pool/connections/test_http/conn_3.conf",
+          "status": "active",
+          "acquired_by": "test_user",
+          "acquired_at": 1750127110.922923
+        }
+      ]
+    }
+  },
+  "global_settings": {
+    "max_total_connections": 200,
+    "enable_multiplexing": true,
+    "connection_reuse": true
+  }
+}

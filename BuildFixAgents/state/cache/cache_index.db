@@ -1,0 +1,7 @@
+# Cache Index Database|||||||
+# Format: cache_key|cache_type|file_path|created_time|last_access|access_count|size|metadata
+test_agent_|agent|/home/ooples/AiDotNet/BuildFixAgents/state/cache/agents/test_agent/.cache.gz|1750126406|1750127111|3|180|agent=test_agent,{"duration": 0, "exit_code": 0}}
+build_db9a74b8080dc35f48d03e6810162655|build|/home/ooples/AiDotNet/BuildFixAgents/state/cache/build/build_db9a74b8080dc35f48d03e6810162655.cache.gz|1750126687|1750126687|1|446|{}
+build_c569159e9fd9c31d6a526562dd304044|build|/home/ooples/AiDotNet/BuildFixAgents/state/cache/build/build_c569159e9fd9c31d6a526562dd304044.cache.gz|1750126687|1750126687|1|53|{}}
+build_db9a74b8080dc35f48d03e6810162655|build|/home/ooples/AiDotNet/BuildFixAgents/state/cache/build/build_db9a74b8080dc35f48d03e6810162655.cache.gz|1750127106|1750127106|1|446|{}
+build_c569159e9fd9c31d6a526562dd304044|build|/home/ooples/AiDotNet/BuildFixAgents/state/cache/build/build_c569159e9fd9c31d6a526562dd304044.cache.gz|1750127106|1750127106|1|53|{}}

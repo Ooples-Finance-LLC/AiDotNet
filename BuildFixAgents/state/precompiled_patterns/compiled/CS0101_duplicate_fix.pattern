@@ -1,0 +1,39 @@
+#!/bin/bash
+ERROR_CODE="CS0101"
+PATTERN_NAME="duplicate_fix"
+
+# Pre-analyzed duplicate patterns
+apply_pattern() {
+    local files=("$@")
+    
+    for file in "${files[@]}"; do
+        # Fast duplicate detection using awk
+        awk '
+        /^[[:space:]]*(public|private|protected|internal)[[:space:]]+(class|interface|enum)[[:space:]]+[A-Za-z0-9_]+/ {
+            match($0, /(class|interface|enum)[[:space:]]+([A-Za-z0-9_]+)/, arr)
+            if (arr[2] in seen) {
+                # Comment out duplicate
+                print "// Duplicate removed: " $0
+                in_duplicate = 1
+                brace_count = 0
+            } else {
+                seen[arr[2]] = 1
+                print $0
+                in_duplicate = 0
+            }
+            next
+        }
+        in_duplicate && /{/ { brace_count++ }
+        in_duplicate && /}/ { 
+            brace_count--
+            if (brace_count == 0) {
+                in_duplicate = 0
+                next
+            }
+        }
+        !in_duplicate { print }
+        ' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+    done
+}
+
+export -f apply_pattern

