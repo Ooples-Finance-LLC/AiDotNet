@@ -156,6 +156,23 @@ public enum InterpretationMethod
     Prototype,
 
     /// <summary>
+    /// Feature interaction analysis.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Analyzes how features work together to influence predictions.
+    /// Shows when two or more features combined have a different effect than each would alone.
+    /// </para>
+    /// <para>
+    /// Examples:
+    /// - Temperature and humidity together affect comfort differently than separately
+    /// - Age and income interact to determine loan approval
+    /// - Medication combinations may have interaction effects
+    /// </para>
+    /// </remarks>
+    FeatureInteraction,
+
+    /// <summary>
     /// Custom interpretation method.
     /// </summary>
     /// <remarks>
