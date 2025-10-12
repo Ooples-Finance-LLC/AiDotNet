@@ -1584,5 +1584,28 @@ public enum LayerType
     /// - Learned upsampling
     /// </para>
     /// </remarks>
-    Upsampling
+    Upsampling,
+
+    /// <summary>
+    /// The final output layer that produces the network's predictions.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Output layers are the final layers in a neural network that
+    /// produce the actual predictions or results.
+    /// </para>
+    /// <para>
+    /// Think of it as:
+    /// - The conclusion of the neural network's processing
+    /// - Where all the learned patterns come together to make a final decision
+    /// - The layer that produces the format your application needs (classes, values, etc.)
+    /// </para>
+    /// <para>
+    /// Output layers typically use specific activation functions:
+    /// - Softmax for multi-class classification
+    /// - Sigmoid for binary classification or multi-label problems
+    /// - Linear (no activation) for regression
+    /// </para>
+    /// </remarks>
+    Output
 }
