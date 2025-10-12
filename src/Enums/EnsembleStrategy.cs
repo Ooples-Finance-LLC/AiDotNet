@@ -49,6 +49,18 @@ public enum EnsembleStrategy
     /// </remarks>
     TrimmedMean,
     
+    /// <summary>
+    /// General voting strategy for classification.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> A general voting approach where models vote for outcomes,
+    /// with the most popular choice winning. This is a generic voting strategy that
+    /// can adapt to different voting mechanisms.
+    /// </para>
+    /// </remarks>
+    Voting,
+    
     // Voting Methods
     /// <summary>
     /// Each model votes for a class (classification).
