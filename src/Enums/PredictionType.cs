@@ -66,6 +66,24 @@ public enum PredictionType
     MulticlassClassification,
 
     /// <summary>
+    /// General classification (binary or multiclass).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> General classification type that encompasses both binary
+    /// and multiclass classification. Used when the specific type is not determined yet
+    /// or when code needs to handle both types generically.
+    /// </para>
+    /// <para>
+    /// Examples:
+    /// - Can represent email classification (spam/not spam)
+    /// - Can represent product categorization (electronics/clothing/food/etc.)
+    /// - Used as a general category before specific type is known
+    /// </para>
+    /// </remarks>
+    Classification,
+
+    /// <summary>
     /// Predicting values that change over time in a sequence.
     /// </summary>
     /// <remarks>
