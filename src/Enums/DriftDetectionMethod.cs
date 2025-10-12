@@ -66,6 +66,31 @@ public enum DriftDetectionMethod
     WassersteinDistance,
     
     /// <summary>
+    /// Kullback-Leibler Divergence for measuring distribution drift.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> KL Divergence measures how much one probability distribution
+    /// differs from another. In drift detection, it compares the current data distribution
+    /// to the reference distribution to detect changes.
+    /// </para>
+    /// <para>
+    /// How it works:
+    /// - Compares current data distribution to baseline distribution
+    /// - Higher divergence indicates more drift
+    /// - Sensitive to differences in probability distributions
+    /// - Asymmetric measure (A to B differs from B to A)
+    /// </para>
+    /// <para>
+    /// Useful for:
+    /// - Detecting subtle shifts in data patterns
+    /// - Comparing probability distributions
+    /// - Measuring information loss
+    /// </para>
+    /// </remarks>
+    KullbackLeiblerDivergence,
+    
+    /// <summary>
     /// Maximum Mean Discrepancy for drift detection.
     /// </summary>
     MaximumMeanDiscrepancy,
