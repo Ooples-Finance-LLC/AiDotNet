@@ -102,6 +102,23 @@ public enum BranchMergeStrategy
     BestPerforming,
 
     /// <summary>
+    /// Replaces previous results with new branch results.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Discards previous results and uses only the new branch's output.
+    /// Like replacing an old answer with a completely new one.
+    /// </para>
+    /// <para>
+    /// Useful when:
+    /// - A branch provides a corrected or updated result
+    /// - Later branches have more accurate information
+    /// - Previous results should be completely overridden
+    /// </para>
+    /// </remarks>
+    Replace,
+
+    /// <summary>
     /// Applies logical AND operation to boolean results.
     /// </summary>
     /// <remarks>
