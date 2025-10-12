@@ -1246,503 +1246,7 @@ public enum ModelType
     /// <b>For Beginners:</b> Deep Q-Networks learn to make sequences of decisions to maximize a reward. They're used in 
     /// reinforcement learning, where an agent learns by interacting with an environment. The network predicts the 
     /// "value" of taking each possible action in a given situation, allowing the agent to choose the best action. 
-    /// It's like learning to play chess by estimating how good each possible move is. DQNs have been used to master 
-    /// video games, control robots, and optimize complex systems like data center cooling.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.General },
-              "Neural network for reinforcement learning applications")]
-    DeepQNetwork,
-
-    /// <summary>
-    /// A framework consisting of two neural networks that compete with each other to generate realistic data.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Generative Adversarial Networks consist of two neural networks competing against each other: 
-    /// a generator that creates fake data (like images) and a discriminator that tries to distinguish real data from 
-    /// fakes. As they train, the generator gets better at creating convincing fakes, and the discriminator gets better 
-    /// at spotting them. It's like a counterfeiter and detective constantly improving to outdo each other. This 
-    /// competition drives both to improve until the generator creates data so realistic that it's hard to distinguish 
-    /// from real data. GANs have created remarkably realistic images, videos, and even music.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.General },
-              "Competitive neural networks for generating realistic data")]
-    GenerativeAdversarialNetwork,
-
-    /// <summary>
-    /// A neural network architecture that combines neural networks with external memory access mechanisms.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Neural Turing Machines combine neural networks with an external memory that they can read 
-    /// from and write to in a precise way. This is inspired by how computers use memory and how humans can store and 
-    /// retrieve information. The network learns to control where to store information, what to store, and how to retrieve 
-    /// it later. This gives it the ability to learn algorithms - step-by-step procedures for solving problems - rather 
-    /// than just pattern recognition. NTMs can learn tasks like copying sequences, sorting numbers, or even simple 
-    /// programming-like tasks.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.General },
-              "Neural network with controlled external memory access")]
-    NeuralTuringMachine,
-
-    /// <summary>
-    /// A method for evolving neural networks through genetic algorithms.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> NEAT (NeuroEvolution of Augmenting Topologies) uses principles from evolution to design 
-    /// neural networks. Instead of manually designing the network structure, NEAT starts with simple networks and 
-    /// gradually makes them more complex through a process similar to natural selection. Networks that perform better 
-    /// are more likely to "reproduce" and pass on their characteristics. Over many generations, this can discover 
-    /// innovative network designs that human engineers might not think of. NEAT is particularly useful for reinforcement 
-    /// learning problems like game playing or robot control.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.General },
-              "Evolutionary approach to neural network design")]
-    NEAT,
-
-    /// <summary>
-    /// A neural network architecture designed to store and retrieve information from an external memory.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Memory Networks are designed to improve how neural networks handle information that needs
-    /// to be remembered over time. They combine neural networks with an external memory component that can be read
-    /// from and written to. This allows the network to store facts, context, or other information and retrieve it
-    /// when needed. Memory Networks are particularly useful for tasks like answering questions about a story, where
-    /// the network needs to remember details from earlier parts of the text to answer questions correctly.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.General },
-              "Neural network with explicit memory storage and retrieval")]
-    MemoryNetwork,
-
-    /// <summary>
-    /// A neural network inspired by the structure and function of the neocortex in the human brain.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Hierarchical Temporal Memory Networks are inspired by how the human neocortex processes
-    /// information. They learn patterns in a hierarchical way, with higher levels learning more abstract patterns
-    /// based on the patterns detected at lower levels. HTM Networks are particularly good at finding patterns in
-    /// time-based data and can learn continuously without forgetting previous patterns. They're designed to
-    /// recognize anomalies, make predictions, and understand sequences in data, similar to how our brains process
-    /// sensory information.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.TimeSeries, MetricGroups.General },
-              "Brain-inspired network for temporal pattern recognition")]
-    HTMNetwork,
-
-    /// <summary>
-    /// A general-purpose computational model inspired by the structure and function of biological neural networks.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Neural Networks are computing systems inspired by the human brain. They consist of
-    /// interconnected "neurons" that process information and learn patterns from data. Each connection has a
-    /// "weight" that strengthens or weakens the signal between neurons, and these weights are adjusted during
-    /// training to improve performance. Neural networks can learn to recognize patterns, classify data, make
-    /// predictions, and solve complex problems without being explicitly programmed with rules. They're the
-    /// foundation of many modern AI systems.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.Regression, MetricGroups.BinaryClassification, MetricGroups.MulticlassClassification, MetricGroups.General },
-              "General-purpose brain-inspired computational model")]
-    NeuralNetwork,
-
-    /// <summary>
-    /// A neural network architecture for 3D scene understanding and representation.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Occupancy Networks represent 3D objects or scenes by learning which points in space
-    /// are inside or outside an object. This is like having a detailed 3D model where you can check any point
-    /// in space to see if it's part of the object. Unlike traditional 3D representations that use fixed grids
-    /// or point clouds, Occupancy Networks can represent shapes at any resolution. They're useful for 3D
-    /// reconstruction, shape generation, and scene understanding in applications like robotics, virtual reality,
-    /// and computer-aided design.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.General },
-              "Neural network for 3D object and scene representation")]
-    OccupancyNetwork,
-
-    /// <summary>
-    /// A stochastic neural network that can learn a probability distribution over its inputs.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Restricted Boltzmann Machines learn patterns in data by trying to recreate the input
-    /// from scratch. They consist of two layers of neurons - visible and hidden - with connections between layers
-    /// but not within layers (that's the "restricted" part). RBMs can learn to recognize patterns and extract
-    /// features without supervision. They're like a simplified version of Deep Boltzmann Machines and are often
-    /// used as building blocks for deeper networks. RBMs have been applied to problems like recommendation systems,
-    /// feature extraction, and dimensionality reduction.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.General },
-              "Two-layer stochastic neural network for unsupervised learning")]
-    RestrictedBoltzmannMachine,
-
-    /// <summary>
-    /// A neural network model that mimics the behavior of biological neurons more closely than traditional artificial neurons.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Spiking Neural Networks more closely mimic how real neurons in the brain communicate.
-    /// While traditional neural networks use continuous values, spiking networks use discrete "spikes" or pulses
-    /// of activity. Neurons accumulate input until they reach a threshold, then fire a spike. This approach is
-    /// more biologically realistic and potentially more energy-efficient. SNNs are particularly interesting for
-    /// neuromorphic computing (brain-inspired hardware), real-time processing of sensory data, and understanding
-    /// how the brain processes information.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.General },
-              "Neural network using discrete spike-based communication")]
-    SpikingNeuralNetwork,
-
-    /// <summary>
-    /// A basic neural network architecture where information flows in one direction from input to output.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Feed Forward Networks are the simplest type of neural network, where information
-    /// travels in only one direction - from input to output, with no loops or cycles. Data passes through
-    /// multiple layers of neurons, with each layer processing the information and passing it to the next.
-    /// This straightforward architecture makes them easier to understand and train compared to more complex
-    /// networks. They're effective for many tasks like classification, regression, and pattern recognition
-    /// where the input is fixed and doesn't depend on previous inputs or states.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.Regression, MetricGroups.BinaryClassification, MetricGroups.MulticlassClassification, MetricGroups.General },
-              "Basic neural network with unidirectional information flow")]
-    FeedForwardNetwork,
-
-    /// <summary>
-    /// A model that represents relationships as straight lines.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Linear models represent relationships as straight lines (or their higher-dimensional
-    /// equivalents). They assume that the output changes proportionally with changes in the input. For example,
-    /// if doubling an input doubles the output, that's a linear relationship. These models are simple,
-    /// interpretable, and computationally efficient. While they can't capture complex curved relationships on
-    /// their own, they form the foundation of many more sophisticated models and can be surprisingly effective
-    /// for many real-world problems.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.Regression,
-              new[] { MetricGroups.Regression, MetricGroups.General },
-              "Model that represents relationships as straight lines")]
-    Linear,
-
-    /// <summary>
-    /// A model that uses polynomial functions to represent non-linear relationships.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Polynomial models use curved lines (like parabolas) instead of straight lines to
-    /// represent relationships in data. They can capture more complex patterns where the rate of change varies.
-    /// For example, a plant's growth might accelerate then slow down over time, forming an S-curve. Polynomial
-    /// models can represent these curved relationships by including squared terms (x�), cubed terms (x�), and
-    /// so on. They're more flexible than linear models but need to be used carefully to avoid overfitting.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.Regression,
-              new[] { MetricGroups.Regression, MetricGroups.General },
-              "Model using polynomial functions for curved relationships")]
-    Polynomial,
-
-    /// <summary>
-    /// A model that discovers mathematical expressions to describe relationships in data.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Symbolic models try to find actual mathematical formulas that explain your data.
-    /// Instead of just fitting parameters to a pre-defined equation, they search for the equation itself.
-    /// For example, they might discover that your data follows "y = sin(x) + x�" rather than just giving
-    /// you numbers. This provides insights into the underlying relationships and can be more interpretable
-    /// than black-box models. Symbolic models are particularly useful when you want to understand the
-    /// mathematical laws governing a system.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.Regression,
-              new[] { MetricGroups.Regression, MetricGroups.General },
-              "Model that discovers mathematical expressions from data")]
-    Symbolic,
-
-    /// <summary>
-    /// A model that uses decision trees or tree-based ensembles for prediction.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Tree-Based models make predictions by following a series of yes/no questions,
-    /// similar to a flowchart. They split the data based on features, creating a tree-like structure.
-    /// For example, to predict house prices: "Is the area > 2000 sq ft? If yes, is it in neighborhood A?
-    /// If no, is it older than 20 years?" and so on. Tree-based models include single decision trees and
-    /// powerful ensembles like Random Forests and Gradient Boosted Trees. They're flexible, handle different
-    /// types of data well, and can capture complex interactions between features.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.Ensemble,
-              new[] { MetricGroups.Regression, MetricGroups.BinaryClassification, MetricGroups.MulticlassClassification, MetricGroups.General },
-              "Model based on decision trees or tree ensembles")]
-    TreeBased,
-
-    /// <summary>
-    /// A flexible Bayesian time series model that combines structural components.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Bayesian Structural Time Series Models combine several components to model time series data. 
-    /// They can include trends, seasonality, and the effects of external factors. What makes them special is their 
-    /// Bayesian approach, which provides uncertainty estimates and allows you to incorporate prior knowledge. 
-    /// These models are particularly useful for forecasting with limited data, understanding which factors 
-    /// influence your time series, and measuring the impact of interventions like marketing campaigns.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.TimeSeries,
-              new[] { MetricGroups.TimeSeries, MetricGroups.Regression, MetricGroups.General },
-              "Bayesian time series model with structural components")]
-    BayesianStructuralTimeSeriesModel,
-
-    /// <summary>
-    /// A hybrid model combining regression with ARIMA error correction.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Dynamic Regression with ARIMA Errors combines two powerful approaches. The regression 
-    /// part models relationships between your time series and external factors (like how temperature affects 
-    /// ice cream sales). The ARIMA part then models the errors from this regression, capturing patterns that 
-    /// the regression missed. It's like having two specialists working together - one focusing on known 
-    /// relationships and the other catching any remaining patterns. This hybrid approach often outperforms 
-    /// either method used alone.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.TimeSeries,
-              new[] { MetricGroups.TimeSeries, MetricGroups.Regression, MetricGroups.General },
-              "Regression model with ARIMA-modeled errors")]
-    DynamicRegressionWithARIMAErrors,
-
-    /// <summary>
-    /// A model designed to capture volatility clustering in financial time series.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> GARCH Models are specialized for financial data where volatility (the amount of 
-    /// fluctuation) tends to cluster - periods of high volatility are followed by more high volatility, 
-    /// and calm periods tend to persist as well. Think of stock markets having "nervous" periods with 
-    /// big swings up and down, followed by "calm" periods with smaller changes. GARCH models capture 
-    /// this pattern, making them valuable for risk management, option pricing, and financial forecasting.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.TimeSeries,
-              new[] { MetricGroups.TimeSeries, MetricGroups.Regression, MetricGroups.General },
-              "Time series model for volatility clustering in financial data")]
-    GARCHModel,
-
-    /// <summary>
-    /// A recurrent neural network architecture with gating mechanisms for efficient sequence processing.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> GRU Neural Networks are a type of recurrent neural network designed for sequential 
-    /// data like text or time series. They're similar to LSTM networks but with a simpler structure that 
-    /// makes them faster to train while still capturing long-term patterns. GRUs use "gates" that control 
-    /// what information to keep or forget, allowing them to learn which parts of the sequence are important. 
-    /// They're widely used for language processing, speech recognition, and time series forecasting.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.TimeSeries, MetricGroups.Regression, MetricGroups.BinaryClassification, MetricGroups.MulticlassClassification, MetricGroups.General },
-              "Efficient recurrent neural network with gating mechanisms")]
-    GRUNeuralNetwork,
-
-    /// <summary>
-    /// A neural network architecture designed to compare and find similarities between inputs.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Siamese Networks are specialized for comparing two inputs to determine how similar 
-    /// they are. They process both inputs through identical sub-networks (hence the name "Siamese," like 
-    /// Siamese twins) and then measure the distance between the outputs. This is useful for tasks like 
-    /// facial recognition (is this the same person?), signature verification, or finding similar products. 
-    /// They're particularly valuable when you have many categories with few examples of each.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.NeuralNetwork,
-              new[] { MetricGroups.BinaryClassification, MetricGroups.General },
-              "Neural network for comparing similarities between inputs")]
-    SiameseNetwork,
-
-    /// <summary>
-    /// A time series model that assesses the impact of specific events or interventions.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Intervention Analysis Models measure how specific events affect a time series. 
-    /// For example, how did a new policy, marketing campaign, or competitor's action impact your sales? 
-    /// These models separate the normal pattern of your time series from the effects of the intervention, 
-    /// allowing you to quantify the impact. It's like measuring how much a medicine improves health by 
-    /// comparing patient outcomes before and after treatment, while accounting for other factors.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.TimeSeries,
-              new[] { MetricGroups.TimeSeries, MetricGroups.Regression, MetricGroups.General },
-              "Time series model for measuring effects of specific interventions")]
-    InterventionAnalysisModel,
-
-    /// <summary>
-    /// A flexible forecasting model that handles multiple seasonal patterns.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> TBATS Models are designed for time series with complex seasonal patterns. While 
-    /// simple models might handle yearly patterns (like holiday sales spikes), TBATS can simultaneously 
-    /// model multiple seasonal patterns of different lengths. For example, retail data might show weekly 
-    /// patterns (busier on weekends), monthly patterns (busier after payday), and yearly patterns (holiday 
-    /// seasons). TBATS can capture all these overlapping cycles, making it powerful for complex forecasting 
-    /// problems.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.TimeSeries,
-              new[] { MetricGroups.TimeSeries, MetricGroups.Regression, MetricGroups.General },
-              "Forecasting model for complex, multiple seasonal patterns")]
-    TBATSModel,
-
-    /// <summary>
-    /// A method that breaks down a time series into trend, seasonal, and remainder components.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> STL Decomposition breaks a time series into three parts: the overall trend 
-    /// (long-term direction), seasonal patterns (regular cycles), and remainder (what's left after 
-    /// removing trend and seasonality). It's like separating a music recording into bass, melody, and 
-    /// percussion. This decomposition helps you understand what's driving your time series and can 
-    /// improve forecasting by modeling each component separately. It's particularly useful for 
-    /// visualizing and interpreting time series data.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.TimeSeries,
-              new[] { MetricGroups.TimeSeries, MetricGroups.General },
-              "Method for decomposing time series into component parts")]
-    STLDecomposition,
-
-    /// <summary>
-    /// A model that captures relationships between multiple related time series.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Vector<double> Autoregression Models analyze multiple time series that influence each 
-    /// other. For example, how prices, advertising, and competitor actions all affect sales. Unlike 
-    /// simpler models that look at each series separately, VAR models capture how each series affects 
-    /// the others. It's like modeling an ecosystem where changes in one species affect others. This 
-    /// makes VAR models powerful for understanding complex systems and forecasting interrelated variables.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.TimeSeries,
-              new[] { MetricGroups.TimeSeries, MetricGroups.Regression, MetricGroups.General },
-              "Model for analyzing multiple interrelated time series")]
-    VARModel,
-
-    /// <summary>
-    /// A flexible time series model that represents observed data in terms of unobserved components.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Unobserved Components Models break down a time series into underlying components 
-    /// that aren't directly observable, such as trend, cycle, seasonal patterns, and irregular fluctuations. 
-    /// It's like a detective inferring underlying motives from observed behaviors. These models are 
-    /// particularly useful for economic data, where concepts like "potential GDP" or "natural rate of 
-    /// unemployment" can't be directly measured but can be estimated from observable data.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.TimeSeries,
-              new[] { MetricGroups.TimeSeries, MetricGroups.Regression, MetricGroups.General },
-              "Time series model based on underlying latent components")]
-    UnobservedComponentsModel,
-
-    /// <summary>
-    /// A model that describes how input changes propagate through a system over time.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Transfer Function Models describe how changes in an input variable affect an 
-    /// output variable over time. For example, how a change in advertising budget affects sales in the 
-    /// following weeks. These models capture both the magnitude of the effect (how much sales increase) 
-    /// and its timing (immediate boost, gradual increase, delayed response, etc.). They're particularly 
-    /// useful for understanding cause-and-effect relationships in time series data.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.TimeSeries,
-              new[] { MetricGroups.TimeSeries, MetricGroups.Regression, MetricGroups.General },
-              "Model for input-output relationships in dynamic systems")]
-    TransferFunctionModel,
-
-    /// <summary>
-    /// A flexible framework for modeling time series data using hidden states.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> State Space Models represent a time series using hidden "states" that evolve 
-    /// over time. Think of it like tracking a car's position when you can only see its speed - the 
-    /// position is the hidden state that you infer from observable data. These models are very flexible 
-    /// and can represent many time series patterns. They're particularly useful for tracking systems 
-    /// that change over time, filtering noisy data, and forecasting complex time series.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.TimeSeries,
-              new[] { MetricGroups.TimeSeries, MetricGroups.Regression, MetricGroups.General },
-              "Flexible model using hidden states to track system dynamics")]
-    StateSpaceModel,
-
-    /// <summary>
-    /// A frequency-domain approach to analyzing time series data.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Spectral Analysis Models examine time series data in terms of cycles and frequencies 
-    /// rather than time. It's like breaking down a musical chord into individual notes - the model identifies 
-    /// which cycles (daily, weekly, monthly, etc.) are present in your data and how strong each one is. This 
-    /// approach is particularly useful for finding hidden periodicities in complex data, understanding cyclical 
-    /// behavior, and filtering out noise. It's widely used in fields like signal processing, economics, and 
-    /// climate science.
-    /// </para>
-    /// </remarks>
-    [ModelInfo(ModelCategory.TimeSeries,
-              new[] { MetricGroups.TimeSeries, MetricGroups.General },
-              "Time series analysis using frequency and cyclical components")]
-    SpectralAnalysisModel,
-
-    //
-    // Reinforcement Learning Models
-    //
-
-    /// <summary>
-    /// A Deep Q-Network model for value-based reinforcement learning.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>For Beginners:</b> Deep Q-Network (DQN) is a breakthrough algorithm that combines neural networks 
-    /// with Q-learning to solve complex decision-making problems. It learns to estimate the value of taking 
-    /// each action in different states, like learning which chess moves are good in which positions by 
-    /// playing many games and remembering which moves led to wins or losses. DQN uses a neural network 
+    /// It's like learning to play chess by estimating how good each possible move is. DQN uses a neural network 
     /// to approximate the Q-function, which predicts the expected future rewards for each action. It also 
     /// uses experience replay (storing and randomly sampling past experiences) and target networks (a 
     /// separate network for stable targets) to improve learning stability. DQN is particularly effective 
@@ -1753,7 +1257,7 @@ public enum ModelType
     [ModelInfo(ModelCategory.NeuralNetwork,
               new[] { MetricGroups.General },
               "Deep Q-Network for value-based reinforcement learning")]
-    DQNModel,
+    DeepQNetwork,
 
     /// <summary>
     /// A Proximal Policy Optimization model for policy-based reinforcement learning.
@@ -1761,14 +1265,14 @@ public enum ModelType
     /// <remarks>
     /// <para>
     /// <b>For Beginners:</b> Proximal Policy Optimization (PPO) is a state-of-the-art policy gradient method 
-    /// that learns a policy (strategy) directly, deciding which actions to take in different situations. 
-    /// Unlike value-based methods that learn which actions are good, PPO learns the probability of taking 
-    /// each action. What makes PPO special is its "proximal" constraint - it prevents the policy from 
-    /// changing too much in a single update, making training much more stable. This stability, combined 
-    /// with its effectiveness, has made PPO the go-to algorithm for many applications. It's widely used 
-    /// for training AI agents in games (like OpenAI's Dota 2 bot), robotics (for learning complex 
-    /// movements), and trading applications (for portfolio management). PPO works well with both discrete 
-    /// and continuous actions, making it versatile for different types of problems.
+    /// that learns by trial and error. It works by completing entire episodes (sequences of actions), then 
+    /// adjusting the probability of actions based on whether they led to good or bad outcomes. Think of it 
+    /// like a student taking a test, seeing the final grade, and then figuring out which answers to change 
+    /// for next time. PPO uses the total reward from an episode to update its policy - if an episode 
+    /// resulted in high rewards, it increases the probability of the actions taken; if rewards were low, 
+    /// it decreases them. While conceptually simple and easy to understand, PPO can have high variance 
+    /// in its learning (results can be inconsistent), which is why more advanced methods like TD3 were 
+    /// developed. However, it remains valuable for its simplicity and theoretical importance.
     /// </para>
     /// </remarks>
     [ModelInfo(ModelCategory.NeuralNetwork,
@@ -2105,6 +1609,21 @@ public enum ModelType
     // Ensemble Model Types
     
     /// <summary>
+    /// Ensemble model that combines multiple models.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> An ensemble model combines predictions from multiple models
+    /// to achieve better accuracy than any single model. Think of it as consulting multiple
+    /// experts before making a decision.
+    /// </para>
+    /// </remarks>
+    [ModelInfo(ModelCategory.Ensemble,
+              new[] { MetricGroups.General },
+              "Ensemble model combining multiple models")]
+    Ensemble,
+    
+    /// <summary>
     /// A custom ensemble model with flexible configuration.
     /// </summary>
     /// <remarks>
@@ -2334,9 +1853,9 @@ public enum ModelType
     /// <remarks>
     /// <para>
     /// <b>For Beginners:</b> Confidence-Weighted learning maintains a probability distribution over possible
-    /// model parameters, updating more aggressively when predictions are uncertain. It's like a weather
-    /// forecaster who adjusts predictions more when they're less sure about the forecast. This leads to
-    /// faster learning on easy examples while being cautious on difficult ones.
+    /// model parameters, updating more aggressively when predictions are uncertain. It's like a
+    /// weather forecaster who adjusts predictions more when they're less sure about the forecast. This
+    /// leads to faster learning on easy examples while being cautious on difficult ones.
     /// </para>
     /// </remarks>
     [ModelInfo(ModelCategory.Classification,
