@@ -1,3 +1,6 @@
+using AiDotNet.Extensions;
+using System.Collections.Generic;
+
 namespace AiDotNet.LinearAlgebra;
 
 /// <summary>
@@ -22,6 +25,86 @@ namespace AiDotNet.LinearAlgebra;
 public class Tensor<T> : TensorBase<T>, IEnumerable<T>
 {
     /// <summary>
+    /// Creates an empty tensor with zero elements.
+    /// </summary>
+    /// <returns>A new empty tensor.</returns>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This creates a tensor with no elements.
+    /// It's useful as a placeholder or when you need to represent the absence of data.</para>
+    /// </remarks>
+    public static Tensor<T> Empty()
+    {
+        // Create a singleton empty tensor instance if it doesn't exist yet
+        if (_emptyTensor == null)
+        {
+            _emptyTensor = new Tensor<T>([])
+            {
+                IsEmpty = true
+            };
+        }
+
+        return _emptyTensor;
+    }
+
+    // Static field to hold the singleton empty tensor instance
+    private static Tensor<T>? _emptyTensor;
+
+    /// <summary>
+    /// Creates a tensor with the specified dimensions, initialized with zeros.
+    /// </summary>
+    /// <param name="dimensions">An array specifying the size of each dimension.</param>
+    /// <returns>A new tensor filled with zeros.</returns>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This creates a tensor of the specified shape with all elements set to zero.
+    /// It's useful for initializing tensors before filling them with actual values or as a starting point
+    /// for computations.</para>
+    /// <para>
+    /// For example:
+    /// - Tensor&lt;double&gt;.Zeros([3]) creates a vector [0, 0, 0]
+    /// - Tensor&lt;double&gt;.Zeros([2, 3]) creates a 2x3 matrix of zeros
+    /// </para>
+    /// </remarks>
+    public static Tensor<T> Zeros(params int[] dimensions)
+    {
+        return new Tensor<T>(dimensions);
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether this tensor is empty.
+    /// </summary>
+    public bool IsEmpty { get; private set; }
+
+    /// <summary>
+    /// Gets or sets the metadata associated with this tensor.
+    /// </summary>
+    public Dictionary<string, object> Metadata { get; set; } = new Dictionary<string, object>();
+
+    /// <summary>
+    /// Creates a detached copy of this tensor that does not share memory with the original.
+    /// </summary>
+    /// <returns>A new tensor with the same data but independent memory.</returns>
+    public Tensor<T> Detach()
+    {
+        // Create a new array with the tensor's data
+        T[] data = new T[Length];
+        for (int i = 0; i < Length; i++)
+        {
+            data[i] = _data[i];
+        }
+        
+        var detachedData = new Vector<T>(data);
+        var detached = new Tensor<T>(Shape.ToArray(), detachedData);
+        
+        // Copy metadata
+        foreach (var kvp in Metadata)
+        {
+            detached.Metadata[kvp.Key] = kvp.Value;
+        }
+        
+        return detached;
+    }
+
+    /// <summary>
     /// Creates a new tensor with the specified dimensions, initialized with default values.
     /// </summary>
     /// <param name="dimensions">An array specifying the size of each dimension.</param>
@@ -31,11 +114,13 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// 
     /// For example:
     /// - new Tensor&lt;float&gt;([5]) creates a vector with 5 zeros
-    /// - new Tensor&lt;float&gt;([2, 3]) creates a 2×3 matrix of zeros
+    /// - new Tensor&lt;float&gt;([2, 3]) creates a 2ï¿½3 matrix of zeros
     /// </para>
     /// </remarks>
-    public Tensor(int[] dimensions) : base(dimensions)
+    public Tensor(int[] dimensions) : base(dimensions != null && dimensions.Length > 0 ? dimensions : [1])
     {
+        // Mark as empty if shape is empty or contains a zero dimension
+        IsEmpty = dimensions == null || dimensions.Length == 0 || dimensions.Any(dim => dim == 0);
     }
 
     /// <summary>
@@ -48,7 +133,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// the values you provide in the data parameter.
     /// 
     /// The data is stored in "row-major order," which means we fill the tensor one row at a time.
-    /// For a 2×3 matrix, the data would be arranged as:
+    /// For a 2ï¿½3 matrix, the data would be arranged as:
     /// [row1-col1, row1-col2, row1-col3, row2-col1, row2-col2, row2-col3]
     /// 
     /// The length of your data must match the total number of elements needed for the tensor's shape.
@@ -83,7 +168,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     
         if (matrix.Rows * matrix.Columns != totalSize)
         {
-            throw new ArgumentException($"Matrix size ({matrix.Rows}×{matrix.Columns} = {matrix.Rows * matrix.Columns}) " +
+            throw new ArgumentException($"Matrix size ({matrix.Rows}ï¿½{matrix.Columns} = {matrix.Rows * matrix.Columns}) " +
                                         $"does not match the specified tensor dimensions (total elements: {totalSize})");
         }
     
@@ -147,7 +232,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// and puts them into a vector (a one-dimensional array), reading in row-major order.
     /// </para>
     /// <para>
-    /// For example, if you have a 2×2×2 tensor:
+    /// For example, if you have a 2ï¿½2ï¿½2 tensor:
     /// [[[1, 2], [3, 4]],
     ///  [[5, 6], [7, 8]]]
     /// The flattened vector would be: [1, 2, 3, 4, 5, 6, 7, 8]
@@ -346,29 +431,54 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     }
 
     /// <summary>
-    /// Adds a vector to the last dimension of a 3D tensor.
+    /// Adds a vector to the tensor along the last dimension.
     /// </summary>
-    /// <param name="vector">The vector to add.</param>
-    /// <returns>A new tensor containing the result of the addition.</returns>
-    /// <exception cref="ArgumentException">Thrown when tensor rank is not 3 or vector length doesn't match the last dimension.</exception>
+    /// <param name="vector">The vector to add. Its length must match the size of the tensor's last dimension.</param>
+    /// <returns>A new tensor with the same shape as the original, where each element has the corresponding vector element added to it.</returns>
+    /// <exception cref="ArgumentException">Thrown when the vector length does not match the last dimension of the tensor.</exception>
+    /// <exception cref="NotSupportedException">Thrown when the tensor rank is not supported (currently supports ranks 2 and 3).</exception>
     /// <remarks>
-    /// This method is specifically designed for 3D tensors and adds the vector to each slice along the last dimension.
+    /// For a rank-2 tensor with shape [m,n], the vector of length n is added to each row.
+    /// For a rank-3 tensor with shape [m,n,p], the vector of length p is added to each element along the third dimension.
     /// </remarks>
     public Tensor<T> Add(Vector<T> vector)
     {
-        if (this.Rank != 3 || this.Shape[2] != vector.Length)
-            throw new ArgumentException("Vector length must match the last dimension of the tensor.");
+        // Check that vector length matches the last dimension of the tensor
+        int lastDimIndex = this.Rank - 1;
+        int lastDimSize = this.Shape[lastDimIndex];
+
+        if (lastDimSize != vector.Length)
+            throw new ArgumentException($"Vector length must match the last dimension of the tensor. Expected {lastDimSize}, got {vector.Length}.");
 
         var result = new Tensor<T>(this.Shape);
-        for (int i = 0; i < this.Shape[0]; i++)
+
+        // Handle based on tensor rank
+        if (this.Rank == 2)
         {
-            for (int j = 0; j < this.Shape[1]; j++)
+            for (int i = 0; i < this.Shape[0]; i++)
             {
-                for (int k = 0; k < this.Shape[2]; k++)
+                for (int j = 0; j < this.Shape[1]; j++)
                 {
-                    result[i, j, k] = _numOps.Add(this[i, j, k], vector[k]);
+                    result[i, j] = _numOps.Add(this[i, j], vector[j]);
                 }
             }
+        }
+        else if (this.Rank == 3)
+        {
+            for (int i = 0; i < this.Shape[0]; i++)
+            {
+                for (int j = 0; j < this.Shape[1]; j++)
+                {
+                    for (int k = 0; k < this.Shape[2]; k++)
+                    {
+                        result[i, j, k] = _numOps.Add(this[i, j, k], vector[k]);
+                    }
+                }
+            }
+        }
+        else
+        {
+            throw new NotSupportedException($"Adding vector to tensor of rank {this.Rank} is not currently supported.");
         }
 
         return result;
@@ -423,7 +533,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// It works by multiplying corresponding elements and then adding all those products together.</para>
     /// 
     /// <para>For example, if you have two tensors [1,2,3] and [4,5,6], the dot product would be:
-    /// (1×4) + (2×5) + (3×6) = 4 + 10 + 18 = 32</para>
+    /// (1ï¿½4) + (2ï¿½5) + (3ï¿½6) = 4 + 10 + 18 = 32</para>
     /// 
     /// <para>Both tensors must have identical shapes for this operation.</para>
     /// </remarks>
@@ -595,10 +705,10 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// The "axis" parameter tells the method which direction to stack them.</para>
     /// 
     /// <para>For example:
-    /// - If you have three 2×3 tensors (like three rectangular sheets of paper) and stack them with axis=0,
-    ///   you'll get a 3×2×3 tensor (like a stack of three sheets).
-    /// - If you stack them with axis=1, you'll get a 2×3×3 tensor (like sheets arranged side by side).
-    /// - If you stack them with axis=2, you'll get a 2×3×3 tensor (like sheets arranged in a grid).</para>
+    /// - If you have three 2ï¿½3 tensors (like three rectangular sheets of paper) and stack them with axis=0,
+    ///   you'll get a 3ï¿½2ï¿½3 tensor (like a stack of three sheets).
+    /// - If you stack them with axis=1, you'll get a 2ï¿½3ï¿½3 tensor (like sheets arranged side by side).
+    /// - If you stack them with axis=2, you'll get a 2ï¿½3ï¿½3 tensor (like sheets arranged in a grid).</para>
     /// 
     /// <para>All input tensors must have the same shape. The resulting tensor will have rank+1 dimensions.</para>
     /// </remarks>
@@ -649,32 +759,45 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     }
 
     /// <summary>
-    /// Transposes the tensor by rearranging its dimensions according to the specified permutation.
+    /// Transposes the tensor according to the specified permutation of dimensions.
     /// </summary>
-    /// <param name="permutation">An array specifying the new order of dimensions.</param>
-    /// <returns>A new tensor with rearranged dimensions.</returns>
+    /// <param name="permutation">An array specifying the new order of dimensions. Must contain each dimension index exactly once.</param>
+    /// <returns>A new tensor with dimensions rearranged according to the specified permutation.</returns>
     /// <exception cref="ArgumentException">
-    /// Thrown when the permutation array length doesn't match the tensor rank or contains invalid values.
+    /// Thrown when:
+    /// - Permutation array length doesn't match tensor rank
+    /// - Permutation doesn't contain exactly one occurrence of each dimension index
+    /// - For rank-1 tensors, if a non-trivial permutation is attempted
     /// </exception>
     /// <remarks>
-    /// <b>For Beginners:</b> Transposing a tensor means rearranging its dimensions.
-    /// 
-    /// For example, with a 2D tensor (matrix), transposing swaps rows and columns.
-    /// For higher-dimensional tensors, you can specify exactly how you want to rearrange the dimensions.
-    /// 
-    /// The permutation array indicates the new positions of each dimension:
-    /// - For a 3D tensor with shape [2,3,4], a permutation [2,0,1] would result in a tensor with shape [4,2,3]
-    /// - The value at position i in the permutation array indicates which dimension of the original tensor
-    ///   should be placed at position i in the result
+    /// For a rank-2 tensor, transpose([1,0]) swaps rows and columns.
+    /// For rank-3+ tensors, dimensions are rearranged according to the permutation.
+    /// For rank-1 tensors, only the trivial permutation [0] is valid.
     /// </remarks>
     public Tensor<T> Transpose(int[] permutation)
     {
+        // Handle the case where the tensor is rank-1 but a longer permutation is provided
+        if (Rank == 1 && permutation.Length > 1)
+        {
+            throw new ArgumentException($"Cannot transpose a rank-1 tensor with a permutation of length {permutation.Length}. " +
+                                       "Consider reshaping the tensor first if you want to change its dimensionality.");
+        }
+
+        // Standard validation
         if (permutation.Length != Rank)
-            throw new ArgumentException("Permutation array length must match tensor rank.");
+            throw new ArgumentException($"Permutation array length ({permutation.Length}) must match tensor rank ({Rank}).");
 
         if (!permutation.OrderBy(x => x).SequenceEqual(Enumerable.Range(0, Rank)))
-            throw new ArgumentException("Invalid permutation array.");
+            throw new ArgumentException("Invalid permutation array. Must contain exactly one occurrence of each dimension index.");
 
+        // For rank-1, check if it's the trivial permutation [0]
+        if (Rank == 1)
+        {
+            // This is a no-op for rank-1, just return a copy
+            return this;
+        }
+
+        // Continue with the original implementation for rank >= 2
         int[] newShape = new int[Rank];
         for (int i = 0; i < Rank; i++)
         {
@@ -682,7 +805,6 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
         }
 
         Tensor<T> result = new Tensor<T>(newShape);
-
         int[] oldIndices = new int[Rank];
         int[] newIndices = new int[Rank];
 
@@ -695,37 +817,6 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
             }
 
             result[newIndices] = this[oldIndices];
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// Subtracts another tensor from this tensor element-wise.
-    /// </summary>
-    /// <param name="other">The tensor to subtract.</param>
-    /// <returns>A new tensor containing the result of the subtraction.</returns>
-    /// <exception cref="ArgumentException">Thrown when tensors have different shapes.</exception>
-    /// <remarks>
-    /// <para><b>For Beginners:</b> This method subtracts each element in the "other" tensor from the corresponding element 
-    /// in this tensor.</para>
-    /// 
-    /// <para>For example, if tensor A is [[5, 6], [7, 8]] and tensor B is [[1, 2], [3, 4]], then A.Subtract(B) would result 
-    /// in [[4, 4], [4, 4]].</para>
-    /// 
-    /// <para>Both tensors must have identical shapes for this operation to work.</para>
-    /// </remarks>
-    public Tensor<T> Subtract(Tensor<T> other)
-    {
-        if (!Shape.SequenceEqual(other.Shape))
-            throw new ArgumentException("Tensors must have the same shape for subtraction.");
-
-        var result = new Tensor<T>(Shape);
-        var ops = MathHelper.GetNumericOperations<T>();
-
-        for (int i = 0; i < _data.Length; i++)
-        {
-            result._data[i] = ops.Subtract(_data[i], other._data[i]);
         }
 
         return result;
@@ -850,7 +941,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// <para>Think of it like rearranging items in a container - the items stay the same, but their organization changes.
     /// The total number of elements must remain the same.</para>
     /// 
-    /// <para>For example, you could reshape a 4×3 tensor (4 rows, 3 columns) into a 2×6 tensor (2 rows, 6 columns).
+    /// <para>For example, you could reshape a 4ï¿½3 tensor (4 rows, 3 columns) into a 2ï¿½6 tensor (2 rows, 6 columns).
     /// Both shapes contain exactly 12 elements.</para>
     /// 
     /// <para>This is useful when you need to transform your data to fit a specific algorithm's requirements
@@ -944,45 +1035,99 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     }
 
     /// <summary>
-    /// Multiplies a 3D tensor with a matrix along the last dimension.
+    /// Multiplies this tensor by a matrix along the last dimension.
     /// </summary>
-    /// <param name="matrix">The matrix to multiply with the tensor.</param>
+    /// <param name="matrix">The matrix to multiply with.</param>
     /// <returns>A new tensor containing the result of the multiplication.</returns>
     /// <exception cref="ArgumentException">
-    /// Thrown when the tensor is not 3D or when the matrix rows don't match the last dimension of the tensor.
+    /// Thrown when the number of rows in the matrix doesn't match the last dimension of the tensor,
+    /// or when the tensor's rank is not 2 or 3.
     /// </exception>
     /// <remarks>
-    /// <b>For Beginners:</b> This operation performs matrix multiplication between each 2D slice of the 3D tensor
-    /// and the provided matrix. Think of it as applying the same transformation (represented by the matrix)
-    /// to each 2D slice of your 3D data.
+    /// <para>
+    /// This method performs matrix multiplication between this tensor and the provided matrix.
+    /// For 2D tensors (matrices), it performs standard matrix multiplication.
+    /// For 3D tensors, it performs batched matrix multiplication where each 2D slice in the tensor
+    /// is multiplied by the same matrix.
+    /// </para>
+    /// <para>
+    /// The dimensions of the resulting tensor depend on the input tensor's rank:
+    /// - For 2D tensors of shape [m, n] multiplied by a matrix of shape [n, p],
+    ///   the result is a tensor of shape [m, p].
+    /// - For 3D tensors of shape [b, m, n] multiplied by a matrix of shape [n, p],
+    ///   the result is a tensor of shape [b, m, p].
+    /// </para>
+    /// <para><b>For Beginners:</b> This method multiplies your tensor with a matrix.
     /// 
-    /// The resulting tensor will have the same first two dimensions as the original tensor,
-    /// but the third dimension will match the number of columns in the matrix.
+    /// Think of it like this:
+    /// - If you have a 2D tensor (a table of numbers with rows and columns), this multiplication
+    ///   is like standard matrix multiplication from linear algebra.
+    /// - If you have a 3D tensor (like multiple tables stacked on top of each other), this method
+    ///   multiplies each table by the same matrix.
+    /// 
+    /// The operation is only valid when the width of your tensor matches the height of the matrix.
+    /// For example, if your tensor has shape [12, 4] (12 rows, 4 columns), the matrix must have
+    /// 4 rows (its number of columns can be anything).
+    /// 
+    /// This operation is commonly used in neural networks for applying transformations to features
+    /// or for connecting layers together.
+    /// </para>
     /// </remarks>
     public Tensor<T> Multiply(Matrix<T> matrix)
     {
-        if (this.Rank != 3 || this.Shape[2] != matrix.Rows)
-            throw new ArgumentException("Matrix rows must match the last dimension of the tensor.");
-
-        var result = new Tensor<T>([this.Shape[0], this.Shape[1], matrix.Columns]);
-        for (int i = 0; i < this.Shape[0]; i++)
+        // Handle 2D tensor (matrix multiplication)
+        if (this.Rank == 2)
         {
-            for (int j = 0; j < this.Shape[1]; j++)
+            if (this.Shape[1] != matrix.Rows)
+                throw new ArgumentException($"Matrix rows ({matrix.Rows}) must match the last dimension of the tensor ({this.Shape[1]}).");
+
+            var result = new Tensor<T>([this.Shape[0], matrix.Columns]);
+
+            for (int i = 0; i < this.Shape[0]; i++)
             {
                 for (int k = 0; k < matrix.Columns; k++)
                 {
                     T sum = _numOps.Zero;
-                    for (int l = 0; l < this.Shape[2]; l++)
+                    for (int j = 0; j < this.Shape[1]; j++)
                     {
-                        sum = _numOps.Add(sum, _numOps.Multiply(this[i, j, l], matrix[l, k]));
+                        sum = _numOps.Add(sum, _numOps.Multiply(this[i, j], matrix[j, k]));
                     }
-
-                    result[i, j, k] = sum;
+                    result[i, k] = sum;
                 }
             }
-        }
 
-        return result;
+            return result;
+        }
+        // Handle 3D tensor (batched matrix multiplication)
+        else if (this.Rank == 3)
+        {
+            if (this.Shape[2] != matrix.Rows)
+                throw new ArgumentException($"Matrix rows ({matrix.Rows}) must match the last dimension of the tensor ({this.Shape[2]}).");
+
+            var result = new Tensor<T>([this.Shape[0], this.Shape[1], matrix.Columns]);
+
+            for (int i = 0; i < this.Shape[0]; i++)
+            {
+                for (int j = 0; j < this.Shape[1]; j++)
+                {
+                    for (int k = 0; k < matrix.Columns; k++)
+                    {
+                        T sum = _numOps.Zero;
+                        for (int l = 0; l < this.Shape[2]; l++)
+                        {
+                            sum = _numOps.Add(sum, _numOps.Multiply(this[i, j, l], matrix[l, k]));
+                        }
+                        result[i, j, k] = sum;
+                    }
+                }
+            }
+
+            return result;
+        }
+        else
+        {
+            throw new ArgumentException($"Tensor must be 2D or 3D for matrix multiplication, but has rank {this.Rank}");
+        }
     }
 
     /// <summary>
@@ -1033,8 +1178,8 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// the original tensors to the correct position in the new combined tensor. This method handles that
     /// copying process by recursively traversing through all dimensions of the tensors.</para>
     /// 
-    /// <para>For example, when stacking 3 images of size [28×28] along a new first dimension, 
-    /// the result will be a tensor of shape [3×28×28].</para>
+    /// <para>For example, when stacking 3 images of size [28ï¿½28] along a new first dimension, 
+    /// the result will be a tensor of shape [3ï¿½28ï¿½28].</para>
     /// </remarks>
     private static void CopyTensorToStack(Tensor<T> source, Tensor<T> destination, int[] destIndices, int stackAxis)
     {
@@ -1137,19 +1282,177 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     }
 
     /// <summary>
+    /// Adds another tensor to this tensor with broadcasting support.
+    /// </summary>
+    /// <param name="other">The tensor to add.</param>
+    /// <returns>A new tensor containing the element-wise sum.</returns>
+    /// <exception cref="ArgumentException">Thrown when tensors cannot be broadcast together.</exception>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This method adds two tensors together, supporting tensors of different shapes.
+    /// Broadcasting automatically expands smaller dimensions to match larger ones when possible.</para>
+    /// 
+    /// <para>For example, adding a tensor of shape [3,4] and a tensor of shape [4] will work because the
+    /// second tensor is automatically expanded to shape [1,4] and then [3,4].</para>
+    /// 
+    /// <para>Broadcasting follows these rules:
+    /// 1. Dimensions starting from the right are compared
+    /// 2. Dimensions are compatible when they are equal or one of them is 1
+    /// 3. The resulting dimension will be the larger of the two</para>
+    /// </remarks>
+    public Tensor<T> Add(Tensor<T> other)
+    {
+        // If shapes are the same, use direct addition
+        if (Shape.SequenceEqual(other.Shape))
+        {
+            var result = new Tensor<T>(Shape);
+            for (int i = 0; i < _data.Length; i++)
+            {
+                result._data[i] = _numOps.Add(_data[i], other._data[i]);
+            }
+
+            return result;
+        }
+
+        // Otherwise, use broadcasting
+        return BroadcastAdd(other);
+    }
+
+    /// <summary>
+    /// Performs element-wise addition with broadcasting support for tensors of different shapes.
+    /// </summary>
+    /// <param name="other">The tensor to add.</param>
+    /// <returns>A new tensor containing the element-wise sum.</returns>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This method adds each element in this tensor with the corresponding element 
+    /// in another tensor. If the tensors have different shapes, broadcasting rules are applied to make them compatible.</para>
+    /// 
+    /// <para>For example, if you add a tensor of shape [3,4] with a tensor of shape [1,4], the second tensor
+    /// will be "expanded" to match the shape of the first one before addition.</para>
+    /// </remarks>
+    private Tensor<T> BroadcastAdd(Tensor<T> other)
+    {
+        int[] broadcastShape = GetBroadcastShape(this.Shape, other.Shape);
+        var result = new Tensor<T>(broadcastShape);
+
+        // Create index arrays for both tensors
+        int[] thisIndices = new int[this.Rank];
+        int[] otherIndices = new int[other.Rank];
+
+        // Iterate over the result tensor
+        foreach (var index in result.GetIndices())
+        {
+            // Map result index to this tensor's index
+            for (int i = 0; i < this.Rank; i++)
+            {
+                thisIndices[i] = this.Shape[i] == 1 ? 0 : index[i];
+            }
+
+            // Map result index to other tensor's index
+            for (int i = 0; i < other.Rank; i++)
+            {
+                otherIndices[i] = other.Shape[i] == 1 ? 0 : index[i];
+            }
+
+            result.SetFlatIndexValue(result.GetFlatIndex(index),
+                _numOps.Add(this.GetFlatIndexValue(this.GetFlatIndex(thisIndices)),
+                            other.GetFlatIndexValue(other.GetFlatIndex(otherIndices))));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Subtracts another tensor from this tensor with broadcasting support.
+    /// </summary>
+    /// <param name="other">The tensor to subtract.</param>
+    /// <returns>A new tensor containing the element-wise difference.</returns>
+    /// <exception cref="ArgumentException">Thrown when tensors cannot be broadcast together.</exception>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This method subtracts one tensor from another, supporting tensors of different shapes.
+    /// Broadcasting automatically expands smaller dimensions to match larger ones when possible.</para>
+    /// 
+    /// <para>For example, subtracting a tensor of shape [4] from a tensor of shape [3,4] will work because the
+    /// second tensor is automatically expanded to shape [1,4] and then [3,4].</para>
+    /// 
+    /// <para>Broadcasting follows the same rules as addition, making it easier to perform operations
+    /// on tensors with different but compatible shapes.</para>
+    /// </remarks>
+    public Tensor<T> Subtract(Tensor<T> other)
+    {
+        // If shapes are the same, use direct subtraction
+        if (Shape.SequenceEqual(other.Shape))
+        {
+            var result = new Tensor<T>(Shape);
+            for (int i = 0; i < _data.Length; i++)
+            {
+                result._data[i] = _numOps.Subtract(_data[i], other._data[i]);
+            }
+            return result;
+        }
+
+        // Otherwise, use broadcasting
+        return BroadcastSubtract(other);
+    }
+
+    /// <summary>
+    /// Performs element-wise subtraction with broadcasting support for tensors of different shapes.
+    /// </summary>
+    /// <param name="other">The tensor to subtract.</param>
+    /// <returns>A new tensor containing the element-wise difference.</returns>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This method subtracts each element in another tensor from the corresponding element 
+    /// in this tensor. If the tensors have different shapes, broadcasting rules are applied to make them compatible.</para>
+    /// 
+    /// <para>For example, if you subtract a tensor of shape [1,4] from a tensor of shape [3,4], the second tensor
+    /// will be "expanded" to match the shape of the first one before subtraction.</para>
+    /// </remarks>
+    private Tensor<T> BroadcastSubtract(Tensor<T> other)
+    {
+        int[] broadcastShape = GetBroadcastShape(this.Shape, other.Shape);
+        var result = new Tensor<T>(broadcastShape);
+
+        // Create index arrays for both tensors
+        int[] thisIndices = new int[this.Rank];
+        int[] otherIndices = new int[other.Rank];
+
+        // Iterate over the result tensor
+        foreach (var index in result.GetIndices())
+        {
+            // Map result index to this tensor's index
+            for (int i = 0; i < this.Rank; i++)
+            {
+                thisIndices[i] = this.Shape[i] == 1 ? 0 : index[i];
+            }
+
+            // Map result index to other tensor's index
+            for (int i = 0; i < other.Rank; i++)
+            {
+                otherIndices[i] = other.Shape[i] == 1 ? 0 : index[i];
+            }
+
+            // Perform subtraction
+            result[index] = _numOps.Subtract(this[thisIndices], other[otherIndices]);
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// Performs element-wise multiplication with broadcasting support.
     /// </summary>
     /// <param name="other">The tensor to multiply with.</param>
     /// <returns>A new tensor containing the element-wise product.</returns>
+    /// <exception cref="ArgumentException">Thrown when tensors cannot be broadcast together.</exception>
     /// <remarks>
-    /// <b>For Beginners:</b> This method multiplies each element in this tensor with the corresponding element in the other tensor.
-    /// 
+    /// <para><b>For Beginners:</b> This method multiplies each element in this tensor with the corresponding element in the other tensor.
     /// Broadcasting allows tensors of different shapes to be multiplied together by automatically expanding
-    /// smaller dimensions to match larger ones. For example, you can multiply a 3×4 tensor with a 1×4 tensor
-    /// (which will be treated as if it were repeated 3 times).
+    /// smaller dimensions to match larger ones.</para>
     /// 
-    /// This is particularly useful in machine learning when applying the same operation across multiple
-    /// data points or features.
+    /// <para>For example, you can multiply a 3ï¿½4 tensor with a 1ï¿½4 tensor
+    /// (which will be treated as if it were repeated 3 times).</para>
+    /// 
+    /// <para>This is particularly useful in machine learning when applying the same operation across multiple
+    /// data points or features.</para>
     /// </remarks>
     public Tensor<T> PointwiseMultiply(Tensor<T> other)
     {
@@ -1168,6 +1471,95 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
             // Handle broadcasting
             return BroadcastPointwiseMultiply(other);
         }
+    }
+
+    /// <summary>
+    /// Divides this tensor by another tensor with broadcasting support.
+    /// </summary>
+    /// <param name="other">The tensor to divide by.</param>
+    /// <returns>A new tensor containing the element-wise quotient.</returns>
+    /// <exception cref="ArgumentException">Thrown when tensors cannot be broadcast together.</exception>
+    /// <exception cref="DivideByZeroException">Thrown when a division by zero is attempted.</exception>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This method divides each element in this tensor by the corresponding element 
+    /// in another tensor. Broadcasting automatically expands smaller dimensions to match larger ones when possible.</para>
+    /// 
+    /// <para>For example, dividing a tensor of shape [3,4] by a tensor of shape [1,4] will work because the
+    /// second tensor is automatically expanded to match the shape of the first one.</para>
+    /// 
+    /// <para>The method checks for division by zero and throws an exception if detected. In numerical
+    /// applications, you might want to handle this case differently, such as by replacing zeros with a small
+    /// number or implementing special handling for infinity values.</para>
+    /// </remarks>
+    public Tensor<T> Divide(Tensor<T> other)
+    {
+        // If shapes are the same, use direct division
+        if (Shape.SequenceEqual(other.Shape))
+        {
+            var result = new Tensor<T>(Shape);
+            for (int i = 0; i < _data.Length; i++)
+            {
+                // Check for division by zero if required
+                if (_numOps.Equals(other._data[i], _numOps.Zero))
+                    throw new DivideByZeroException("Division by zero encountered.");
+
+                result._data[i] = _numOps.Divide(_data[i], other._data[i]);
+            }
+            return result;
+        }
+
+        // Otherwise, use broadcasting
+        return BroadcastDivide(other);
+    }
+
+    /// <summary>
+    /// Performs element-wise division with broadcasting support for tensors of different shapes.
+    /// </summary>
+    /// <param name="other">The tensor to divide by.</param>
+    /// <returns>A new tensor containing the element-wise quotient.</returns>
+    /// <exception cref="DivideByZeroException">Thrown when a division by zero is attempted.</exception>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This method divides each element in this tensor by the corresponding element 
+    /// in another tensor. If the tensors have different shapes, broadcasting rules are applied to make them compatible.</para>
+    /// 
+    /// <para>For example, if you divide a tensor of shape [3,4] by a tensor of shape [1,4], the second tensor
+    /// will be "expanded" to match the shape of the first one before division.</para>
+    /// 
+    /// <para>Division by zero is checked and will throw an exception if encountered.</para>
+    /// </remarks>
+    private Tensor<T> BroadcastDivide(Tensor<T> other)
+    {
+        int[] broadcastShape = GetBroadcastShape(this.Shape, other.Shape);
+        var result = new Tensor<T>(broadcastShape);
+
+        // Create index arrays for both tensors
+        int[] thisIndices = new int[this.Rank];
+        int[] otherIndices = new int[other.Rank];
+
+        // Iterate over the result tensor
+        foreach (var index in result.GetIndices())
+        {
+            // Map result index to this tensor's index
+            for (int i = 0; i < this.Rank; i++)
+            {
+                thisIndices[i] = this.Shape[i] == 1 ? 0 : index[i];
+            }
+
+            // Map result index to other tensor's index
+            for (int i = 0; i < other.Rank; i++)
+            {
+                otherIndices[i] = other.Shape[i] == 1 ? 0 : index[i];
+            }
+
+            // Check for division by zero
+            if (_numOps.Equals(other[otherIndices], _numOps.Zero))
+                throw new DivideByZeroException("Division by zero encountered.");
+
+            // Perform division
+            result[index] = _numOps.Divide(this[thisIndices], other[otherIndices]);
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -1228,7 +1620,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// 
     /// For two matrices A and B to be multiplied:
     /// - The number of columns in A must equal the number of rows in B
-    /// - The result will have dimensions: (rows of A) × (columns of B)
+    /// - The result will have dimensions: (rows of A) ï¿½ (columns of B)
     /// 
     /// This is different from element-wise multiplication where corresponding elements are simply multiplied together.
     /// </remarks>
@@ -1248,6 +1640,45 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     }
 
     /// <summary>
+    /// Performs matrix multiplication between two 2D tensors.
+    /// </summary>
+    /// <param name="other">The tensor to multiply with (right operand).</param>
+    /// <returns>A new tensor containing the result of the matrix multiplication.</returns>
+    /// <remarks>
+    /// <para>
+    /// This is an alias for MatrixMultiply, providing a shorter, more commonly used name
+    /// for matrix multiplication operations. The method performs standard matrix multiplication
+    /// where the number of columns in the first matrix must equal the number of rows in the second.
+    /// </para>
+    /// <para>
+    /// <b>For Beginners:</b> MatMul (short for "Matrix Multiplication") combines two matrices
+    /// in a specific mathematical way. It's different from element-wise multiplication:
+    ///
+    /// - Element-wise multiplication: multiply corresponding elements (A[i,j] * B[i,j])
+    /// - Matrix multiplication: dot products of rows and columns
+    ///
+    /// For matrix multiplication to work:
+    /// - First matrix dimensions: M x N
+    /// - Second matrix dimensions: N x P
+    /// - Result matrix dimensions: M x P
+    ///
+    /// The middle dimension (N) must match!
+    ///
+    /// Example: If A is 2x3 and B is 3x4, the result will be 2x4.
+    ///
+    /// This operation is fundamental in neural networks, where it's used to propagate
+    /// data through layers and compute weighted sums of inputs.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// Thrown when either tensor is not 2D or when the dimensions are incompatible for multiplication.
+    /// </exception>
+    public Tensor<T> MatMul(Tensor<T> other)
+    {
+        return MatrixMultiply(other);
+    }
+
+    /// <summary>
     /// Generates all possible index combinations for iterating through a tensor.
     /// </summary>
     /// <returns>An enumerable sequence of index arrays, each representing a position in the tensor.</returns>
@@ -1255,7 +1686,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// <para><b>For Beginners:</b> This method creates a list of all possible positions (indices) in the tensor.
     /// Think of it as generating all possible coordinates to access each element in the tensor.</para>
     /// 
-    /// <para>For example, in a 2×3 tensor, this would generate the coordinates: [0,0], [0,1], [0,2], [1,0], [1,1], [1,2].</para>
+    /// <para>For example, in a 2ï¿½3 tensor, this would generate the coordinates: [0,0], [0,1], [0,2], [1,0], [1,1], [1,2].</para>
     /// 
     /// <para>This is primarily used internally to efficiently loop through all elements in a tensor.</para>
     /// </remarks>
@@ -1394,37 +1825,89 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     }
 
     /// <summary>
-    /// Converts a 2D tensor to a Matrix object.
+    /// Converts this tensor to a matrix.
     /// </summary>
-    /// <returns>A Matrix object containing the same data as the tensor.</returns>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when the tensor is not 2-dimensional.
-    /// </exception>
+    /// <returns>A matrix representation of this tensor.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the tensor cannot be reasonably converted to a matrix.</exception>
     /// <remarks>
-    /// <para><b>For Beginners:</b> This method allows you to convert a 2D tensor to a Matrix object,
-    /// which might have specialized methods for matrix operations.</para>
-    /// 
-    /// <para>A 2D tensor and a matrix are conceptually the same thing - a rectangular grid of numbers.
-    /// This method simply changes the representation from one class to another, making it easier to
-    /// use matrix-specific operations if needed.</para>
+    /// - For rank 2 tensors: Directly converts to a matrix with the same dimensions
+    /// - For rank 1 tensors: Converts to a column matrix (nï¿½1)
+    /// - For rank > 2: Reshapes the tensor by flattening all dimensions after the first into a single dimension
     /// </remarks>
     public Matrix<T> ToMatrix()
     {
-        if (Rank != 2)
+        // For rank 2 tensors, direct conversion
+        if (Rank == 2)
         {
-            throw new InvalidOperationException("Tensor must be 2-dimensional to convert to Matrix.");
-        }
-
-        var matrix = new Matrix<T>(Shape[0], Shape[1]);
-        for (int i = 0; i < Shape[0]; i++)
-        {
-            for (int j = 0; j < Shape[1]; j++)
+            var matrix = new Matrix<T>(Shape[0], Shape[1]);
+            for (int i = 0; i < Shape[0]; i++)
             {
-                matrix[i, j] = this[i, j];
+                for (int j = 0; j < Shape[1]; j++)
+                {
+                    matrix[i, j] = this[i, j];
+                }
             }
+            return matrix;
+        }
+        // For rank 1 tensors (vectors), convert to a column matrix
+        else if (Rank == 1)
+        {
+            var matrix = new Matrix<T>(Shape[0], 1);
+            for (int i = 0; i < Shape[0]; i++)
+            {
+                matrix[i, 0] = this[i];
+            }
+            return matrix;
+        }
+        // For higher rank tensors, flatten all dimensions after the first
+        else if (Rank > 2)
+        {
+            // Calculate the product of all dimensions after the first
+            int secondDimSize = 1;
+            for (int i = 1; i < Shape.Length; i++)
+            {
+                secondDimSize *= Shape[i];
+            }
+
+            // Create a matrix with first dimension preserved and all others flattened
+            var matrix = new Matrix<T>(Shape[0], secondDimSize);
+
+            // Map the multidimensional tensor to the 2D matrix
+            for (int i = 0; i < Shape[0]; i++)
+            {
+                // Track position in the flattened second dimension
+                int flatIndex = 0;
+
+                // Use a recursive helper to fill in the matrix
+                int[] indices = new int[Rank];
+                indices[0] = i;
+                FillMatrixRecursive(matrix, indices, 1, ref flatIndex);
+            }
+
+            return matrix;
         }
 
-        return matrix;
+        throw new InvalidOperationException("Cannot convert tensor to matrix: unsupported rank.");
+    }
+
+    /// <summary>
+    /// Recursively fills a matrix from a tensor with rank > 2.
+    /// </summary>
+    private void FillMatrixRecursive(Matrix<T> matrix, int[] indices, int dimension, ref int flatIndex)
+    {
+        if (dimension == Rank)
+        {
+            // We have a complete set of indices, copy the value to the matrix
+            matrix[indices[0], flatIndex++] = this[indices];
+            return;
+        }
+
+        // Recursively iterate through each value in the current dimension
+        for (int i = 0; i < Shape[dimension]; i++)
+        {
+            indices[dimension] = i;
+            FillMatrixRecursive(matrix, indices, dimension + 1, ref flatIndex);
+        }
     }
 
     /// <summary>
@@ -1439,7 +1922,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// <para>Think of it as if all the values in your tensor were laid out in a single line,
     /// and you're picking one value from that line using its position number.</para>
     /// 
-    /// <para>For example, in a 2×3 tensor (2 rows, 3 columns), the flat indices would map like this:
+    /// <para>For example, in a 2ï¿½3 tensor (2 rows, 3 columns), the flat indices would map like this:
     /// [0,0]=0, [0,1]=1, [0,2]=2, [1,0]=3, [1,1]=4, [1,2]=5</para>
     /// 
     /// <para>So if you want the value at row 1, column 0, you could use either the multi-dimensional
@@ -1464,16 +1947,68 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// number (flat index) and multiple coordinates (like row, column, etc.). This method takes a 
     /// single number and calculates what position it corresponds to in each dimension of the tensor.</para>
     /// 
-    /// <para>For example, in a 3×4 tensor, the flat index 5 would correspond to position [1,1] 
+    /// <para>For example, in a 3ï¿½4 tensor, the flat index 5 would correspond to position [1,1] 
     /// (second row, second column).</para>
     /// </remarks>
-    private void GetIndicesFromFlatIndex(int flatIndex, int[] indices)
+    public void GetIndicesFromFlatIndex(int flatIndex, int[] indices)
     {
         for (int i = Rank - 1; i >= 0; i--)
         {
             indices[i] = flatIndex % Shape[i];
             flatIndex /= Shape[i];
         }
+    }
+
+    /// <summary>
+    /// Gets a representative sample of values from the tensor.
+    /// </summary>
+    /// <param name="maxSampleSize">The maximum number of values to include in the sample.</param>
+    /// <returns>An array containing sampled values from the tensor.</returns>
+    /// <remarks>
+    /// This method extracts a representative sample of values from the tensor for analysis purposes.
+    /// It uses a systematic sampling approach to ensure the sample represents different regions of the tensor.
+    /// If the tensor has fewer elements than the requested sample size, all elements are returned.
+    /// </remarks>
+    public Vector<T> GetSample(int maxSampleSize)
+    {
+        // Handle edge cases
+        if (maxSampleSize <= 0)
+        {
+            throw new ArgumentException("Sample size must be positive", nameof(maxSampleSize));
+        }
+
+        // If tensor is smaller than requested sample, return all elements
+        if (Length <= maxSampleSize)
+        {
+            var allValues = new T[Length];
+            for (int i = 0; i < Length; i++)
+            {
+                allValues[i] = GetFlatIndexValue(i);
+            }
+
+            return new Vector<T>(allValues);
+        }
+
+        // For larger tensors, use systematic sampling
+        var result = new T[maxSampleSize];
+
+        // Calculate sampling interval to cover the entire tensor
+        double interval = (double)Length / maxSampleSize;
+
+        // Use systematic sampling with a small random offset for each sample
+        // to avoid potential aliasing with regular patterns in the data
+        var random = new Random(42); // Fixed seed for reproducibility
+
+        for (int i = 0; i < maxSampleSize; i++)
+        {
+            // Calculate index with small random jitter (ï¿½10% of interval)
+            int jitter = (int)(random.NextDouble() * 0.2 * interval - 0.1 * interval);
+            int index = Math.Min(Length - 1, Math.Max(0, (int)(i * interval + jitter)));
+
+            result[i] = GetFlatIndexValue(index);
+        }
+
+        return new Vector<T>(result);
     }
 
     /// <summary>
@@ -1511,7 +2046,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// <para>Think of it as if all the values in your tensor were laid out in a single line,
     /// and you're changing one value in that line using its position number.</para>
     /// 
-    /// <para>For example, in a 2×3 tensor (2 rows, 3 columns), the flat indices would map like this:
+    /// <para>For example, in a 2ï¿½3 tensor (2 rows, 3 columns), the flat indices would map like this:
     /// [0,0]=0, [0,1]=1, [0,2]=2, [1,0]=3, [1,1]=4, [1,2]=5</para>
     /// 
     /// <para>So if you want to change the value at row 1, column 0, you could use either the multi-dimensional
@@ -1574,7 +2109,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// <remarks>
     /// <para><b>For Beginners:</b> This method creates a new tensor where every element has the same value.</para>
     /// 
-    /// <para>For example, CreateDefault([2, 3], 1.0) would create a 2×3 tensor filled with the value 1.0, like this:
+    /// <para>For example, CreateDefault([2, 3], 1.0) would create a 2ï¿½3 tensor filled with the value 1.0, like this:
     /// [[1.0, 1.0, 1.0],
     ///  [1.0, 1.0, 1.0]]</para>
     /// 
@@ -1799,7 +2334,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// <para>The resulting tensor will have a rank of 2 (two dimensions) with the first dimension
     /// being the number of rows and the second dimension being the number of columns from the original matrix.</para>
     /// 
-    /// <para>For example, if you have a 3×4 matrix representing student test scores (3 students, 4 tests),
+    /// <para>For example, if you have a 3ï¿½4 matrix representing student test scores (3 students, 4 tests),
     /// this method would convert it to a tensor with the same structure but with the ability to perform
     /// more advanced operations on the data.</para>
     /// 
@@ -1809,6 +2344,83 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     public static Tensor<T> FromMatrix(Matrix<T> matrix)
     {
         return new Tensor<T>([matrix.Rows, matrix.Columns], matrix.ToColumnVector());
+    }
+
+    /// <summary>
+    /// Converts the tensor to a one-dimensional array.
+    /// </summary>
+    /// <returns>A one-dimensional array containing all the tensor's elements in row-major order.</returns>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This method flattens your multi-dimensional tensor into a simple one-dimensional array.
+    /// Think of it like taking a 3D cube of data and lining up all the values in a single row.</para>
+    /// 
+    /// <para>The elements are arranged in row-major order, which means:
+    /// - For a 2D tensor (matrix), it reads row by row from left to right
+    /// - For a 3D tensor, it reads layer by layer, and within each layer, row by row
+    /// - The rightmost index varies fastest</para>
+    /// 
+    /// <para>For example, a 2Ã—3 tensor [[1,2,3], [4,5,6]] would become [1,2,3,4,5,6].</para>
+    /// 
+    /// <para>This is useful when you need to:
+    /// - Export tensor data to systems that expect simple arrays
+    /// - Serialize the tensor data for storage or transmission
+    /// - Convert to formats expected by other libraries or APIs</para>
+    /// </remarks>
+    public T[] ToArray()
+    {
+        T[] array = new T[Length];
+        for (int i = 0; i < Length; i++)
+        {
+            array[i] = _data[i];
+        }
+        return array;
+    }
+
+    /// <summary>
+    /// Gets the value at the specified flat index.
+    /// </summary>
+    /// <param name="flatIndex">The flat (linear) index in the tensor's internal storage.</param>
+    /// <returns>The value at the specified flat index.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the flat index is out of range.</exception>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This method allows direct access to tensor elements using a single index,
+    /// treating the tensor as if it were a one-dimensional array. The flat index corresponds to the position
+    /// in the internal storage where elements are arranged in row-major order.</para>
+    /// 
+    /// <para>For example, in a 2Ã—3 tensor, flat index 0 is [0,0], index 1 is [0,1], index 2 is [0,2],
+    /// index 3 is [1,0], and so on.</para>
+    /// 
+    /// <para>This method is mainly used internally by other operations for efficient element access.</para>
+    /// </remarks>
+    public T GetFlatIndexValue(int flatIndex)
+    {
+        if (flatIndex < 0 || flatIndex >= Length)
+            throw new ArgumentOutOfRangeException(nameof(flatIndex), $"Flat index {flatIndex} is out of range for tensor with length {Length}.");
+        
+        return _data[flatIndex];
+    }
+
+    /// <summary>
+    /// Sets the value at the specified flat index.
+    /// </summary>
+    /// <param name="flatIndex">The flat (linear) index in the tensor's internal storage.</param>
+    /// <param name="value">The value to set at the specified index.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the flat index is out of range.</exception>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This method allows direct modification of tensor elements using a single index,
+    /// treating the tensor as if it were a one-dimensional array. The flat index corresponds to the position
+    /// in the internal storage where elements are arranged in row-major order.</para>
+    /// 
+    /// <para>For example, in a 2Ã—3 tensor, setting value at flat index 3 modifies the element at position [1,0].</para>
+    /// 
+    /// <para>This method is mainly used internally by other operations for efficient element modification.</para>
+    /// </remarks>
+    public void SetFlatIndexValue(int flatIndex, T value)
+    {
+        if (flatIndex < 0 || flatIndex >= Length)
+            throw new ArgumentOutOfRangeException(nameof(flatIndex), $"Flat index {flatIndex} is out of range for tensor with length {Length}.");
+        
+        _data[flatIndex] = value;
     }
 
     /// <summary>
@@ -1826,26 +2438,13 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     public static Tensor<T> FromScalar(T value)
     {
         // Create a new tensor with shape [1] (a single-element tensor)
-        var tensor = new Tensor<T>([1]);
-
-        // Set the first (and only) element to the provided value
-        tensor[0] = value;
+        var tensor = new Tensor<T>([1])
+        {
+            // Set the first (and only) element to the provided value
+            [0] = value
+        };
 
         return tensor;
-    }
-
-    /// <summary>
-    /// Creates an empty tensor with no dimensions.
-    /// </summary>
-    /// <returns>An empty tensor.</returns>
-    /// <remarks>
-    /// <para><b>For Beginners:</b> An empty tensor is a tensor with no elements. It's like an empty array or list.
-    /// This is different from a tensor filled with zeros, which would have a specific shape and contain zero values.
-    /// Empty tensors are useful as placeholders or when you need to build a tensor incrementally.</para>
-    /// </remarks>
-    public static Tensor<T> Empty()
-    {
-        return new Tensor<T>([]);
     }
 
     /// <summary>
@@ -1858,7 +2457,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// <para><b>For Beginners:</b> This operator adds two tensors together by adding their corresponding elements.
     /// Both tensors must have exactly the same shape for this to work.
     /// 
-    /// For example, if you have two 2×3 matrices:
+    /// For example, if you have two 2ï¿½3 matrices:
     /// ```
     /// A = [[1, 2, 3],     B = [[5, 6, 7],
     ///      [4, 5, 6]]          [8, 9, 10]]
@@ -1888,47 +2487,13 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// - The number of columns in the first tensor must equal the number of rows in the second tensor
     /// - The result will have dimensions [rows of first tensor, columns of second tensor]
     /// 
-    /// For example, multiplying a 2×3 tensor by a 3×4 tensor results in a 2×4 tensor.
+    /// For example, multiplying a 2ï¿½3 tensor by a 3ï¿½4 tensor results in a 2ï¿½4 tensor.
     /// This is different from element-wise multiplication, which would require both tensors to have the same shape.
     /// </para>
     /// </remarks>
     public static Tensor<T> operator *(Tensor<T> left, Tensor<T> right)
     {
         return left.Multiply(right);
-    }
-
-    /// <summary>
-    /// Adds another tensor to this tensor element-wise.
-    /// </summary>
-    /// <param name="other">The tensor to add.</param>
-    /// <returns>A new tensor containing the sum of this tensor and the other tensor.</returns>
-    /// <remarks>
-    /// <para><b>For Beginners:</b> This method adds two tensors together by adding their corresponding elements.
-    /// Both tensors must have exactly the same shape for this to work.
-    /// 
-    /// For example, if you have two 2×3 matrices:
-    /// ```
-    /// A = [[1, 2, 3],     B = [[5, 6, 7],
-    ///      [4, 5, 6]]          [8, 9, 10]]
-    /// ```
-    /// 
-    /// Then A.Add(B) would result in:
-    /// ```
-    /// [[1+5, 2+6, 3+7],    [[6, 8, 10],
-    ///  [4+8, 5+9, 6+10]] =  [12, 14, 16]]
-    /// ```
-    /// </para>
-    /// </remarks>
-    public Tensor<T> Add(Tensor<T> other)
-    {
-        TensorValidator.ValidateShape(this, other.Shape);
-
-        var result = new Tensor<T>(Shape);
-        for (int i = 0; i < Length; i++)
-        {
-            result._data[i] = _numOps.Add(_data[i], other._data[i]);
-        }
-        return result;
     }
 
     /// <summary>
@@ -1942,7 +2507,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// - The number of columns in the first tensor must equal the number of rows in the second tensor
     /// - The result will have dimensions [rows of first tensor, columns of second tensor]
     /// 
-    /// For example, multiplying a 2×3 tensor by a 3×4 tensor results in a 2×4 tensor.
+    /// For example, multiplying a 2ï¿½3 tensor by a 3ï¿½4 tensor results in a 2ï¿½4 tensor.
     /// This is different from element-wise multiplication, which would require both tensors to have the same shape.
     /// </para>
     /// </remarks>
@@ -1974,6 +2539,7 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
                 {
                     sum = _numOps.Add(sum, _numOps.Multiply(this[i, k], other[k, j]));
                 }
+
                 result[i, j] = sum;
             }
         }
@@ -1989,13 +2555,13 @@ public class Tensor<T> : TensorBase<T>, IEnumerable<T>
     /// <para><b>For Beginners:</b> Transposing a tensor means swapping its dimensions. 
     /// For a 2D tensor (matrix), it means turning rows into columns and vice versa.
     /// 
-    /// For example, if you have a 2×3 matrix:
+    /// For example, if you have a 2ï¿½3 matrix:
     /// ```
     /// A = [[1, 2, 3],
     ///      [4, 5, 6]]
     /// ```
     /// 
-    /// Then A.Transpose() would result in a 3×2 matrix:
+    /// Then A.Transpose() would result in a 3ï¿½2 matrix:
     /// ```
     /// [[1, 4],
     ///  [2, 5],

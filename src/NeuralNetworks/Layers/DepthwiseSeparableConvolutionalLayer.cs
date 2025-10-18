@@ -46,7 +46,7 @@ public class DepthwiseSeparableConvolutionalLayer<T> : LayerBase<T>
     /// Each filter looks for specific patterns within its own channel, like edges or textures.
     /// </para>
     /// </remarks>
-    private Tensor<T> _depthwiseKernels;
+    private Tensor<T> _depthwiseKernels = default!;
 
     /// <summary>
     /// The filter kernels used for the pointwise convolution step.
@@ -67,7 +67,7 @@ public class DepthwiseSeparableConvolutionalLayer<T> : LayerBase<T>
     /// Think of it like a recipe that determines how much of each filtered ingredient to use.
     /// </para>
     /// </remarks>
-    private Tensor<T> _pointwiseKernels;
+    private Tensor<T> _pointwiseKernels = default!;
 
     /// <summary>
     /// The bias values added to each output channel.
@@ -88,7 +88,7 @@ public class DepthwiseSeparableConvolutionalLayer<T> : LayerBase<T>
     /// triggering more easily even with weaker input signals.
     /// </para>
     /// </remarks>
-    private Vector<T> _biases;
+    private Vector<T> _biases = default!;
 
     /// <summary>
     /// Stored input data from the most recent forward pass, used for backpropagation.
@@ -409,7 +409,7 @@ public class DepthwiseSeparableConvolutionalLayer<T> : LayerBase<T>
     /// <remarks>
     /// <para>
     /// This constructor creates a depthwise separable convolutional layer with the specified configuration
-    /// and a vector activation function. Vector activation functions operate on entire vectors at once,
+    /// and a vector activation function. Vector<double> activation functions operate on entire vectors at once,
     /// which can be more efficient for certain operations.
     /// </para>
     /// <para><b>For Beginners:</b> This setup method is similar to the previous one, but uses a different type of
@@ -980,7 +980,7 @@ public class DepthwiseSeparableConvolutionalLayer<T> : LayerBase<T>
         if (UsingVectorActivation)
         {
             if (VectorActivation == null)
-                throw new InvalidOperationException("Vector activation function is not set.");
+                throw new InvalidOperationException("Vector<double> activation function is not set.");
 
             // Create a vector with a single element
             var outputVector = new Vector<T>([output]);

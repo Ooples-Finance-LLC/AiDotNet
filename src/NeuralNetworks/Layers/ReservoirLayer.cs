@@ -104,7 +104,7 @@ public class ReservoirLayer<T> : LayerBase<T>
     /// It is initialized randomly based on the connection probability and then scaled to
     /// achieve the desired spectral radius. These weights remain fixed during training.
     /// </remarks>
-    private Matrix<T> _reservoirWeights;
+    private Matrix<T> _reservoirWeights = default!;
     
     /// <summary>
     /// The current state of the reservoir, representing the activation of all neurons.
@@ -115,7 +115,7 @@ public class ReservoirLayer<T> : LayerBase<T>
     /// The reservoir state is the output of this layer and contains the features that
     /// will be used by subsequent layers for prediction or classification.
     /// </remarks>
-    private Vector<T> _reservoirState;
+    private Vector<T> _reservoirState = default!;
 
     /// <summary>
     /// Gets a value indicating whether this layer supports training.
@@ -284,7 +284,8 @@ public class ReservoirLayer<T> : LayerBase<T>
     public override Tensor<T> Backward(Tensor<T> outputGradient)
     {
         // In ESN, we don't backpropagate through the reservoir
-        throw new NotImplementedException("Backward pass is not implemented for ReservoirLayer in Echo State Networks.");
+        // The reservoir weights are fixed, so we just pass through a zero gradient
+        return Tensor<T>.CreateDefault(GetInputShape(), NumOps.Zero);
     }
 
     /// <summary>
@@ -316,8 +317,8 @@ public class ReservoirLayer<T> : LayerBase<T>
     /// </remarks>
     public override void UpdateParameters(T learningRate)
     {
-        // In ESN, we don't update the reservoir weights
-        throw new NotImplementedException("Parameter update is not implemented for ReservoirLayer in Echo State Networks.");
+        // In ESN, the reservoir weights are fixed and not updated during training
+        // This is a no-op for reservoir layers
     }
 
     /// <summary>

@@ -1,5 +1,7 @@
 namespace AiDotNet.TimeSeries;
 
+using AiDotNet.Interpretability;
+
 /// <summary>
 /// Provides a base class for all time series forecasting models in the library.
 /// </summary>
@@ -38,7 +40,7 @@ namespace AiDotNet.TimeSeries;
 /// - Website traffic prediction
 /// </para>
 /// </remarks>
-public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>
+public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>, IGradientTransformable<T, Matrix<T>, Vector<T>>
 {
     /// <summary>
     /// Configuration options for the time series model.
@@ -78,6 +80,24 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>
     /// </para>
     /// </remarks>
     protected INumericOperations<T> NumOps { get; private set; }
+
+    /// <summary>
+    /// Set of feature indices that have been explicitly marked as active.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This set contains feature indices that have been explicitly set as active through
+    /// the SetActiveFeatureIndices method, overriding the automatic determination based
+    /// on feature importance.
+    /// </para>
+    /// <para>
+    /// <b>For Beginners:</b>
+    /// This tracks which past time periods (lags) have been manually selected as
+    /// important for the model, regardless of their calculated importance based on
+    /// the model's parameters.
+    /// </para>
+    /// </remarks>
+    private HashSet<int>? _explicitlySetActiveFeatures;
 
     /// <summary>
     /// Gets or sets the trained model parameters.
@@ -125,7 +145,9 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>
     /// Lower numbers mean better predictions. They're like a scorecard for the model's performance.
     /// </para>
     /// </remarks>
-    protected Dictionary<string, T> LastEvaluationMetrics { get; private set; } = new Dictionary<string, T>();
+    protected Dictionary<string, T> LastEvaluationMetrics { get; private set; } = [];
+
+    protected Random Random = new();
 
     /// <summary>
     /// Initializes a new instance of the TimeSeriesModelBase class with the specified options.
@@ -164,7 +186,7 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>
         
         Options = options;
         NumOps = MathHelper.GetNumericOperations<T>();
-        ModelParameters = new Vector<T>(0); // Initialize with empty vector
+        ModelParameters = Vector<T>.Empty();
     }
 
     /// <summary>
@@ -720,6 +742,58 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>
     }
 
     /// <summary>
+    /// Base implementation of IGradientTransformable for time series models.
+    /// </summary>
+    /// <param name="input">The input matrix.</param>
+    /// <param name="predictionGradient">The gradient with respect to predictions.</param>
+    /// <returns>The gradient with respect to model parameters.</returns>
+    /// <remarks>
+    /// <para>
+    /// This base implementation provides a standard gradient transformation for time series models.
+    /// More complex models like ProphetModel should override this method with their specific implementations.
+    /// </para>
+    /// <para><b>For Beginners:</b> This method transforms gradients from predictions (one per time point)
+    /// to parameters (one per model coefficient). It's like translating "how wrong each prediction is"
+    /// into "how much to adjust each model parameter".
+    /// </para>
+    /// </remarks>
+    public virtual Vector<T> TransformGradient(Matrix<T> input, Vector<T> predictionGradient)
+    {
+        // Get current parameters
+        Vector<T> parameters = GetParameters();
+        int paramCount = parameters.Length;
+        var parameterGradient = new Vector<T>(paramCount);
+
+        // For simple linear time series models: X^T * prediction_gradient
+        Matrix<T> transposedInput = input.Transpose();
+
+        // Create prediction gradient as a column vector
+        Matrix<T> predictionGradientMatrix = Matrix<T>.FromVector(predictionGradient);
+
+        // Matrix multiplication gives us parameter gradients for coefficients
+        Matrix<T> paramGradMatrix = transposedInput * predictionGradientMatrix;
+
+        // Extract the column vector
+        Vector<T> coefficientGradients = paramGradMatrix.GetColumn(0);
+
+        // Copy coefficient gradients
+        int coefficientCount = Math.Min(coefficientGradients.Length, paramCount);
+        for (int i = 0; i < coefficientCount; i++)
+        {
+            parameterGradient[i] = coefficientGradients[i];
+        }
+
+        // Additional parameters (beyond coefficients) get zero gradients
+        // Derived classes should override this method to handle these properly
+        for (int i = coefficientCount; i < paramCount; i++)
+        {
+            parameterGradient[i] = NumOps.Zero;
+        }
+
+        return parameterGradient;
+    }
+
+    /// <summary>
     /// Serializes model-specific data to the binary writer.
     /// </summary>
     /// <param name="writer">The binary writer to write to.</param>
@@ -772,7 +846,7 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>
     /// <summary>
     /// Gets metadata about the time series model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method provides comprehensive metadata about the model, including its type,
@@ -795,7 +869,7 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>
     /// It's like a complete summary of everything important about the model.
     /// </para>
     /// </remarks>
-    public abstract ModelMetaData<T> GetModelMetaData();
+    public abstract ModelMetadata<T> GetModelMetadata();
 
     /// <summary>
     /// Gets the trainable parameters of the model as a vector.
@@ -942,36 +1016,53 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>
     /// </remarks>
     public virtual IEnumerable<int> GetActiveFeatureIndices()
     {
+        var activeIndices = new List<int>();
+
         if (!IsTrained)
         {
-            throw new InvalidOperationException("The model must be trained before getting active feature indices.");
-        }
-        
-        List<int> activeIndices = new List<int>();
-        
-        // Consider common lag patterns based on model configuration
-        for (int lag = 1; lag <= Options.LagOrder; lag++)
-        {
-            if (IsFeatureUsed(lag))
+            // If not trained, return potential features based on configuration
+            for (int lag = 1; lag <= Options.LagOrder; lag++)
             {
                 activeIndices.Add(lag);
             }
-        }
-        
-        // If seasonal, also include seasonal lags
-        if (Options.SeasonalPeriod > 0)
-        {
-            for (int s = 1; s <= 4; s++) // Consider up to 4 seasonal lags
+
+            if (Options.SeasonalPeriod > 0)
             {
-                int seasonalLag = s * Options.SeasonalPeriod;
-                if (seasonalLag <= Options.LagOrder && IsFeatureUsed(seasonalLag))
+                for (int s = 1; s <= 4; s++)
                 {
-                    activeIndices.Add(seasonalLag);
+                    int seasonalLag = s * Options.SeasonalPeriod;
+                    if (seasonalLag <= Options.LagOrder)
+                    {
+                        activeIndices.Add(seasonalLag);
+                    }
                 }
             }
         }
-        
-        return activeIndices;
+        else
+        {
+            // Original trained model logic
+            for (int lag = 1; lag <= Options.LagOrder; lag++)
+            {
+                if (IsFeatureUsed(lag))
+                {
+                    activeIndices.Add(lag);
+                }
+            }
+
+            if (Options.SeasonalPeriod > 0)
+            {
+                for (int s = 1; s <= 4; s++)
+                {
+                    int seasonalLag = s * Options.SeasonalPeriod;
+                    if (seasonalLag <= Options.LagOrder && IsFeatureUsed(seasonalLag))
+                    {
+                        activeIndices.Add(seasonalLag);
+                    }
+                }
+            }
+        }
+
+        return activeIndices.Distinct().OrderBy(i => i);
     }
 
     /// <summary>
@@ -1005,6 +1096,12 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>
     /// </remarks>
     public virtual bool IsFeatureUsed(int featureIndex)
     {
+        // Check if the feature is explicitly set as active first
+        if (_explicitlySetActiveFeatures != null && _explicitlySetActiveFeatures.Contains(featureIndex))
+        {
+            return true;
+        }
+
         if (!IsTrained)
         {
             throw new InvalidOperationException("The model must be trained before checking feature usage.");
@@ -1350,14 +1447,14 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>
         }
         
         // Create a working copy of the history that we can extend
-        List<T> extendedHistory = new List<T>(history.Length + steps);
+        var extendedHistory = new List<T>(history.Length + steps);
         for (int i = 0; i < history.Length; i++)
         {
             extendedHistory.Add(history[i]);
         }
         
         // Generate forecasts one step at a time
-        Vector<T> forecasts = new Vector<T>(steps);
+        var forecasts = new Vector<T>(steps);
         for (int step = 0; step < steps; step++)
         {
             // Prepare input features for this forecast step
@@ -1415,7 +1512,7 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>
             featureCount += Options.SeasonalPeriod;
         }
         
-        Vector<T> features = new Vector<T>(featureCount);
+        var features = new Vector<T>(featureCount);
         int featureIndex = 0;
         
         // Add lag features
@@ -1450,4 +1547,193 @@ public abstract class TimeSeriesModelBase<T> : ITimeSeriesModel<T>
         
         return features;
     }
+
+    /// <summary>
+    /// Sets which features (lags) should be considered active in the model.
+    /// </summary>
+    /// <param name="featureIndices">The indices of features to mark as active.</param>
+    /// <exception cref="ArgumentNullException">Thrown when featureIndices is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when any feature index is negative.</exception>
+    /// <remarks>
+    /// <para>
+    /// This method explicitly specifies which features (lags) should be considered active
+    /// in the model, overriding the automatic determination based on feature importance.
+    /// Any features not included in the provided collection will be considered inactive,
+    /// regardless of their importance based on model parameters.
+    /// </para>
+    /// <para>
+    /// <b>For Beginners:</b>
+    /// This method lets you manually select which past time periods (lags) the model
+    /// should consider when making predictions. For example, if you know from domain
+    /// expertise that values from 1, 7, and 30 days ago are most important for predicting
+    /// your time series, you can explicitly set these lags as active using this method,
+    /// regardless of what the model would automatically determine.
+    /// </para>
+    /// </remarks>
+    public void SetActiveFeatureIndices(IEnumerable<int> featureIndices)
+    {
+        if (featureIndices == null)
+        {
+            throw new ArgumentNullException(nameof(featureIndices), "Feature indices cannot be null.");
+        }
+
+        // Initialize the set if it doesn't exist
+        _explicitlySetActiveFeatures ??= [];
+
+        // Clear existing explicitly set features
+        _explicitlySetActiveFeatures.Clear();
+
+        // Add the new feature indices
+        foreach (var index in featureIndices)
+        {
+            if (index < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(featureIndices), $"Feature index {index} cannot be negative.");
+            }
+
+            _explicitlySetActiveFeatures.Add(index);
+        }
+    }
+
+    /// <summary>
+    /// Sets the parameters of the model.
+    /// </summary>
+    /// <param name="parameters">The parameters to set.</param>
+    /// <remarks>
+    /// <para>
+    /// This method sets the model parameters from a vector. It delegates to
+    /// the protected ApplyParameters method which derived classes can override
+    /// to handle their specific parameter structures.
+    /// </para>
+    /// </remarks>
+    public virtual void SetParameters(Vector<T> parameters)
+    {
+        ApplyParameters(parameters);
+    }
+
+    #region IInterpretableModel Implementation
+
+    protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
+    protected Vector<int> _sensitiveFeatures;
+    protected readonly List<FairnessMetric> _fairnessMetrics = new();
+    protected IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> _baseModel;
+
+    /// <summary>
+    /// Gets the global feature importance across all predictions.
+    /// </summary>
+    public virtual async Task<Dictionary<int, T>> GetGlobalFeatureImportanceAsync()
+    {
+        return await InterpretableModelHelper.GetGlobalFeatureImportanceAsync(this, _enabledMethods);
+    }
+
+    /// <summary>
+    /// Gets the local feature importance for a specific input.
+    /// </summary>
+    public virtual async Task<Dictionary<int, T>> GetLocalFeatureImportanceAsync(Matrix<T> input)
+    {
+        return await InterpretableModelHelper.GetLocalFeatureImportanceAsync(this, _enabledMethods, input);
+    }
+
+    /// <summary>
+    /// Gets SHAP values for the given inputs.
+    /// </summary>
+    public virtual async Task<Matrix<T>> GetShapValuesAsync(Matrix<T> inputs)
+    {
+        return await InterpretableModelHelper.GetShapValuesAsync(this, _enabledMethods);
+    }
+
+    /// <summary>
+    /// Gets LIME explanation for a specific input.
+    /// </summary>
+    public virtual async Task<LimeExplanation<T>> GetLimeExplanationAsync(Matrix<T> input, int numFeatures = 10)
+    {
+        return await InterpretableModelHelper.GetLimeExplanationAsync<T>(_enabledMethods, numFeatures);
+    }
+
+    /// <summary>
+    /// Gets partial dependence data for specified features.
+    /// </summary>
+    public virtual async Task<PartialDependenceData<T>> GetPartialDependenceAsync(Vector<int> featureIndices, int gridResolution = 20)
+    {
+        return await InterpretableModelHelper.GetPartialDependenceAsync<T>(_enabledMethods, featureIndices, gridResolution);
+    }
+
+    /// <summary>
+    /// Gets counterfactual explanation for a given input and desired output.
+    /// </summary>
+    public virtual async Task<CounterfactualExplanation<T>> GetCounterfactualAsync(Matrix<T> input, Vector<T> desiredOutput, int maxChanges = 5)
+    {
+        return await InterpretableModelHelper.GetCounterfactualAsync<T>(_enabledMethods, maxChanges);
+    }
+
+    /// <summary>
+    /// Gets model-specific interpretability information.
+    /// </summary>
+    public virtual async Task<Dictionary<string, object>> GetModelSpecificInterpretabilityAsync()
+    {
+        return await InterpretableModelHelper.GetModelSpecificInterpretabilityAsync(this);
+    }
+
+    /// <summary>
+    /// Generates a text explanation for a prediction.
+    /// </summary>
+    public virtual async Task<string> GenerateTextExplanationAsync(Matrix<T> input, Vector<T> prediction)
+    {
+        return await InterpretableModelHelper.GenerateTextExplanationAsync(this, input, prediction);
+    }
+
+    /// <summary>
+    /// Gets feature interaction effects between two features.
+    /// </summary>
+    public virtual async Task<T> GetFeatureInteractionAsync(int feature1Index, int feature2Index)
+    {
+        return await InterpretableModelHelper.GetFeatureInteractionAsync<T>(_enabledMethods, feature1Index, feature2Index);
+    }
+
+    /// <summary>
+    /// Validates fairness metrics for the given inputs.
+    /// </summary>
+    public virtual async Task<FairnessMetrics<T>> ValidateFairnessAsync(Matrix<T> inputs, int sensitiveFeatureIndex)
+    {
+        return await InterpretableModelHelper.ValidateFairnessAsync<T>(_fairnessMetrics);
+    }
+
+    /// <summary>
+    /// Gets anchor explanation for a given input.
+    /// </summary>
+    public virtual async Task<AnchorExplanation<T>> GetAnchorExplanationAsync(Matrix<T> input, T threshold)
+    {
+        return await InterpretableModelHelper.GetAnchorExplanationAsync(_enabledMethods, threshold);
+    }
+
+    /// <summary>
+    /// Sets the base model for interpretability analysis.
+    /// </summary>
+    public virtual void SetBaseModel(IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> model)
+    {
+        _baseModel = model ?? throw new ArgumentNullException(nameof(model));
+    }
+
+    /// <summary>
+    /// Enables specific interpretation methods.
+    /// </summary>
+    public virtual void EnableMethod(params InterpretationMethod[] methods)
+    {
+        foreach (var method in methods)
+        {
+            _enabledMethods.Add(method);
+        }
+    }
+
+    /// <summary>
+    /// Configures fairness evaluation settings.
+    /// </summary>
+    public virtual void ConfigureFairness(Vector<int> sensitiveFeatures, params FairnessMetric[] fairnessMetrics)
+    {
+        _sensitiveFeatures = sensitiveFeatures ?? throw new ArgumentNullException(nameof(sensitiveFeatures));
+        _fairnessMetrics.Clear();
+        _fairnessMetrics.AddRange(fairnessMetrics);
+    }
+
+    #endregion
 }

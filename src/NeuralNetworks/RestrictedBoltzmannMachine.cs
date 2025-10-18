@@ -204,7 +204,7 @@ public class RestrictedBoltzmannMachine<T> : NeuralNetworkBase<T>
     /// converge to good weights; too low and it might take too long to learn anything useful.
     /// </para>
     /// </remarks>
-    private T _learningRate;
+    private T _learningRate = default!;
 
     /// <summary>
     /// Gets or sets the number of steps to run the Gibbs sampling chain during Contrastive Divergence.
@@ -502,8 +502,8 @@ public class RestrictedBoltzmannMachine<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Samples binary states from activation probabilities.
     /// </summary>
-    /// <param name="activations">Tensor of activation probabilities.</param>
-    /// <returns>Tensor of binary states (0 or 1).</returns>
+    /// <param name="activations">Tensor<double> of activation probabilities.</param>
+    /// <returns>Tensor<double> of binary states (0 or 1).</returns>
     /// <remarks>
     /// <para>
     /// This method converts activation probabilities to binary states using stochastic sampling.
@@ -737,7 +737,7 @@ public class RestrictedBoltzmannMachine<T> : NeuralNetworkBase<T>
     /// </summary>
     /// <param name="visible">The visible layer tensor.</param>
     /// <param name="hidden">The hidden layer tensor.</param>
-    /// <returns>Matrix of associations between visible and hidden units.</returns>
+    /// <returns>Matrix<double> of associations between visible and hidden units.</returns>
     private Matrix<T> ComputeAssociations(Tensor<T> visible, Tensor<T> hidden)
     {
         var associations = new Matrix<T>(HiddenSize, VisibleSize);
@@ -758,7 +758,7 @@ public class RestrictedBoltzmannMachine<T> : NeuralNetworkBase<T>
     /// </summary>
     /// <param name="numSamples">The number of samples to generate.</param>
     /// <param name="numSteps">The number of Gibbs sampling steps to perform.</param>
-    /// <returns>Tensor containing the generated samples.</returns>
+    /// <returns>Tensor<double> containing the generated samples.</returns>
     /// <remarks>
     /// <para>
     /// This method generates new data samples that follow the distribution learned by the RBM.
@@ -872,7 +872,7 @@ public class RestrictedBoltzmannMachine<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the RBM model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the RBM.</returns>
+    /// <returns>A ModelMetadata object containing information about the RBM.</returns>
     /// <remarks>
     /// <para>
     /// This method returns comprehensive metadata about the RBM, including its architecture,
@@ -891,7 +891,7 @@ public class RestrictedBoltzmannMachine<T> : NeuralNetworkBase<T>
     /// and understanding the structure of your model at a glance.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         // Count total parameters
         int totalParams = (VisibleSize * HiddenSize) + VisibleSize + HiddenSize;
@@ -901,7 +901,7 @@ public class RestrictedBoltzmannMachine<T> : NeuralNetworkBase<T>
             ? _vectorActivation.GetType().Name 
             : (_scalarActivation != null ? _scalarActivation.GetType().Name : "None");
         
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.RestrictedBoltzmannMachine,
             AdditionalInfo = new Dictionary<string, object>

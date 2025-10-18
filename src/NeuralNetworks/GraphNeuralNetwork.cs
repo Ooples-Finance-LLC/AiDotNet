@@ -35,7 +35,7 @@ public class GraphNeuralNetwork<T> : NeuralNetworkBase<T>
     /// <remarks>
     /// <para>
     /// This activation function is applied to the output of graph convolutional layers and operates on entire vectors.
-    /// Vector activation functions transform multiple values at once, potentially capturing relationships between them.
+    /// Vector<double> activation functions transform multiple values at once, potentially capturing relationships between them.
     /// </para>
     /// <para><b>For Beginners:</b> This determines how signals are processed in the graph layers.
     /// 
@@ -175,7 +175,7 @@ public class GraphNeuralNetwork<T> : NeuralNetworkBase<T>
     /// <remarks>
     /// <para>
     /// This constructor creates a graph neural network with the specified architecture and vector activation functions.
-    /// Vector activation functions operate on entire vectors rather than individual elements.
+    /// Vector<double> activation functions operate on entire vectors rather than individual elements.
     /// </para>
     /// <para><b>For Beginners:</b> This creates a new graph neural network where the 
     /// activation functions work on groups of numbers together.
@@ -184,7 +184,7 @@ public class GraphNeuralNetwork<T> : NeuralNetworkBase<T>
     /// - The overall structure (architecture)
     /// - Which activation functions to use at different stages
     /// 
-    /// Vector activation functions process multiple values as a group, which can help
+    /// Vector<double> activation functions process multiple values as a group, which can help
     /// capture relationships between different values.
     /// </para>
     /// </remarks>
@@ -507,8 +507,25 @@ public class GraphNeuralNetwork<T> : NeuralNetworkBase<T>
     /// by understanding how nodes in a graph influence each other.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Trains the Graph Neural Network on a single input-output pair.
+    /// </summary>
+    /// <param name="input">The input tensor containing node features and adjacency information. 
+    /// First half contains node features, second half contains the adjacency matrix.</param>
+    /// <param name="expectedOutput">The expected output tensor for the given graph input.</param>
+    /// <exception cref="ArgumentNullException">Thrown when any input parameter is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when input tensor cannot be properly divided into features and adjacency components.</exception>
     public override void Train(Tensor<T> input, Tensor<T> expectedOutput)
     {
+        // Validate inputs
+        if (input == null) throw new ArgumentNullException(nameof(input));
+        if (expectedOutput == null) throw new ArgumentNullException(nameof(expectedOutput));
+
+        // Validate input shape is divisible by 2 for proper splitting
+        if (input.Shape[0] % 2 != 0)
+            throw new ArgumentException("Input tensor must have an even dimension to be split into features and adjacency matrix.");
+
+        // Ensure we're in training mode
         if (!IsTrainingMode)
         {
             SetTrainingMode(true);
@@ -516,11 +533,9 @@ public class GraphNeuralNetwork<T> : NeuralNetworkBase<T>
 
         // Extract node features and adjacency matrix from the input tensor
         int featuresDimension = input.Shape[0] / 2; // First half contains features
-        
-        // Extract node features
+
+        // Extract node features and adjacency matrix
         Tensor<T> nodeFeatures = input.Slice(0, featuresDimension);
-        
-        // Extract adjacency matrix
         Tensor<T> adjacencyMatrix = input.Slice(featuresDimension, featuresDimension);
 
         // Forward pass with graph data
@@ -534,8 +549,9 @@ public class GraphNeuralNetwork<T> : NeuralNetworkBase<T>
         // Calculate output gradients
         var outputGradients = LossFunction.CalculateDerivative(flattenedPredictions, flattenedExpected);
 
-        // Backpropagate to get parameter gradients
-        Vector<T> gradients = Backpropagate(outputGradients);
+        // Backpropagate through the network
+        // No need to store the result since we use GetParameterGradients() directly
+        Backpropagate(Tensor<T>.FromVector(outputGradients, expectedOutput.Shape));
 
         // Get parameter gradients for all trainable layers
         Vector<T> parameterGradients = GetParameterGradients();
@@ -544,7 +560,7 @@ public class GraphNeuralNetwork<T> : NeuralNetworkBase<T>
         parameterGradients = ClipGradient(parameterGradients);
 
         // Create optimizer
-        var optimizer = new AdamOptimizer<T, Tensor<T>, Tensor<T>>();
+        var optimizer = new AdamOptimizer<T, Tensor<T>, Tensor<T>>(this);
 
         // Get current parameters
         Vector<T> currentParameters = GetParameters();
@@ -599,7 +615,7 @@ public class GraphNeuralNetwork<T> : NeuralNetworkBase<T>
         var outputGradients = new MeanSquaredErrorLoss<T>().CalculateDerivative(flattenedPredictions, flattenedExpected);
 
         // Back-propagate the gradients
-        Vector<T> backpropGradients = Backpropagate(outputGradients);
+        var backpropGradients = Backpropagate(Tensor<T>.FromVector(outputGradients, expectedOutput.Shape));
         
         // Get parameter gradients
         Vector<T> parameterGradients = GetParameterGradients();
@@ -608,7 +624,7 @@ public class GraphNeuralNetwork<T> : NeuralNetworkBase<T>
         parameterGradients = ClipGradient(parameterGradients);
         
         // Use adaptive optimizer (Adam)
-        var optimizer = new AdamOptimizer<T, Tensor<T>, Tensor<T>>();
+        var optimizer = new AdamOptimizer<T, Tensor<T>, Tensor<T>>(this);
         
         // Get current parameters
         Vector<T> currentParameters = GetParameters();
@@ -623,7 +639,7 @@ public class GraphNeuralNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the Graph Neural Network model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata about the Graph Neural Network, including its model type,
@@ -644,9 +660,9 @@ public class GraphNeuralNetwork<T> : NeuralNetworkBase<T>
     /// - Saving the model for later use
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.GraphNeuralNetwork,
             AdditionalInfo = new Dictionary<string, object>
@@ -779,6 +795,34 @@ public class GraphNeuralNetwork<T> : NeuralNetworkBase<T>
 
     protected override IFullModel<T, Tensor<T>, Tensor<T>> CreateNewInstance()
     {
-        throw new NotImplementedException();
+        GraphNeuralNetwork<T> newNetwork;
+        
+        // Create a new instance with the same configuration
+        // Check which type of activation functions we're using
+        if (_graphConvolutionalVectorActivation != null || _activationLayerVectorActivation != null ||
+            _finalDenseLayerVectorActivation != null || _finalActivationLayerVectorActivation != null)
+        {
+            // Using vector activation functions
+            newNetwork = new GraphNeuralNetwork<T>(
+                Architecture,
+                LossFunction,
+                _graphConvolutionalVectorActivation,
+                _activationLayerVectorActivation,
+                _finalDenseLayerVectorActivation,
+                _finalActivationLayerVectorActivation);
+        }
+        else
+        {
+            // Using scalar activation functions
+            newNetwork = new GraphNeuralNetwork<T>(
+                Architecture,
+                LossFunction,
+                _graphConvolutionalScalarActivation,
+                _activationLayerScalarActivation,
+                _finalDenseLayerScalarActivation,
+                _finalActivationLayerScalarActivation);
+        }
+        
+        return newNetwork;
     }
 }

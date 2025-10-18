@@ -25,9 +25,9 @@ public class FeatureImportanceFitDetector<T, TInput, TOutput> : FitDetectorBase<
     /// <b>For Beginners:</b> These settings control how the detector interprets feature importances 
     /// and correlations, including thresholds for determining different types of model fit.
     /// </remarks>
-    private readonly FeatureImportanceFitDetectorOptions _options;
+    private readonly FeatureImportanceFitDetectorOptions _options = default!;
 
-    private Matrix<T> _featureCorrelations;
+    private Matrix<T> _featureCorrelations = default!;
 
     /// <summary>
     /// Initializes a new instance of the FeatureImportanceFitDetector class.
@@ -314,8 +314,8 @@ public class FeatureImportanceFitDetector<T, TInput, TOutput> : FitDetectorBase<
     /// <summary>
     /// Calculates the error between actual and predicted values.
     /// </summary>
-    /// <param name="actual">Vector of actual values.</param>
-    /// <param name="predicted">Vector of predicted values.</param>
+    /// <param name="actual">Vector<double> of actual values.</param>
+    /// <param name="predicted">Vector<double> of predicted values.</param>
     /// <returns>The mean squared error between actual and predicted values.</returns>
     /// <remarks>
     /// <para>
@@ -363,7 +363,7 @@ public class FeatureImportanceFitDetector<T, TInput, TOutput> : FitDetectorBase<
     /// </remarks>
     private Vector<T> PermuteFeature(Vector<T> feature)
     {
-        var permutedFeature = feature.Clone();
+        var permutedFeature = (Vector<T>)feature.Clone();
         int n = permutedFeature.Length;
 
         for (int i = n - 1; i > 0; i--)
@@ -380,7 +380,7 @@ public class FeatureImportanceFitDetector<T, TInput, TOutput> : FitDetectorBase<
     /// <summary>
     /// Calculates the correlation matrix for all features.
     /// </summary>
-    /// <param name="features">Matrix of feature values.</param>
+    /// <param name="features">Matrix<double> of feature values.</param>
     /// <returns>A matrix of correlation coefficients between all pairs of features.</returns>
     /// <remarks>
     /// <para>
@@ -420,7 +420,7 @@ public class FeatureImportanceFitDetector<T, TInput, TOutput> : FitDetectorBase<
     /// <summary>
     /// Determines if most features are uncorrelated with each other.
     /// </summary>
-    /// <param name="correlations">Matrix of correlation coefficients between all pairs of features.</param>
+    /// <param name="correlations">Matrix<double> of correlation coefficients between all pairs of features.</param>
     /// <returns>True if most feature pairs have correlation below the threshold, false otherwise.</returns>
     /// <remarks>
     /// <para>
@@ -459,7 +459,7 @@ public class FeatureImportanceFitDetector<T, TInput, TOutput> : FitDetectorBase<
     /// <summary>
     /// Calculates the average absolute correlation across all feature pairs.
     /// </summary>
-    /// <param name="correlations">Matrix of correlation coefficients between all pairs of features.</param>
+    /// <param name="correlations">Matrix<double> of correlation coefficients between all pairs of features.</param>
     /// <returns>The average of the absolute values of all correlation coefficients.</returns>
     /// <remarks>
     /// <para>

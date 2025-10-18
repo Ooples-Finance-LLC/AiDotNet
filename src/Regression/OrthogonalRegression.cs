@@ -22,7 +22,7 @@ namespace AiDotNet.Regression;
 /// to all points when measuring distance perpendicular to the line, rather than just vertically.
 /// </para>
 /// </remarks>
-public class OrthogonalRegression<T> : RegressionBase<T>
+public class OrthogonalRegression<T> : RegressionModelBase<T>
 {
     /// <summary>
     /// Configuration options for the orthogonal regression model.
@@ -30,7 +30,7 @@ public class OrthogonalRegression<T> : RegressionBase<T>
     /// <value>
     /// Contains settings like tolerance, maximum iterations, and whether to scale variables.
     /// </value>
-    private readonly OrthogonalRegressionOptions<T> _options;
+    private readonly OrthogonalRegressionOptions<T> _options = default!;
 
     /// <summary>
     /// Initializes a new instance of the OrthogonalRegression class with the specified options and regularization.
@@ -49,7 +49,7 @@ public class OrthogonalRegression<T> : RegressionBase<T>
     /// </para>
     /// </remarks>
     public OrthogonalRegression(OrthogonalRegressionOptions<T>? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _options = options ?? new OrthogonalRegressionOptions<T>();
     }

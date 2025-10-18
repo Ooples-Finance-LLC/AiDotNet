@@ -1,4 +1,4 @@
-namespace AiDotNet.Regression;
+﻿namespace AiDotNet.Regression;
 
 /// <summary>
 /// Represents a multilayer perceptron (neural network) for regression problems.
@@ -26,7 +26,7 @@ namespace AiDotNet.Regression;
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The numeric type used for calculations, typically float or double.</typeparam>
-public class MultilayerPerceptronRegression<T> : NonLinearRegressionBase<T>
+public class MultilayerPerceptronRegression<T> : NonLinearRegressionModelBase<T>
 {
     /// <summary>
     /// The configuration options for the multilayer perceptron.
@@ -49,7 +49,7 @@ public class MultilayerPerceptronRegression<T> : NonLinearRegressionBase<T>
     /// to get better performance for your specific problem.
     /// </para>
     /// </remarks>
-    private readonly MultilayerPerceptronOptions<T, Matrix<T>, Vector<T>> _options;
+    private readonly MultilayerPerceptronOptions<T, Matrix<T>, Vector<T>> _options = default!;
 
     /// <summary>
     /// The weights connecting the layers of the neural network.
@@ -72,7 +72,7 @@ public class MultilayerPerceptronRegression<T> : NonLinearRegressionBase<T>
     /// for this output."
     /// </para>
     /// </remarks>
-    private readonly List<Matrix<T>> _weights;
+    private readonly List<Matrix<T>> _weights = default!;
 
     /// <summary>
     /// The bias values for each layer of the neural network.
@@ -93,7 +93,7 @@ public class MultilayerPerceptronRegression<T> : NonLinearRegressionBase<T>
     /// whether the neuron tends to fire or remain inactive.
     /// </para>
     /// </remarks>
-    private readonly List<Vector<T>> _biases;
+    private readonly List<Vector<T>> _biases = default!;
 
     /// <summary>
     /// The optimization algorithm used to update the weights and biases during training.
@@ -114,7 +114,45 @@ public class MultilayerPerceptronRegression<T> : NonLinearRegressionBase<T>
     /// instead of following a fixed plan regardless of results.
     /// </para>
     /// </remarks>
-    private IOptimizer<T, Matrix<T>, Vector<T>> _optimizer;
+    private IOptimizer<T, Matrix<T>, Vector<T>> _optimizer = default!;
+
+    /// <summary>
+    /// Gets or sets the loss function used to calculate the error between predictions and targets.
+    /// </summary>
+    /// <value>The loss function, defaulting to Mean Squared Error.</value>
+    /// <remarks>
+    /// <para>
+    /// The loss function quantifies how far the network's predictions are from the true values, providing
+    /// the optimization target during training. Mean Squared Error (MSE) is commonly used for regression
+    /// problems, calculating the average of the squared differences between predictions and targets. For
+    /// classification problems, cross-entropy loss would be more appropriate. The choice of loss function
+    /// should align with the problem type and the output activation function.
+    /// </para>
+    /// <para><b>For Beginners:</b> This setting defines how the network measures its prediction errors
+    /// during training.
+    /// 
+    /// Think of the loss function as a scorekeeper:
+    /// - It calculates how far off the network's predictions are from the correct answers
+    /// - The network tries to minimize this score during training
+    /// - Different types of problems need different ways of keeping score
+    /// 
+    /// The default Mean Squared Error (MSE):
+    /// - Calculates the average of the squared differences between predictions and actual values
+    /// - Works well for regression problems (predicting continuous values)
+    /// - Heavily penalizes large errors
+    /// 
+    /// You might want to change this to:
+    /// - Mean Absolute Error: If you want to treat all errors equally, regardless of direction
+    /// - Binary Cross-Entropy: For binary classification problems
+    /// - Categorical Cross-Entropy: For multi-class classification problems
+    /// 
+    /// The loss function should match your problem type and output activation function. For example:
+    /// - Regression → MSE + Linear output activation
+    /// - Binary classification → Binary Cross-Entropy + Sigmoid output activation
+    /// - Multi-class classification → Categorical Cross-Entropy + Softmax output activation
+    /// </para>
+    /// </remarks>
+    private ILossFunction<T> _lossFunction = default!;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MultilayerPerceptronRegression{T}"/> class with optional custom options and regularization.
@@ -138,11 +176,13 @@ public class MultilayerPerceptronRegression<T> : NonLinearRegressionBase<T>
     /// but not yet trained on any data.
     /// </para>
     /// </remarks>
-    public MultilayerPerceptronRegression(MultilayerPerceptronOptions<T, Matrix<T>, Vector<T>>? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
+    public MultilayerPerceptronRegression(MultilayerPerceptronOptions<T, Matrix<T>, Vector<T>>? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null,
+        IOptimizer<T, Matrix<T>, Vector<T>>? optimizer = null, ILossFunction<T>? lossFunction = null)
         : base(options, regularization)
     {
         _options = options ?? new MultilayerPerceptronOptions<T, Matrix<T>, Vector<T>>();
-        _optimizer = _options.Optimizer ?? new AdamOptimizer<T, Matrix<T>, Vector<T>>();
+        _optimizer = optimizer ?? new AdamOptimizer<T, Matrix<T>, Vector<T>>(this);
+        _lossFunction = lossFunction ?? new MeanSquaredErrorLoss<T>();
         _weights = [];
         _biases = [];
 
@@ -424,7 +464,7 @@ public class MultilayerPerceptronRegression<T> : NonLinearRegressionBase<T>
     /// 
     /// The forward pass:
     /// - Takes the input features
-    /// - For each layer, calculates: activation = activation_function(weights � previous_activation + biases)
+    /// - For each layer, calculates: activation = activation_function(weights × previous_activation + biases)
     /// - Repeats this process through all layers
     /// - Returns the final output from the last layer
     /// 
@@ -520,9 +560,9 @@ public class MultilayerPerceptronRegression<T> : NonLinearRegressionBase<T>
     /// </remarks>
     private T ComputeLoss(Vector<T> predictions, Vector<T> targets)
     {
-        if (_options.LossFunction != null)
+        if (_lossFunction != null)
         {
-            return _options.LossFunction.CalculateLoss(predictions, targets);
+            return _lossFunction.CalculateLoss(predictions, targets);
         }
 
         // Default to MSE if no loss function is specified
@@ -558,9 +598,9 @@ public class MultilayerPerceptronRegression<T> : NonLinearRegressionBase<T>
     {
         Vector<T> error;
 
-        if (_options.LossFunction != null)
+        if (_lossFunction != null)
         {
-            error = _options.LossFunction.CalculateDerivative(predictions, targets);
+            error = _lossFunction.CalculateDerivative(predictions, targets);
         }
         else
         {

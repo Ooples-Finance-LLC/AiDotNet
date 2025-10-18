@@ -36,7 +36,7 @@ public class MemoryReadLayer<T> : LayerBase<T>
     /// <remarks>
     /// This matrix transforms the input vector into a key vector that is used to query the memory.
     /// </remarks>
-    private Matrix<T> _keyWeights;
+    private Matrix<T> _keyWeights = default!;
     
     /// <summary>
     /// The weight matrix used to transform the memory values after attention.
@@ -44,7 +44,7 @@ public class MemoryReadLayer<T> : LayerBase<T>
     /// <remarks>
     /// This matrix transforms the retrieved memory values into the output space.
     /// </remarks>
-    private Matrix<T> _valueWeights;
+    private Matrix<T> _valueWeights = default!;
     
     /// <summary>
     /// The weight matrix applied to the output after value transformation.
@@ -52,7 +52,7 @@ public class MemoryReadLayer<T> : LayerBase<T>
     /// <remarks>
     /// This matrix applies a final transformation to the output before adding the bias.
     /// </remarks>
-    private Matrix<T> _outputWeights;
+    private Matrix<T> _outputWeights = default!;
     
     /// <summary>
     /// The bias vector added to the output.
@@ -60,7 +60,7 @@ public class MemoryReadLayer<T> : LayerBase<T>
     /// <remarks>
     /// This vector is added to the output after all weight transformations.
     /// </remarks>
-    private Vector<T> _outputBias;
+    private Vector<T> _outputBias = default!;
 
     /// <summary>
     /// The input tensor from the most recent forward pass.
@@ -406,7 +406,7 @@ public class MemoryReadLayer<T> : LayerBase<T>
         var inputGradient = attentionWeightsGradient.Multiply(_keyWeights.Transpose());
         var memoryGradient = attentionWeightsGradient.Transpose([1, 0]).Multiply(_lastInput.Multiply(_keyWeights));
 
-        // Combine inputGradient and memoryGradient into a single Tensor
+        // Combine inputGradient and memoryGradient into a single Tensor<double>
         return CombineGradients(inputGradient, memoryGradient);
     }
 

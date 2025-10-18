@@ -576,8 +576,10 @@ public class SelfOrganizingMap<T> : NeuralNetworkBase<T>
     /// </remarks>
     public override void UpdateParameters(Vector<T> parameters)
     {
-        // This method is not typically used in SOMs
-        throw new NotImplementedException("UpdateParameters is not implemented for Self-Organizing Maps.");
+        // SOMs use competitive learning, not gradient-based parameter updates
+        throw new NotSupportedException(
+            "Self-Organizing Maps do not support gradient-based parameter updates. " +
+            "Training is performed through competitive learning using the Train method.");
     }
 
     /// <summary>
@@ -675,7 +677,7 @@ public class SelfOrganizingMap<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets the metadata of the Self-Organizing Map model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the SOM.</returns>
+    /// <returns>A ModelMetadata object containing information about the SOM.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata about the SOM, including its type, dimensions, and training progress.
@@ -694,9 +696,9 @@ public class SelfOrganizingMap<T> : NeuralNetworkBase<T>
     /// This information is useful for keeping track of the model's configuration and training progress.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.SelfOrganizingMap,
             AdditionalInfo = new Dictionary<string, object>

@@ -12,9 +12,9 @@
 /// <b>For Beginners:</b> While linear regression fits a straight line to your data,
 /// polynomial regression can fit curves, allowing it to capture more complex patterns.
 /// </remarks>
-public class PolynomialRegression<T> : RegressionBase<T>
+public class PolynomialRegression<T> : RegressionModelBase<T>
 {
-    private readonly PolynomialRegressionOptions<T> _polyOptions;
+    private readonly PolynomialRegressionOptions<T> _polyOptions = default!;
 
     /// <summary>
     /// Creates a new instance of the polynomial regression model.
@@ -33,7 +33,7 @@ public class PolynomialRegression<T> : RegressionBase<T>
     /// if you don't have enough data.
     /// </remarks>
     public PolynomialRegression(PolynomialRegressionOptions<T>? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _polyOptions = options ?? new PolynomialRegressionOptions<T>();
     }

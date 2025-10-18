@@ -612,11 +612,8 @@ public static class MatrixExtensions
     {
         var ops = MathHelper.GetNumericOperations<T>();
 
-        // If tolerance is not provided (i.e., it's default(T)), use a small value based on the type
-        if (tolerance?.Equals(default(T)) ?? true)
-        {
-            tolerance = ops.FromDouble(1e-10); // Use a small value as default tolerance
-        }
+        // Set default tolerance if not provided
+        tolerance ??= ops.FromDouble(1e-10);
 
         for (int i = 1; i < matrix.Rows; i++)
         {
@@ -2708,18 +2705,48 @@ public static class MatrixExtensions
     /// The Gaussian-Jordan elimination is a step-by-step process to find this inverse by transforming the original matrix into the identity matrix.
     /// </para>
     /// </remarks>
-    public static Matrix<T> InverseGaussianJordanElimination<T>(this Matrix<T> matrix)
+    /// <summary>
+    /// Inverts a matrix using the Gaussian-Jordan elimination method with improved numerical stability.
+    /// </summary>
+    /// <typeparam name="T">The numeric type of the matrix elements.</typeparam>
+    /// <param name="matrix">The matrix to invert.</param>
+    /// <param name="regularization">Optional regularization parameter to add to diagonal elements for improved stability.</param>
+    /// <returns>The inverted matrix.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the matrix is singular and cannot be inverted.</exception>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Matrix inversion is like finding the reciprocal of a number. For example, the reciprocal of 2 is 1/2.
+    /// Similarly, the inverse of a matrix A is another matrix that, when multiplied with A, gives the identity matrix (similar to how 2 × 1/2 = 1).
+    /// The Gaussian-Jordan elimination is a step-by-step process to find this inverse by transforming the original matrix into the identity matrix.
+    /// </para>
+    /// <para>
+    /// This implementation includes regularization and improved numerical stability checks, which are especially important
+    /// for time series data that may lead to ill-conditioned matrices.
+    /// </para>
+    /// </remarks>
+    public static Matrix<T> InverseGaussianJordanElimination<T>(this Matrix<T> matrix, T? regularization = default)
     {
         var rows = matrix.Rows;
         var ops = MathHelper.GetNumericOperations<T>();
         var augmentedMatrix = new Matrix<T>(rows, 2 * rows);
+        var epsilon = ops.FromDouble(1e-10); // Numerical stability threshold
+
+        // Apply regularization if provided (add to diagonal elements)
+        var workingMatrix = matrix.Clone();
+        if (regularization != null && !ops.Equals(regularization, ops.Zero))
+        {
+            for (int i = 0; i < rows; i++)
+            {
+                workingMatrix[i, i] = ops.Add(workingMatrix[i, i], regularization);
+            }
+        }
 
         // Copy matrix into the left half of the augmented matrix
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < rows; j++)
             {
-                augmentedMatrix[i, j] = matrix[i, j];
+                augmentedMatrix[i, j] = workingMatrix[i, j];
             }
         }
 
@@ -2745,10 +2772,10 @@ public static class MatrixExtensions
                 }
             }
 
-            // Check for singularity
-            if (ops.Equals(maxValue, ops.Zero))
+            // Check for singularity with improved numerical stability
+            if (ops.LessThan(maxValue, epsilon))
             {
-                throw new InvalidOperationException("Matrix is singular and cannot be inverted.");
+                throw new InvalidOperationException("Matrix is numerically singular and cannot be inverted. Consider using regularization.");
             }
 
             // Swap current row with pivot row
@@ -2898,6 +2925,7 @@ public static class MatrixExtensions
                 {
                     nullspaceMatrix[j, nullIndex] = _vMatrix[j, i];
                 }
+
                 nullIndex++;
             }
         }
@@ -2935,6 +2963,7 @@ public static class MatrixExtensions
                 {
                     rangeMatrix[j, rank] = _uMatrix[j, i];
                 }
+
                 rank++;
             }
         }

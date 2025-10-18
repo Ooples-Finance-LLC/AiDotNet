@@ -4,7 +4,7 @@
 /// A feature selector that removes features with variance below a specified threshold.
 /// </summary>
 /// <typeparam name="T">The data type used for calculations (typically float or double).</typeparam>
-/// <typeparam name="TInput">The input data type (Matrix, Tensor, etc.).</typeparam>
+/// <typeparam name="TInput">The input data type (Matrix<double>, Tensor<double>, etc.).</typeparam>
 /// <remarks>
 /// <para>
 /// <b>For Beginners:</b> Variance is a measure of how spread out the values of a feature are. Features 
@@ -26,7 +26,7 @@ public class VarianceThresholdFeatureSelector<T, TInput> : IFeatureSelector<T, T
     /// <b>For Beginners:</b> This value determines how much variation a feature must have to be kept. 
     /// Features with variance below this threshold will be removed. The default value is 0.1.
     /// </remarks>
-    private readonly T _threshold;
+    private readonly T _threshold = default!;
     
     /// <summary>
     /// Provides operations for numeric calculations with type T.
@@ -35,7 +35,7 @@ public class VarianceThresholdFeatureSelector<T, TInput> : IFeatureSelector<T, T
     /// <b>For Beginners:</b> This is a helper object that knows how to perform math operations 
     /// on the specific number type you're using (like float or double).
     /// </remarks>
-    private readonly INumericOperations<T> _numOps;
+    private readonly INumericOperations<T> _numOps = default!;
 
     /// <summary>
     /// The strategy to use for extracting features from higher-dimensional tensors.

@@ -5,7 +5,7 @@
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>For Beginners:</b> Matrix decomposition is like breaking a complex puzzle into simpler pieces 
+/// <b>For Beginners:</b> Matrix<double> decomposition is like breaking a complex puzzle into simpler pieces 
 /// that are easier to work with. In mathematics, we often need to break down complex matrices 
 /// (grids of numbers) into simpler components to solve problems more efficiently.
 /// 
@@ -14,7 +14,7 @@
 /// - Disassembling a complicated machine into its basic parts
 /// - Converting a difficult problem into several easier ones
 /// 
-/// Matrix decompositions are important in AI and machine learning for:
+/// Matrix<double> decompositions are important in AI and machine learning for:
 /// - Solving systems of equations efficiently
 /// - Reducing the dimensionality of data
 /// - Finding patterns in data
@@ -26,6 +26,27 @@
 /// </remarks>
 public enum MatrixDecompositionType
 {
+    /// <summary>
+    /// Indicates that no matrix decomposition method is selected or should be applied.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> This option means "don't decompose the matrix" or "no decomposition method has been chosen yet."
+    /// 
+    /// Think of it as:
+    /// - Leaving the matrix in its original form
+    /// - Skipping the decomposition step entirely
+    /// - A default or placeholder value
+    /// 
+    /// Best used for:
+    /// - When decomposition is optional and you want to indicate it shouldn't be performed
+    /// - As a default value before a specific decomposition method is selected
+    /// - When the matrix is already in a desired form and doesn't need decomposition
+    /// - For testing or comparing results with and without decomposition
+    /// </para>
+    /// </remarks>
+    None,
+
     /// <summary>
     /// A method for solving systems of linear equations using determinants.
     /// </summary>
@@ -107,7 +128,7 @@ public enum MatrixDecompositionType
     /// Best used for:
     /// - Solving linear systems efficiently
     /// - Computing determinants
-    /// - Matrix inversion
+    /// - Matrix<double> inversion
     /// - When you need to solve multiple systems with the same coefficient matrix
     /// </para>
     /// </remarks>

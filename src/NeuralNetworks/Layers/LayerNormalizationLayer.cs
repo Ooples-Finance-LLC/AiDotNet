@@ -51,7 +51,7 @@ public class LayerNormalizationLayer<T> : LayerBase<T>
     /// when the data has very little variation.
     /// </para>
     /// </remarks>
-    private readonly T _epsilon;
+    private readonly T _epsilon = default!;
 
     /// <summary>
     /// The scale parameters learned during training.
@@ -72,7 +72,7 @@ public class LayerNormalizationLayer<T> : LayerBase<T>
     /// If gamma is greater than 1, it amplifies the feature; if less than 1, it reduces its importance.
     /// </para>
     /// </remarks>
-    private Vector<T> _gamma;
+    private Vector<T> _gamma = default!;
 
     /// <summary>
     /// The shift parameters learned during training.
@@ -94,7 +94,7 @@ public class LayerNormalizationLayer<T> : LayerBase<T>
     /// after normalization has centered them around zero.
     /// </para>
     /// </remarks>
-    private Vector<T> _beta;
+    private Vector<T> _beta = default!;
 
     /// <summary>
     /// Stores the input tensor from the last forward pass for use in the backward pass.
@@ -479,5 +479,56 @@ public class LayerNormalizationLayer<T> : LayerBase<T>
         _lastStd = null;
         _gammaGradient = null;
         _betaGradient = null;
+    }
+
+    /// <summary>
+    /// Copies the parameters from another layer normalization layer.
+    /// </summary>
+    /// <param name="source">The source layer to copy parameters from.</param>
+    public void CopyParameters(LayerNormalizationLayer<T> source)
+    {
+        if (source == null)
+        {
+            throw new ArgumentNullException(nameof(source));
+        }
+
+        if (source._gamma.Length != _gamma.Length || source._beta.Length != _beta.Length)
+        {
+            throw new ArgumentException("Source layer has incompatible dimensions");
+        }
+
+        _gamma = (Vector<T>)source._gamma.Clone();
+        _beta = (Vector<T>)source._beta.Clone();
+    }
+
+    /// <summary>
+    /// Performs a soft update of the parameters using Polyak averaging.
+    /// </summary>
+    /// <param name="source">The source layer to update from.</param>
+    /// <param name="tau">The interpolation parameter (0 < tau <= 1).</param>
+    public void SoftUpdate(LayerNormalizationLayer<T> source, T tau)
+    {
+        if (source == null)
+        {
+            throw new ArgumentNullException(nameof(source));
+        }
+
+        if (source._gamma.Length != _gamma.Length || source._beta.Length != _beta.Length)
+        {
+            throw new ArgumentException("Source layer has incompatible dimensions");
+        }
+
+        // Soft update: θ' = (1 - τ) * θ' + τ * θ
+        for (int i = 0; i < _gamma.Length; i++)
+        {
+            _gamma[i] = NumOps.Add(
+                NumOps.Multiply(NumOps.Subtract(NumOps.One, tau), _gamma[i]),
+                NumOps.Multiply(tau, source._gamma[i])
+            );
+            _beta[i] = NumOps.Add(
+                NumOps.Multiply(NumOps.Subtract(NumOps.One, tau), _beta[i]),
+                NumOps.Multiply(tau, source._beta[i])
+            );
+        }
     }
 }

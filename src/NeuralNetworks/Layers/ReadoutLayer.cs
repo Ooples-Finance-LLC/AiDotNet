@@ -31,44 +31,44 @@ namespace AiDotNet.NeuralNetworks.Layers;
 public class ReadoutLayer<T> : LayerBase<T>
 {
     /// <summary>
-    /// Matrix storing the weight parameters for connections between inputs and outputs.
+    /// Matrix<double> storing the weight parameters for connections between inputs and outputs.
     /// </summary>
     /// <remarks>
     /// This matrix has dimensions [outputSize, inputSize], where each row represents the weights
     /// for one output neuron. These weights determine how strongly each input feature influences
     /// each output neuron and are the primary trainable parameters of the layer.
     /// </remarks>
-    private Matrix<T> _weights;
+    private Matrix<T> _weights = default!;
     
     /// <summary>
-    /// Vector storing the bias parameters for each output neuron.
+    /// Vector<double> storing the bias parameters for each output neuron.
     /// </summary>
     /// <remarks>
     /// This vector has length outputSize, where each element is a constant value added to the
     /// weighted sum for the corresponding output neuron. Biases allow the network to shift the
     /// activation function, giving it more flexibility to fit the data.
     /// </remarks>
-    private Vector<T> _bias;
+    private Vector<T> _bias = default!;
     
     /// <summary>
-    /// Matrix storing the gradients of the loss with respect to the weight parameters.
+    /// Matrix<double> storing the gradients of the loss with respect to the weight parameters.
     /// </summary>
     /// <remarks>
     /// This matrix has the same dimensions as the _weights matrix and stores the accumulated
     /// gradients for all weight parameters during the backward pass. These gradients are used
     /// to update the weights during the parameter update step.
     /// </remarks>
-    private Matrix<T> _weightGradients;
+    private Matrix<T> _weightGradients = default!;
     
     /// <summary>
-    /// Vector storing the gradients of the loss with respect to the bias parameters.
+    /// Vector<double> storing the gradients of the loss with respect to the bias parameters.
     /// </summary>
     /// <remarks>
     /// This vector has the same length as the _bias vector and stores the accumulated
     /// gradients for all bias parameters during the backward pass. These gradients are used
     /// to update the biases during the parameter update step.
     /// </remarks>
-    private Vector<T> _biasGradients;
+    private Vector<T> _biasGradients = default!;
     
     /// <summary>
     /// Stores the input vector from the most recent forward pass for use in backpropagation.

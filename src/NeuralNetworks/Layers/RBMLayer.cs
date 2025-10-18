@@ -85,7 +85,7 @@ public class RBMLayer<T> : LayerBase<T>
     /// During training, these weights are adjusted to capture patterns in your data.
     /// </para>
     /// </remarks>
-    private Matrix<T> _weights;
+    private Matrix<T> _weights = default!;
 
     /// <summary>
     /// Gets or sets the bias values for the visible units.
@@ -108,7 +108,7 @@ public class RBMLayer<T> : LayerBase<T>
     /// the biases for those background pixels would become negative during training.
     /// </para>
     /// </remarks>
-    private Vector<T> _visibleBiases;
+    private Vector<T> _visibleBiases = default!;
 
     /// <summary>
     /// Gets or sets the bias values for the hidden units.
@@ -130,7 +130,7 @@ public class RBMLayer<T> : LayerBase<T>
     /// These biases help the RBM learn features that occur with different frequencies in your data.
     /// </para>
     /// </remarks>
-    private Vector<T> _hiddenBiases;
+    private Vector<T> _hiddenBiases = default!;
 
     /// <summary>
     /// Stores the last input from the visible layer during training.
@@ -268,7 +268,7 @@ public class RBMLayer<T> : LayerBase<T>
     /// ```csharp
     /// // Create an RBM with 784 visible units, 200 hidden units,
     /// // and a vectorized sigmoid activation function
-    /// var rbmLayer = new RBMLayer<float>(784, 200, new VectorizedSigmoidActivation<float>());
+    /// var rbmLayer = new RBMLayer<float>(784, 200, new Vector<double>izedSigmoidActivation<float>());
     /// ```
     /// 
     /// This approach is functionally equivalent to using scalar activation, but can be more
@@ -466,8 +466,8 @@ public class RBMLayer<T> : LayerBase<T>
     /// <summary>
     /// Samples binary states (0 or 1) from probability values.
     /// </summary>
-    /// <param name="probabilities">Vector of probability values between 0 and 1.</param>
-    /// <returns>Vector of binary samples (0 or 1) based on the probabilities.</returns>
+    /// <param name="probabilities">Vector<double> of probability values between 0 and 1.</param>
+    /// <returns>Vector<double> of binary samples (0 or 1) based on the probabilities.</returns>
     /// <remarks>
     /// <para>
     /// This method converts probability values to binary states by comparing each probability

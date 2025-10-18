@@ -24,7 +24,7 @@ namespace AiDotNet.Regression;
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The numeric type used for calculations, typically float or double.</typeparam>
-public class RobustRegression<T> : RegressionBase<T>
+public class RobustRegression<T> : RegressionModelBase<T>
 {
     /// <summary>
     /// Gets the configuration options used by this robust regression model.
@@ -41,7 +41,7 @@ public class RobustRegression<T> : RegressionBase<T>
     /// - They determine when the model decides it's "good enough" and stops improving
     /// </para>
     /// </remarks>
-    private readonly RobustRegressionOptions<T> _options;
+    private readonly RobustRegressionOptions<T> _options = default!;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RobustRegression{T}"/> class with the specified options 
@@ -65,7 +65,7 @@ public class RobustRegression<T> : RegressionBase<T>
     /// </para>
     /// </remarks>
     public RobustRegression(RobustRegressionOptions<T>? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _options = options ?? new RobustRegressionOptions<T>();
     }
@@ -102,7 +102,7 @@ public class RobustRegression<T> : RegressionBase<T>
         x = Regularization.Regularize(x);
 
         // Initial regression estimate
-        IRegression<T> initialRegression = _options.InitialRegression ?? new MultipleRegression<T>();
+        IRegressionModel<T> initialRegression = _options.InitialRegression ?? new MultipleRegression<T>();
         initialRegression.Train(x, y);
         Vector<T> parameters = initialRegression.GetParameters();
 

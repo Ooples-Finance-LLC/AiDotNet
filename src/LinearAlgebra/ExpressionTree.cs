@@ -1,4 +1,7 @@
-﻿namespace AiDotNet.LinearAlgebra;
+﻿using System.Threading.Tasks;
+using AiDotNet.Interpretability;
+
+namespace AiDotNet.LinearAlgebra;
 
 /// <summary>
 /// Represents a symbolic expression tree for mathematical operations that can be used for symbolic regression.
@@ -121,7 +124,7 @@ public class ExpressionTree<T, TInput, TOutput> : IFullModel<T, TInput, TOutput>
     /// <summary>
     /// Helper object for performing numeric operations on type T.
     /// </summary>
-    private readonly INumericOperations<T> _numOps;
+    private readonly INumericOperations<T> _numOps = default!;
 
     /// <summary>
     /// Creates a new expression tree node with the specified properties.
@@ -565,9 +568,9 @@ public class ExpressionTree<T, TInput, TOutput> : IFullModel<T, TInput, TOutput>
     /// <b>For Beginners:</b> This provides useful information about your formula, like how complex it is
     /// and how many input variables it needs. Think of it as a summary sheet about your mathematical model.
     /// </remarks>
-    public ModelMetaData<T> GetModelMetaData()
+    public ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.ExpressionTree,
             FeatureCount = FeatureCount,
@@ -766,6 +769,52 @@ public class ExpressionTree<T, TInput, TOutput> : IFullModel<T, TInput, TOutput>
     {
         // Return the coefficients which are the model's parameters
         return Coefficients;
+    }
+
+    /// <summary>
+    /// Sets the parameters of this expression tree.
+    /// </summary>
+    /// <param name="parameters">The parameters to set.</param>
+    /// <exception cref="ArgumentNullException">Thrown when parameters is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when parameters has a different length than the tree's coefficient count.</exception>
+    /// <remarks>
+    /// <b>For Beginners:</b> This updates all the constant numbers in your formula.
+    /// For example, if your formula is "2x + 3y + 5" and you provide [4, 1, 7],
+    /// your formula becomes "4x + 1y + 7". The structure stays the same, only the numbers change.
+    /// </remarks>
+    public void SetParameters(Vector<T> parameters)
+    {
+        if (parameters == null)
+        {
+            throw new ArgumentNullException(nameof(parameters));
+        }
+        
+        var currentCoefficients = Coefficients;
+        if (parameters.Length != currentCoefficients.Length)
+        {
+            throw new ArgumentException($"Parameters length ({parameters.Length}) must match coefficient count ({currentCoefficients.Length}).", nameof(parameters));
+        }
+        
+        // Update constant nodes with new parameter values
+        int coefficientIndex = 0;
+        
+        void UpdateConstantNodes(ExpressionTree<T, TInput, TOutput> node)
+        {
+            if (node.Type == ExpressionNodeType.Constant)
+            {
+                node.Value = parameters[coefficientIndex++];
+            }
+            if (node.Left != null)
+            {
+                UpdateConstantNodes(node.Left);
+            }
+            if (node.Right != null)
+            {
+                UpdateConstantNodes(node.Right);
+            }
+        }
+        
+        UpdateConstantNodes(this);
     }
 
     /// <summary>
@@ -987,6 +1036,68 @@ public class ExpressionTree<T, TInput, TOutput> : IFullModel<T, TInput, TOutput>
     }
 
     /// <summary>
+    /// Sets which features should be considered active in the expression tree.
+    /// </summary>
+    /// <param name="featureIndices">The indices of features to mark as active.</param>
+    /// <exception cref="ArgumentNullException">Thrown when featureIndices is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when any feature index is negative or exceeds the available features.</exception>
+    /// <exception cref="NotSupportedException">Thrown because expression trees don't support direct feature selection.</exception>
+    /// <remarks>
+    /// <b>For Beginners:</b> This method isn't fully supported for expression trees because their structure
+    /// directly determines which features are used. Expression trees represent mathematical formulas where
+    /// the variables in the formula correspond to features. The structure of the formula (the tree) determines
+    /// which features (variables) are included, so you can't simply mark certain features as active or inactive
+    /// without changing the formula itself.
+    /// 
+    /// If you need to control which features are used, consider:
+    /// 1. Creating a new expression tree that only uses the desired features
+    /// 2. Using feature selection techniques before training
+    /// 3. Using a different model type that supports direct feature selection
+    /// </remarks>
+    public void SetActiveFeatureIndices(IEnumerable<int> featureIndices)
+    {
+        if (featureIndices == null)
+        {
+            throw new ArgumentNullException(nameof(featureIndices), "Feature indices cannot be null.");
+        }
+
+        // Validate all indices before operation
+        List<int> indices = [.. featureIndices];
+
+        // Find the highest feature index currently used in the tree
+        int maxAvailableFeature = -1;
+        foreach (int index in GetActiveFeatureIndices())
+        {
+            maxAvailableFeature = Math.Max(maxAvailableFeature, index);
+        }
+
+        // Check for invalid indices
+        foreach (int index in indices)
+        {
+            if (index < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(featureIndices),
+                    $"Feature index {index} cannot be negative.");
+            }
+
+            if (index > maxAvailableFeature && maxAvailableFeature >= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(featureIndices),
+                    $"Feature index {index} exceeds the maximum available feature index {maxAvailableFeature}.");
+            }
+        }
+
+        // For expression trees, we cannot simply set active features without modifying the tree structure
+        // This would require restructuring the entire tree, which is a complex operation
+
+        throw new NotSupportedException(
+            "Setting active features directly is not supported for expression trees. " +
+            "The active features are determined by the structure of the expression tree itself. " +
+            "To change which features are used, you need to modify the tree structure or create a new expression tree."
+        );
+    }
+
+    /// <summary>
     /// Gets a vector containing all coefficient values in this expression tree.
     /// </summary>
     /// <remarks>
@@ -1017,7 +1128,133 @@ public class ExpressionTree<T, TInput, TOutput> : IFullModel<T, TInput, TOutput>
             }
 
             CollectCoefficients(this);
-            return new Vector<T>(coefficients.ToArray());
+            return new Vector<T>([.. coefficients]);
         }
     }
+
+    #region IInterpretableModel Implementation
+
+    protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
+    protected Vector<int> _sensitiveFeatures;
+    protected readonly List<FairnessMetric> _fairnessMetrics = new();
+    protected IModel<TInput, TOutput, ModelMetadata<T>> _baseModel;
+
+    /// <summary>
+    /// Gets the global feature importance across all predictions.
+    /// </summary>
+    public virtual async Task<Dictionary<int, T>> GetGlobalFeatureImportanceAsync()
+    {
+        return await InterpretableModelHelper.GetGlobalFeatureImportanceAsync(this, _enabledMethods);
+    }
+
+    /// <summary>
+    /// Gets the local feature importance for a specific input.
+    /// </summary>
+    public virtual async Task<Dictionary<int, T>> GetLocalFeatureImportanceAsync(TInput input)
+    {
+        return await InterpretableModelHelper.GetLocalFeatureImportanceAsync(this, _enabledMethods, input);
+    }
+
+    /// <summary>
+    /// Gets SHAP values for the given inputs.
+    /// </summary>
+    public virtual async Task<Matrix<T>> GetShapValuesAsync(TInput inputs)
+    {
+        return await InterpretableModelHelper.GetShapValuesAsync(this, _enabledMethods);
+    }
+
+    /// <summary>
+    /// Gets LIME explanation for a specific input.
+    /// </summary>
+    public virtual async Task<LimeExplanation<T>> GetLimeExplanationAsync(TInput input, int numFeatures = 10)
+    {
+        return await InterpretableModelHelper.GetLimeExplanationAsync<T>(_enabledMethods, numFeatures);
+    }
+
+    /// <summary>
+    /// Gets partial dependence data for specified features.
+    /// </summary>
+    public virtual async Task<PartialDependenceData<T>> GetPartialDependenceAsync(Vector<int> featureIndices, int gridResolution = 20)
+    {
+        return await InterpretableModelHelper.GetPartialDependenceAsync<T>(_enabledMethods, featureIndices, gridResolution);
+    }
+
+    /// <summary>
+    /// Gets counterfactual explanation for a given input and desired output.
+    /// </summary>
+    public virtual async Task<CounterfactualExplanation<T>> GetCounterfactualAsync(TInput input, TOutput desiredOutput, int maxChanges = 5)
+    {
+        return await InterpretableModelHelper.GetCounterfactualAsync<T>(_enabledMethods, maxChanges);
+    }
+
+    /// <summary>
+    /// Gets model-specific interpretability information.
+    /// </summary>
+    public virtual async Task<Dictionary<string, object>> GetModelSpecificInterpretabilityAsync()
+    {
+        return await InterpretableModelHelper.GetModelSpecificInterpretabilityAsync(this);
+    }
+
+    /// <summary>
+    /// Generates a text explanation for a prediction.
+    /// </summary>
+    public virtual async Task<string> GenerateTextExplanationAsync(TInput input, TOutput prediction)
+    {
+        return await InterpretableModelHelper.GenerateTextExplanationAsync(this, input, prediction);
+    }
+
+    /// <summary>
+    /// Gets feature interaction effects between two features.
+    /// </summary>
+    public virtual async Task<T> GetFeatureInteractionAsync(int feature1Index, int feature2Index)
+    {
+        return await InterpretableModelHelper.GetFeatureInteractionAsync<T>(_enabledMethods, feature1Index, feature2Index);
+    }
+
+    /// <summary>
+    /// Validates fairness metrics for the given inputs.
+    /// </summary>
+    public virtual async Task<FairnessMetrics<T>> ValidateFairnessAsync(TInput inputs, int sensitiveFeatureIndex)
+    {
+        return await InterpretableModelHelper.ValidateFairnessAsync<T>(_fairnessMetrics);
+    }
+
+    /// <summary>
+    /// Gets anchor explanation for a given input.
+    /// </summary>
+    public virtual async Task<AnchorExplanation<T>> GetAnchorExplanationAsync(TInput input, T threshold)
+    {
+        return await InterpretableModelHelper.GetAnchorExplanationAsync(_enabledMethods, threshold);
+    }
+
+    /// <summary>
+    /// Sets the base model for interpretability analysis.
+    /// </summary>
+    public virtual void SetBaseModel(IModel<TInput, TOutput, ModelMetadata<T>> model)
+    {
+        _baseModel = model ?? throw new ArgumentNullException(nameof(model));
+    }
+
+    /// <summary>
+    /// Enables specific interpretation methods.
+    /// </summary>
+    public virtual void EnableMethod(params InterpretationMethod[] methods)
+    {
+        foreach (var method in methods)
+        {
+            _enabledMethods.Add(method);
+        }
+    }
+
+    /// <summary>
+    /// Configures fairness evaluation settings.
+    /// </summary>
+    public virtual void ConfigureFairness(Vector<int> sensitiveFeatures, params FairnessMetric[] fairnessMetrics)
+    {
+        _sensitiveFeatures = sensitiveFeatures ?? throw new ArgumentNullException(nameof(sensitiveFeatures));
+        _fairnessMetrics.Clear();
+        _fairnessMetrics.AddRange(fairnessMetrics);
+    }
+
+    #endregion
 }

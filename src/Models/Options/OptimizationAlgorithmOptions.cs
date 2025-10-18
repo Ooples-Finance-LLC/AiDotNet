@@ -66,7 +66,7 @@ public class OptimizationAlgorithmOptions<T, TInput, TOutput> : ModelOptions
     /// <para><b>For Beginners:</b> Features are the characteristics or attributes in your data (like height, weight, color).
     /// This setting defines the minimum number of these characteristics the model should use.</para>
     /// </remarks>
-    public int MinimumFeatures { get; set; }
+    public int MinimumFeatures { get; set; } = 1;
 
     /// <summary>
     /// Gets or sets the maximum number of features to consider in the model.
@@ -76,7 +76,7 @@ public class OptimizationAlgorithmOptions<T, TInput, TOutput> : ModelOptions
     /// <para><b>For Beginners:</b> This limits how many characteristics (features) from your data the model can use.
     /// Setting a maximum can help prevent the model from becoming too complex.</para>
     /// </remarks>
-    public int MaximumFeatures { get; set; }
+    public int MaximumFeatures { get; set; } = 10;
 
     /// <summary>
     /// Gets or sets whether to use expression trees for optimization.
@@ -276,6 +276,11 @@ public class OptimizationAlgorithmOptions<T, TInput, TOutput> : ModelOptions
     public ModelStatsOptions ModelStatsOptions { get; set; } = new();
 
     /// <summary>
+    /// Optimization mode determining what aspects of the model to optimize.
+    /// </summary>
+    public OptimizationMode OptimizationMode { get; set; }
+
+    /// <summary>
     /// Gets or sets the model evaluator to use for assessing model performance.
     /// </summary>
     /// <value>The model evaluator implementation.</value>
@@ -317,6 +322,73 @@ public class OptimizationAlgorithmOptions<T, TInput, TOutput> : ModelOptions
     /// useful for complex models that take a long time to evaluate.</para>
     /// </remarks>
     public IModelCache<T, TInput, TOutput> ModelCache { get; set; } = new DefaultModelCache<T, TInput, TOutput>();
+
+    /// <summary>
+    /// Gets or sets the absolute maximum number of features that can be used.
+    /// </summary>
+    public int AbsoluteMaximumFeatures { get; set; } = 100;
+
+    /// <summary>
+    /// Gets or sets the probability of applying feature selection in each iteration.
+    /// </summary>
+    public double FeatureSelectionProbability { get; set; } = 0.7;
+
+    /// <summary>
+    /// Gets or sets the minimum allowed value for feature selection probability.
+    /// </summary>
+    public double MinFeatureSelectionProbability { get; set; } = 0.2;
+
+    /// <summary>
+    /// Gets or sets the maximum allowed value for feature selection probability.
+    /// </summary>
+    public double MaxFeatureSelectionProbability { get; set; } = 0.9;
+
+    // Parameter adjustment settings
+
+    /// <summary>
+    /// Gets or sets the scale of parameter adjustments.
+    /// </summary>
+    public double ParameterAdjustmentScale { get; set; } = 0.1;
+
+    /// <summary>
+    /// Gets or sets the minimum allowed value for parameter adjustment scale.
+    /// </summary>
+    public double MinParameterAdjustmentScale { get; set; } = 0.01;
+
+    /// <summary>
+    /// Gets or sets the maximum allowed value for parameter adjustment scale.
+    /// </summary>
+    public double MaxParameterAdjustmentScale { get; set; } = 0.5;
+
+    /// <summary>
+    /// Gets or sets the probability of flipping a parameter's sign.
+    /// </summary>
+    public double SignFlipProbability { get; set; } = 0.05;
+
+    /// <summary>
+    /// Gets or sets the minimum allowed value for sign flip probability.
+    /// </summary>
+    public double MinSignFlipProbability { get; set; } = 0.01;
+
+    /// <summary>
+    /// Gets or sets the maximum allowed value for sign flip probability.
+    /// </summary>
+    public double MaxSignFlipProbability { get; set; } = 0.2;
+
+    /// <summary>
+    /// Gets or sets the probability of applying parameter adjustments in each iteration.
+    /// </summary>
+    public double ParameterAdjustmentProbability { get; set; } = 0.8;
+
+    /// <summary>
+    /// Gets or sets the minimum allowed value for parameter adjustment probability.
+    /// </summary>
+    public double MinParameterAdjustmentProbability { get; set; } = 0.3;
+
+    /// <summary>
+    /// Gets or sets the maximum allowed value for parameter adjustment probability.
+    /// </summary>
+    public double MaxParameterAdjustmentProbability { get; set; } = 0.95;
 
     /// <summary>
     /// Creates default implementations for the nullable interface objects based on optimizer type.

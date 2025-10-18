@@ -1157,7 +1157,7 @@ public class NeuralTuringMachine<T> : NeuralNetworkBase<T>
     /// <returns>A ModelMetaData object containing information about the NTM.</returns>
     public override ModelMetaData<T> GetModelMetaData()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.NeuralTuringMachine,
             AdditionalInfo = new Dictionary<string, object>

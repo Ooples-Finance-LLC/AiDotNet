@@ -52,7 +52,7 @@ public class EmbeddingLayer<T> : LayerBase<T>
     /// 
     /// For example, with a vocabulary of 5 words and 4 dimensions:
     /// ```
-    /// Word ID | Embedding Vector
+    /// Word ID | Embedding Vector<double>
     /// --------|-----------------
     /// 0       | [0.1, 0.2, -0.3, 0.5]
     /// 1       | [-0.5, 0.8, 0.1, -0.2]
@@ -64,7 +64,7 @@ public class EmbeddingLayer<T> : LayerBase<T>
     /// During training, these values are adjusted to make similar tokens have similar vectors.
     /// </para>
     /// </remarks>
-    private Matrix<T> _embeddingMatrix;
+    private Matrix<T> _embeddingMatrix = default!;
 
     /// <summary>
     /// The gradients for the embedding matrix, computed during backpropagation.

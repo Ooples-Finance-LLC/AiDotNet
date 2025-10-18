@@ -92,13 +92,14 @@ public class DefaultModelEvaluator<T, TInput, TOutput> : IModelEvaluator<T, TInp
         var predicted = ConversionsHelper.ConvertToVector<T, TOutput>(predictions);
         var inputSize = InputHelper<T, TInput>.GetInputSize(X);
         var actual = ConversionsHelper.ConvertToVector<T, TOutput>(y);
+        var metaData = model.GetModelMetadata();
 
-        return new DataSetStats<T, TInput, TOutput>
+        return new DataSetStats<T, TInput, TOutput>(metaData.ModelType)
         {
-            ErrorStats = CalculateErrorStats(actual, predicted, inputSize),
-            ActualBasicStats = CalculateBasicStats(actual),
-            PredictedBasicStats = CalculateBasicStats(predicted),
-            PredictionStats = CalculatePredictionStats(actual, predicted, inputSize),
+            ErrorStats = CalculateErrorStats(actual, predicted, inputSize, metaData.ModelType),
+            ActualBasicStats = CalculateBasicStats(actual, metaData.ModelType),
+            PredictedBasicStats = CalculateBasicStats(predicted, metaData.ModelType),
+            PredictionStats = CalculatePredictionStats(actual, predicted, inputSize, metaData.ModelType),
             Predicted = predictions,
             Features = X,
             Actual = y
@@ -121,9 +122,9 @@ public class DefaultModelEvaluator<T, TInput, TOutput> : IModelEvaluator<T, TInp
     /// 
     /// Lower values for these metrics indicate better model performance.
     /// </remarks>
-    private static ErrorStats<T> CalculateErrorStats(Vector<T> actual, Vector<T> predicted, int featureCount)
+    private static ErrorStats<T> CalculateErrorStats(Vector<T> actual, Vector<T> predicted, int featureCount, ModelType modelType, NeuralNetworkTaskType? taskType = null)
     {
-        return new ErrorStats<T>(new ErrorStatsInputs<T> { Actual = actual, Predicted = predicted, FeatureCount = featureCount });
+        return new ErrorStats<T>(new ErrorStatsInputs<T> { Actual = actual, Predicted = predicted, FeatureCount = featureCount }, modelType, taskType);
     }
 
     /// <summary>
@@ -140,9 +141,9 @@ public class DefaultModelEvaluator<T, TInput, TOutput> : IModelEvaluator<T, TInp
     /// 
     /// These statistics help you understand the distribution of your data.
     /// </remarks>
-    private static BasicStats<T> CalculateBasicStats(Vector<T> values)
+    private static BasicStats<T> CalculateBasicStats(Vector<T> values, ModelType modelType)
     {
-        return new BasicStats<T>(new BasicStatsInputs<T> { Values = values });
+        return new BasicStats<T>(values, modelType);
     }
 
     /// <summary>
@@ -161,7 +162,7 @@ public class DefaultModelEvaluator<T, TInput, TOutput> : IModelEvaluator<T, TInp
     /// 
     /// These metrics help you understand not just how accurate your model is, but also how reliable and robust it is.
     /// </remarks>
-    private PredictionStats<T> CalculatePredictionStats(Vector<T> actual, Vector<T> predicted, int featureCount)
+    private PredictionStats<T> CalculatePredictionStats(Vector<T> actual, Vector<T> predicted, int featureCount, ModelType modelType)
     {
         return new PredictionStats<T>(new PredictionStatsInputs<T> 
         { 
@@ -170,7 +171,7 @@ public class DefaultModelEvaluator<T, TInput, TOutput> : IModelEvaluator<T, TInp
             NumberOfParameters = featureCount, 
             ConfidenceLevel = _predictionOptions.ConfidenceLevel, 
             LearningCurveSteps = _predictionOptions.LearningCurveSteps 
-        });
+        }, modelType);
     }
 
     /// <summary>
@@ -191,14 +192,14 @@ public class DefaultModelEvaluator<T, TInput, TOutput> : IModelEvaluator<T, TInp
     /// </remarks>
     private static ModelStats<T, TInput, TOutput> CalculateModelStats(IFullModel<T, TInput, TOutput>? model, TInput xTrain, NormalizationInfo<T, TInput, TOutput> normInfo)
     {
-        var predictionModelResult = new PredictionModelResult<T, TInput, TOutput>(model, new OptimizationResult<T, TInput, TOutput>(), normInfo);
+        var predictionModelResult = new PredictionModelResult<T, TInput, TOutput>(new OptimizationResult<T, TInput, TOutput>() { BestSolution = model }, normInfo);
 
         return new ModelStats<T, TInput, TOutput>(new ModelStatsInputs<T, TInput, TOutput>
         {
             XMatrix = xTrain,
             FeatureCount = InputHelper<T, TInput>.GetInputSize(xTrain),
             Model = predictionModelResult?.Model
-        });
+        }, modelType: model?.GetModelMetadata().ModelType ?? ModelType.None);
     }
 
     /// <summary>
@@ -238,7 +239,7 @@ public class DefaultModelEvaluator<T, TInput, TOutput> : IModelEvaluator<T, TInp
         Vector<T> y,
         ICrossValidator<T>? crossValidator = null)
     {
-        crossValidator ??= new StandardCrossValidator<T>();
+        crossValidator ??= new StandardCrossValidator<T>(model.GetModelMetadata().ModelType);
 
         return crossValidator.Validate(model, X, y);
     }

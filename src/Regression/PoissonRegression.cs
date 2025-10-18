@@ -20,7 +20,7 @@ namespace AiDotNet.Regression;
 /// variance increases with the mean, which is common in count data.
 /// </para>
 /// </remarks>
-public class PoissonRegression<T> : RegressionBase<T>
+public class PoissonRegression<T> : RegressionModelBase<T>
 {
     /// <summary>
     /// Configuration options for the Poisson regression model.
@@ -28,7 +28,7 @@ public class PoissonRegression<T> : RegressionBase<T>
     /// <value>
     /// Contains settings like maximum iterations and convergence tolerance.
     /// </value>
-    private readonly PoissonRegressionOptions<T> _options;
+    private readonly PoissonRegressionOptions<T> _options = default!;
 
     /// <summary>
     /// Initializes a new instance of the PoissonRegression class with the specified options and regularization.
@@ -47,7 +47,7 @@ public class PoissonRegression<T> : RegressionBase<T>
     /// </para>
     /// </remarks>
     public PoissonRegression(PoissonRegressionOptions<T>? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _options = options ?? new PoissonRegressionOptions<T>();
     }

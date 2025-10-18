@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace AiDotNet.NeuralNetworks;
 
 /// <summary>
@@ -30,6 +32,21 @@ namespace AiDotNet.NeuralNetworks;
 /// </remarks>
 public class NeuralNetwork<T> : NeuralNetworkBase<T>
 {
+    /// <summary>
+    /// Indicates whether this network supports training (learning from data).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The standard neural network supports training through backpropagation.
+    /// This property is overridden to return true, allowing the network to learn from data.
+    /// </para>
+    /// <para><b>For Beginners:</b> This tells the system that this neural network can learn.
+    /// Unlike some specialized networks that can only make predictions with pre-set values,
+    /// this network can adjust its internal parameters based on examples you provide during training.
+    /// </para>
+    /// </remarks>
+    public override bool SupportsTraining => true;
+
     /// <summary>
     /// Creates a new neural network with the specified architecture.
     /// </summary>
@@ -64,7 +81,6 @@ public class NeuralNetwork<T> : NeuralNetworkBase<T>
     public NeuralNetwork(NeuralNetworkArchitecture<T> architecture, ILossFunction<T>? lossFunction = null) : 
         base(architecture, lossFunction ?? NeuralNetworkHelper<T>.GetDefaultLossFunction(architecture.TaskType))
     {
-        InitializeLayers();
     }
 
     /// <summary>
@@ -227,6 +243,9 @@ public class NeuralNetwork<T> : NeuralNetworkBase<T>
     /// </remarks>
     public override void Train(Tensor<T> input, Tensor<T> expectedOutput)
     {
+        // Ensure we have architecture initialized
+        EnsureArchitectureInitialized();
+
         // Ensure we're in training mode
         SetTrainingMode(true);
 
@@ -265,7 +284,7 @@ public class NeuralNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the neural network.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the neural network.</returns>
+    /// <returns>A ModelMetadata object containing information about the neural network.</returns>
     /// <remarks>
     /// <para>
     /// This method returns comprehensive metadata about the neural network, including its architecture,
@@ -287,7 +306,7 @@ public class NeuralNetwork<T> : NeuralNetworkBase<T>
     /// - Creating reports or visualizations
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         // Count parameters by layer type
         Dictionary<string, int> layerCounts = [];
@@ -309,7 +328,7 @@ public class NeuralNetwork<T> : NeuralNetworkBase<T>
         // Get layer sizes
         int[] layerSizes = Architecture.GetLayerSizes();
         
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.NeuralNetwork,
             AdditionalInfo = new Dictionary<string, object>

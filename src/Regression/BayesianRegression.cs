@@ -44,17 +44,17 @@
 /// - You need to incorporate prior knowledge about the problem
 /// </para>
 /// </remarks>
-public class BayesianRegression<T> : RegressionBase<T>
+public class BayesianRegression<T> : RegressionModelBase<T>
 {
     /// <summary>
     /// Options specific to Bayesian regression.
     /// </summary>
-    private readonly BayesianRegressionOptions<T> _bayesOptions;
+    private readonly BayesianRegressionOptions<T> _bayesOptions = default!;
     
     /// <summary>
     /// The covariance matrix of the posterior distribution over model parameters.
     /// </summary>
-    private Matrix<T> _posteriorCovariance;
+    private Matrix<T> _posteriorCovariance = default!;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BayesianRegression{T}"/> class with the specified options and regularization.
@@ -85,10 +85,10 @@ public class BayesianRegression<T> : RegressionBase<T>
     /// </remarks>
     public BayesianRegression(BayesianRegressionOptions<T>? bayesianOptions = null, 
                               IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(bayesianOptions, regularization)
+        : base(bayesianOptions ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _bayesOptions = bayesianOptions ?? new BayesianRegressionOptions<T>();
-        _posteriorCovariance = new Matrix<T>(0, 0);
+        _posteriorCovariance = Matrix<T>.Empty();
     }
 
     /// <summary>

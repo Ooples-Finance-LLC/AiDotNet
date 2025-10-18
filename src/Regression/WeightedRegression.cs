@@ -29,7 +29,7 @@ namespace AiDotNet.Regression;
 /// This helps you build models that focus more on the data points you trust or care about most.
 /// </para>
 /// </remarks>
-public class WeightedRegression<T> : RegressionBase<T>
+public class WeightedRegression<T> : RegressionModelBase<T>
 {
     /// <summary>
     /// The weights assigned to each data point, determining their influence on the model.
@@ -52,7 +52,7 @@ public class WeightedRegression<T> : RegressionBase<T>
     /// for those who might be less reliable.
     /// </para>
     /// </remarks>
-    private readonly Vector<T> _weights;
+    private readonly Vector<T> _weights = default!;
     
     /// <summary>
     /// The polynomial order for feature expansion.
@@ -106,7 +106,7 @@ public class WeightedRegression<T> : RegressionBase<T>
     /// </para>
     /// </remarks>
     public WeightedRegression(WeightedRegressionOptions<T>? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _weights = options?.Weights ?? throw new ArgumentNullException(nameof(options), "Weights must be provided for weighted regression.");
         _order = options.Order;

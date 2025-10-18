@@ -1,3 +1,5 @@
+using System;
+
 namespace AiDotNet.NeuralNetworks;
 
 /// <summary>
@@ -48,7 +50,7 @@ public class DeepBeliefNetwork<T> : NeuralNetworkBase<T>
     /// During pre-training, we train each floor separately, then combine them into a complete tower.
     /// </para>
     /// </remarks>
-    private List<RBMLayer<T>> _rbmLayers;
+    private List<RBMLayer<T>> _rbmLayers = default!;
 
     /// <summary>
     /// Gets or sets the learning rate for parameter updates during fine-tuning.
@@ -69,7 +71,7 @@ public class DeepBeliefNetwork<T> : NeuralNetworkBase<T>
     /// Typical values range from 0.0001 to 0.1, with 0.01 being a common starting point.
     /// </para>
     /// </remarks>
-    private T _learningRate;
+    private T _learningRate = default!;
 
     /// <summary>
     /// Gets or sets the number of epochs for fine-tuning.
@@ -567,21 +569,21 @@ public class DeepBeliefNetwork<T> : NeuralNetworkBase<T>
                 // Accumulate gradients for each example in the batch
                 for (int i = 0; i < actualBatchSize; i++)
                 {
-                    var x = batchX.GetRow(i);
-                    var y = batchY.GetRow(i);
-                    
+                    var x = ExtractSingleExample(batchX, i);
+                    var y = ExtractSingleExample(batchY, i).ToVector();
+
                     // Forward pass with memory to save intermediate states
-                    var prediction = ForwardWithMemory(x);
-                    
+                    var prediction = ForwardWithMemory(x).ToVector();
+
                     // Calculate loss and gradients for this example
-                    T loss = CalculateLoss(Tensor<T>.FromVector(prediction), Tensor<T>.FromVector(y));
+                    T loss = _lossFunction.CalculateLoss(prediction, y);
                     totalLoss = NumOps.Add(totalLoss, loss);
                     
                     // Calculate output gradients
-                    Vector<T> outputGradients = CalculateOutputGradients(prediction, y);
-                    
+                    Vector<T> outputGradients = _lossFunction.CalculateDerivative(prediction, y);
+
                     // Backpropagate to compute gradients for all parameters
-                    Backpropagate(outputGradients);
+                    Backpropagate(Tensor<T>.FromVector(outputGradients, expectedOutput.Shape));
                     
                     // Accumulate gradients
                     var gradients = GetParameterGradients();
@@ -716,7 +718,7 @@ public class DeepBeliefNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the Deep Belief Network model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata that describes the Deep Belief Network, including its type,
@@ -737,7 +739,7 @@ public class DeepBeliefNetwork<T> : NeuralNetworkBase<T>
     /// - Reproducing your model setup later
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
         var layerSizes = new List<int>();
         
@@ -753,7 +755,7 @@ public class DeepBeliefNetwork<T> : NeuralNetworkBase<T>
             layerSizes.Add(_rbmLayers[_rbmLayers.Count - 1].GetOutputShape()[0]);
         }
         
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.DeepBeliefNetwork,
             AdditionalInfo = new Dictionary<string, object>

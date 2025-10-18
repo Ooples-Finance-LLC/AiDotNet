@@ -34,42 +34,42 @@ namespace AiDotNet.NeuralNetworks.Layers;
 public class SelfAttentionLayer<T> : LayerBase<T>
 {
     /// <summary>
-    /// Matrix of weights for transforming input embeddings into query vectors.
+    /// Matrix<double> of weights for transforming input embeddings into query vectors.
     /// </summary>
     /// <remarks>
     /// This matrix transforms input embeddings into query vectors, which are used to compute attention scores.
     /// Queries represent what each position in the sequence is looking for in other positions.
     /// </remarks>
-    private Matrix<T> _queryWeights;
+    private Matrix<T> _queryWeights = default!;
     
     /// <summary>
-    /// Matrix of weights for transforming input embeddings into key vectors.
+    /// Matrix<double> of weights for transforming input embeddings into key vectors.
     /// </summary>
     /// <remarks>
     /// This matrix transforms input embeddings into key vectors, which are used to compute attention scores.
     /// Keys represent what each position in the sequence has to offer to other positions.
     /// </remarks>
-    private Matrix<T> _keyWeights;
+    private Matrix<T> _keyWeights = default!;
     
     /// <summary>
-    /// Matrix of weights for transforming input embeddings into value vectors.
+    /// Matrix<double> of weights for transforming input embeddings into value vectors.
     /// </summary>
     /// <remarks>
     /// This matrix transforms input embeddings into value vectors, which contain the actual content
     /// that will be aggregated based on attention scores. Values represent the information that
     /// is being extracted from each position.
     /// </remarks>
-    private Matrix<T> _valueWeights;
+    private Matrix<T> _valueWeights = default!;
     
     /// <summary>
-    /// Vector of biases added to the output of the attention mechanism.
+    /// Vector<double> of biases added to the output of the attention mechanism.
     /// </summary>
     /// <remarks>
     /// This vector contains bias terms that are added to the output of the attention mechanism
     /// before applying the final activation function. Biases allow the network to adjust the
     /// baseline activation level of the attention output.
     /// </remarks>
-    private Vector<T> _outputBias;
+    private Vector<T> _outputBias = default!;
 
     /// <summary>
     /// Stores the input tensor from the most recent forward pass for use in backpropagation.
@@ -411,7 +411,7 @@ public class SelfAttentionLayer<T> : LayerBase<T>
 
         var attentionOutputGradient = activationGradient;
 
-        // Sum over batch and sequence dimensions, then convert to Vector
+        // Sum over batch and sequence dimensions, then convert to Vector<double>
         _outputBiasGradient = attentionOutputGradient.Sum([0, 1]).ToVector();
 
         // Reshape attentionOutputGradient for multi-head attention

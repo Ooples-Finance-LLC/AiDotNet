@@ -39,7 +39,7 @@
 /// <para>
 /// Note: Unlike many other kernels, the Sigmoid kernel is not always positive definite, which means
 /// it might not work well with all machine learning algorithms. It's most commonly used with
-/// Support Vector Machines.
+/// Support Vector<double> Machines.
 /// </para>
 /// </remarks>
 public class SigmoidKernel<T> : IKernelFunction<T>
@@ -56,7 +56,7 @@ public class SigmoidKernel<T> : IKernelFunction<T>
     /// 
     /// The default value is 1.0, which provides a balanced sensitivity for many applications.
     /// </remarks>
-    private readonly T _alpha;
+    private readonly T _alpha = default!;
     
     /// <summary>
     /// The shifting parameter that moves the sigmoid curve horizontally.
@@ -71,7 +71,7 @@ public class SigmoidKernel<T> : IKernelFunction<T>
     /// 
     /// Adjusting this parameter can help when your data has a natural bias or offset.
     /// </remarks>
-    private readonly T _c;
+    private readonly T _c = default!;
     
     /// <summary>
     /// Operations for performing numeric calculations with type T.
@@ -81,7 +81,7 @@ public class SigmoidKernel<T> : IKernelFunction<T>
     /// operations regardless of what numeric type (like double, float, decimal) you're using.
     /// You don't need to interact with this directly.
     /// </remarks>
-    private readonly INumericOperations<T> _numOps;
+    private readonly INumericOperations<T> _numOps = default!;
 
     /// <summary>
     /// Initializes a new instance of the Sigmoid kernel with optional scaling and shifting parameters.
@@ -153,7 +153,7 @@ public class SigmoidKernel<T> : IKernelFunction<T>
     /// </para>
     /// <para>
     /// Note: The Sigmoid kernel doesn't always satisfy the mathematical properties required for all
-    /// kernel-based algorithms. It works best with Support Vector Machines and similar methods.
+    /// kernel-based algorithms. It works best with Support Vector<double> Machines and similar methods.
     /// </para>
     /// </remarks>
     public T Calculate(Vector<T> x1, Vector<T> x2)

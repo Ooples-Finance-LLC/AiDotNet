@@ -130,7 +130,7 @@ public class SubpixelConvolutionalLayer<T> : LayerBase<T>
     /// are used to store information that helps create the higher resolution output.
     /// </para>
     /// </remarks>
-    private Tensor<T> _kernels;
+    private Tensor<T> _kernels = default!;
 
     /// <summary>
     /// The bias values added after the convolution operation.
@@ -151,7 +151,7 @@ public class SubpixelConvolutionalLayer<T> : LayerBase<T>
     /// across the entire feature map.
     /// </para>
     /// </remarks>
-    private Vector<T> _biases;
+    private Vector<T> _biases = default!;
 
     /// <summary>
     /// The cached input from the last forward pass.
@@ -291,7 +291,7 @@ public class SubpixelConvolutionalLayer<T> : LayerBase<T>
     /// for most training scenarios.
     /// </para>
     /// </remarks>
-    private readonly T _momentumFactor;
+    private readonly T _momentumFactor = default!;
 
     /// <summary>
     /// The coefficient for L2 weight regularization (weight decay).
@@ -312,7 +312,7 @@ public class SubpixelConvolutionalLayer<T> : LayerBase<T>
     /// the simplest pattern that explains the data rather than memorizing specific examples.
     /// </para>
     /// </remarks>
-    private readonly T _weightDecay;
+    private readonly T _weightDecay = default!;
 
     /// <summary>
     /// Gets a value indicating whether this layer supports training.
@@ -403,7 +403,7 @@ public class SubpixelConvolutionalLayer<T> : LayerBase<T>
     /// </para>
     /// <para><b>For Beginners:</b> This constructor is similar to the previous one, but uses vector activations.
     /// 
-    /// Vector activations:
+    /// Vector<double> activations:
     /// - Process entire groups of numbers at once, rather than one at a time
     /// - Can capture relationships between different elements
     /// - Allow for more complex transformations

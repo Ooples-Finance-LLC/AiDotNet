@@ -46,7 +46,7 @@ public class GaussianKernel<T> : IKernelFunction<T>
     /// <summary>
     /// Operations for performing numeric calculations with type T.
     /// </summary>
-    private readonly INumericOperations<T> _numOps;
+    private readonly INumericOperations<T> _numOps = default!;
 
     /// <summary>
     /// Initializes a new instance of the Gaussian kernel with an optional bandwidth parameter.
@@ -109,7 +109,7 @@ public class GaussianKernel<T> : IKernelFunction<T>
     public T Calculate(Vector<T> x1, Vector<T> x2)
     {
         if (x1.Length != x2.Length)
-            throw new ArgumentException("Vectors must have the same length.");
+            throw new ArgumentException("Vector<double>s must have the same length.");
 
         T squaredDistance = _numOps.Zero;
         for (int i = 0; i < x1.Length; i++)

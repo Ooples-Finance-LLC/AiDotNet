@@ -437,7 +437,7 @@ public class LiquidStateMachine<T> : NeuralNetworkBase<T>
         var outputGradients = LossFunction.CalculateDerivative(flattenedPredictions, flattenedExpected);
 
         // Backpropagate to get parameter gradients
-        Vector<T> gradients = Backpropagate(outputGradients);
+       var gradients = Backpropagate(Tensor<T>.FromVector(outputGradients, expectedOutput.Shape));
 
         // Get parameter gradients for all trainable layers
         Vector<T> parameterGradients = GetParameterGradients();
@@ -446,7 +446,7 @@ public class LiquidStateMachine<T> : NeuralNetworkBase<T>
         parameterGradients = ClipGradient(parameterGradients);
 
         // Create optimizer
-        var optimizer = new GradientDescentOptimizer<T, Tensor<T>, Tensor<T>>();
+        var optimizer = new GradientDescentOptimizer<T, Tensor<T>, Tensor<T>>(this);
 
         // Get current parameters
         Vector<T> currentParameters = GetParameters();
@@ -461,7 +461,7 @@ public class LiquidStateMachine<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the Liquid State Machine model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata about the LSM, including its model type, architecture details,
@@ -480,9 +480,9 @@ public class LiquidStateMachine<T> : NeuralNetworkBase<T>
     /// especially when experimenting with multiple settings.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.LiquidStateMachine,
             AdditionalInfo = new Dictionary<string, object>

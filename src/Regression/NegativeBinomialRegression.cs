@@ -22,7 +22,7 @@ namespace AiDotNet.Regression;
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The numeric type used for calculations, typically float or double.</typeparam>
-public class NegativeBinomialRegression<T> : RegressionBase<T>
+public class NegativeBinomialRegression<T> : RegressionModelBase<T>
 {
     /// <summary>
     /// The dispersion parameter that accounts for overdispersion in the data.
@@ -44,7 +44,7 @@ public class NegativeBinomialRegression<T> : RegressionBase<T>
     /// that large deviations from the average are normal for this data.
     /// </para>
     /// </remarks>
-    private T _dispersion;
+    private T _dispersion = default!;
 
     /// <summary>
     /// The configuration options for the negative binomial regression model.
@@ -65,7 +65,7 @@ public class NegativeBinomialRegression<T> : RegressionBase<T>
     /// These settings affect how quickly the model trains and how accurate it becomes.
     /// </para>
     /// </remarks>
-    private readonly NegativeBinomialRegressionOptions<T> _options;
+    private readonly NegativeBinomialRegressionOptions<T> _options = default!;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NegativeBinomialRegression{T}"/> class with optional custom options and regularization.
@@ -89,7 +89,7 @@ public class NegativeBinomialRegression<T> : RegressionBase<T>
     /// </para>
     /// </remarks>
     public NegativeBinomialRegression(NegativeBinomialRegressionOptions<T>? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _options = options ?? new NegativeBinomialRegressionOptions<T>();
         _dispersion = NumOps.One;

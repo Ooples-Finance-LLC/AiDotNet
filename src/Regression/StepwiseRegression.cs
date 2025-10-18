@@ -28,7 +28,7 @@ namespace AiDotNet.Regression;
 /// features are most important for accurate predictions and discard the rest.
 /// </para>
 /// </remarks>
-public class StepwiseRegression<T> : RegressionBase<T>
+public class StepwiseRegression<T> : RegressionModelBase<T>
 {
     /// <summary>
     /// Configuration options for the stepwise regression model.
@@ -50,7 +50,7 @@ public class StepwiseRegression<T> : RegressionBase<T>
     /// too complex (overfitting).
     /// </para>
     /// </remarks>
-    private readonly StepwiseRegressionOptions<T> _options;
+    private readonly StepwiseRegressionOptions<T> _options = default!;
     
     /// <summary>
     /// The calculator used to evaluate the fitness or quality of models during feature selection.
@@ -72,7 +72,7 @@ public class StepwiseRegression<T> : RegressionBase<T>
     /// just as different fitness calculators might prioritize accuracy, simplicity, or generalization.
     /// </para>
     /// </remarks>
-    private readonly IFitnessCalculator<T, Matrix<T>, Vector<T>> _fitnessCalculator;
+    private readonly IFitnessCalculator<T, Matrix<T>, Vector<T>> _fitnessCalculator = default!;
     
     /// <summary>
     /// The list of feature indices that have been selected for the final model.
@@ -93,7 +93,7 @@ public class StepwiseRegression<T> : RegressionBase<T>
     /// it means only the 1st, 4th, and 8th features were important enough to keep.
     /// </para>
     /// </remarks>
-    private List<int> _selectedFeatures;
+    private List<int> _selectedFeatures = default!;
     
     /// <summary>
     /// The evaluator used to assess the performance of models during the feature selection process.
@@ -114,7 +114,7 @@ public class StepwiseRegression<T> : RegressionBase<T>
     /// how well your recipe turned out.
     /// </para>
     /// </remarks>
-    private readonly IModelEvaluator<T, Matrix<T>, Vector<T>> _modelEvaluator;
+    private readonly IModelEvaluator<T, Matrix<T>, Vector<T>> _modelEvaluator = default!;
 
     /// <summary>
     /// Creates a new stepwise regression model.
@@ -164,7 +164,7 @@ public class StepwiseRegression<T> : RegressionBase<T>
         IFitnessCalculator<T, Matrix<T>, Vector<T>>? fitnessCalculator = null, 
         IRegularization<T, Matrix<T>, Vector<T>>? regularization = null, 
         IModelEvaluator<T, Matrix<T>, Vector<T>>? modelEvaluator = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _options = options ?? new StepwiseRegressionOptions<T>();
         _fitnessCalculator = fitnessCalculator ?? new AdjustedRSquaredFitnessCalculator<T, Matrix<T>, Vector<T>>();
@@ -395,7 +395,7 @@ public class StepwiseRegression<T> : RegressionBase<T>
 
             var input = new ModelEvaluationInput<T, Matrix<T>, Vector<T>>
             {
-                InputData = OptimizerHelper<T, Matrix<T>, Vector<T>>.CreateOptimizationInputData(currentX, y, currentX, y, currentX, y)
+                InputData = OptimizerHelper<T, Matrix<T>, Vector<T>>.CreateOptimizationInputData(currentX, y, currentX, y, currentX, y, currentX, y)
             };
             var evaluationData = _modelEvaluator.EvaluateModel(input);
             var score = _fitnessCalculator.CalculateFitnessScore(evaluationData);

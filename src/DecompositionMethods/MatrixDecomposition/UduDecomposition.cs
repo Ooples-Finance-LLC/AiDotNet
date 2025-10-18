@@ -15,7 +15,7 @@ namespace AiDotNet.DecompositionMethods.MatrixDecomposition;
 /// </remarks>
 public class UduDecomposition<T> : IMatrixDecomposition<T>
 {
-    private readonly INumericOperations<T> _numOps;
+    private readonly INumericOperations<T> _numOps = default!;
 
     /// <summary>
     /// Gets the original matrix being decomposed.
@@ -186,7 +186,7 @@ public class UduDecomposition<T> : IMatrixDecomposition<T>
     public Vector<T> Solve(Vector<T> b)
     {
         if (b.Length != A.Rows)
-            throw new ArgumentException("Vector b must have the same length as the number of rows in matrix A.");
+            throw new ArgumentException("Vector<double> b must have the same length as the number of rows in matrix A.");
 
         // Forward substitution
         Vector<T> y = new Vector<T>(b.Length);

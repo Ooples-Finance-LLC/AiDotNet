@@ -58,7 +58,7 @@ public class LocallyConnectedLayer<T> : LayerBase<T>
     /// This complex structure allows each position to have its own specialized filter.
     /// </para>
     /// </remarks>
-    private Tensor<T> _weights;
+    private Tensor<T> _weights = default!;
 
     /// <summary>
     /// The bias values for each output channel.
@@ -78,7 +78,7 @@ public class LocallyConnectedLayer<T> : LayerBase<T>
     /// They're like a "starting point" that the network can adjust during learning.
     /// </para>
     /// </remarks>
-    private Vector<T> _biases;
+    private Vector<T> _biases = default!;
 
     /// <summary>
     /// Stores the input tensor from the last forward pass for use in the backward pass.
@@ -343,11 +343,11 @@ public class LocallyConnectedLayer<T> : LayerBase<T>
     /// <remarks>
     /// <para>
     /// This constructor creates a new Locally Connected layer with the specified dimensions, kernel parameters,
-    /// and vector activation function. Vector activation functions operate on entire vectors rather than individual elements.
+    /// and vector activation function. Vector<double> activation functions operate on entire vectors rather than individual elements.
     /// </para>
     /// <para><b>For Beginners:</b> This creates a new locally connected layer with an advanced vector-based activation.
     /// 
-    /// Vector activation functions:
+    /// Vector<double> activation functions:
     /// - Process entire groups of numbers together, not just one at a time
     /// - Can capture relationships between different features
     /// - May be more powerful for complex patterns

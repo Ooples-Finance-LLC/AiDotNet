@@ -24,7 +24,7 @@ namespace AiDotNet.Regression;
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The numeric type used for calculations, typically float or double.</typeparam>
-public class M5ModelTree<T> : AsyncDecisionTreeRegressionBase<T>
+public class M5ModelTree<T> : AsyncDecisionTreeRegressionModelBase<T>
 {
     /// <summary>
     /// The configuration options for the M5 model tree algorithm.
@@ -47,7 +47,7 @@ public class M5ModelTree<T> : AsyncDecisionTreeRegressionBase<T>
     /// and one that will work well on new, unseen data.
     /// </para>
     /// </remarks>
-    private readonly M5ModelTreeOptions _options;
+    private readonly M5ModelTreeOptions _options = default!;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="M5ModelTree{T}"/> class with optional custom options and regularization.
@@ -70,7 +70,7 @@ public class M5ModelTree<T> : AsyncDecisionTreeRegressionBase<T>
     /// </para>
     /// </remarks>
     public M5ModelTree(M5ModelTreeOptions? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _options = options ?? new M5ModelTreeOptions();
     }
@@ -605,9 +605,9 @@ public class M5ModelTree<T> : AsyncDecisionTreeRegressionBase<T>
     /// - Saving important details along with the model
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.M5ModelTree,
             AdditionalInfo = new Dictionary<string, object>

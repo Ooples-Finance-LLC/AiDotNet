@@ -30,7 +30,7 @@ public class AdditiveChiSquaredKernel<T> : IKernelFunction<T>
     /// <summary>
     /// Operations for performing numeric calculations with type T.
     /// </summary>
-    private readonly INumericOperations<T> _numOps;
+    private readonly INumericOperations<T> _numOps = default!;
 
     /// <summary>
     /// Initializes a new instance of the Additive Chi-Squared kernel.
@@ -68,7 +68,7 @@ public class AdditiveChiSquaredKernel<T> : IKernelFunction<T>
     /// </para>
     /// <para>
     /// Higher output values indicate greater similarity between the vectors. This is useful in
-    /// machine learning algorithms that need to compare data points, such as Support Vector Machines
+    /// machine learning algorithms that need to compare data points, such as Support Vector<double> Machines
     /// or clustering algorithms.
     /// </para>
     /// <para>

@@ -22,7 +22,7 @@ namespace AiDotNet.Regression;
 /// the model's accuracy. This process is similar to how we learn from experience.
 /// </para>
 /// </remarks>
-public class NeuralNetworkRegression<T> : NonLinearRegressionBase<T>
+public class NeuralNetworkRegression<T> : NonLinearRegressionModelBase<T>
 {
     /// <summary>
     /// Configuration options for the neural network regression model.
@@ -30,7 +30,7 @@ public class NeuralNetworkRegression<T> : NonLinearRegressionBase<T>
     /// <value>
     /// Contains settings like layer sizes, learning rate, batch size, and activation functions.
     /// </value>
-    private readonly NeuralNetworkRegressionOptions<T, Matrix<T>, Vector<T>> _options;
+    private readonly NeuralNetworkRegressionOptions<T, Matrix<T>, Vector<T>> _options = default!;
 
     /// <summary>
     /// The weight matrices for each layer of the neural network.
@@ -38,7 +38,7 @@ public class NeuralNetworkRegression<T> : NonLinearRegressionBase<T>
     /// <value>
     /// A list of matrices where each matrix represents the connections between two consecutive layers.
     /// </value>
-    private readonly List<Matrix<T>> _weights;
+    private readonly List<Matrix<T>> _weights = default!;
 
     /// <summary>
     /// The bias vectors for each layer of the neural network.
@@ -46,7 +46,7 @@ public class NeuralNetworkRegression<T> : NonLinearRegressionBase<T>
     /// <value>
     /// A list of vectors where each vector represents the biases for a layer.
     /// </value>
-    private readonly List<Vector<T>> _biases;
+    private readonly List<Vector<T>> _biases = default!;
 
     /// <summary>
     /// The optimization algorithm used to update the model parameters during training.
@@ -54,7 +54,7 @@ public class NeuralNetworkRegression<T> : NonLinearRegressionBase<T>
     /// <value>
     /// An implementation of the IOptimizer interface that determines how weights and biases are updated.
     /// </value>
-    private readonly IOptimizer<T, Matrix<T>, Vector<T>> _optimizer;
+    private readonly IOptimizer<T, Matrix<T>, Vector<T>> _optimizer = default!;
 
     /// <summary>
     /// Initializes a new instance of the NeuralNetworkRegression class with the specified options and regularization.
@@ -81,7 +81,7 @@ public class NeuralNetworkRegression<T> : NonLinearRegressionBase<T>
         : base(options, regularization)
     {
         _options = options ?? new NeuralNetworkRegressionOptions<T, Matrix<T>, Vector<T>>();
-        _optimizer = _options.Optimizer ?? new AdamOptimizer<T, Matrix<T>, Vector<T>>();
+        _optimizer = _options.Optimizer ?? new AdamOptimizer<T, Matrix<T>, Vector<T>>(this);
         _weights = [];
         _biases = [];
 

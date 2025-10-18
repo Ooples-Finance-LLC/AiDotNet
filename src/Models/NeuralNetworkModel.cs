@@ -1,4 +1,7 @@
-﻿namespace AiDotNet.Models;
+﻿using System.Threading.Tasks;
+using AiDotNet.Interpretability;
+
+namespace AiDotNet.Models;
 
 /// <summary>
 /// Represents a neural network model that implements the IFullModel interface.
@@ -46,7 +49,26 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     /// </para>
     /// </remarks>
     public NeuralNetworkBase<T> Network { get; }
-    
+
+    /// <summary>
+    /// Set of feature indices that have been explicitly marked as active.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This field stores feature indices that have been explicitly set as active through
+    /// the SetActiveFeatureIndices method, overriding the automatic determination based
+    /// on the neural network's architecture.
+    /// </para>
+    /// <para><b>For Beginners:</b> This tracks which input features have been manually
+    /// selected as important for the neural network model, regardless of what features
+    /// the network might actually use in its internal calculations.
+    /// 
+    /// When set, these manually selected features take precedence over the automatic
+    /// feature detection which for neural networks typically includes all input features.
+    /// </para>
+    /// </remarks>
+    private HashSet<int>? _explicitlySetActiveFeatures;
+
     /// <summary>
     /// Gets the architecture of the neural network.
     /// </summary>
@@ -108,7 +130,7 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     /// too large and the model might never find the best solution.
     /// </para>
     /// </remarks>
-    private T _learningRate;
+    private T _learningRate = default!;
     
     /// <summary>
     /// Indicates whether the model is currently in training mode.
@@ -155,7 +177,7 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     /// </remarks>
     public NeuralNetworkModel(NeuralNetworkArchitecture<T> architecture)
     {
-        Architecture = architecture ?? throw new ArgumentNullException(nameof(architecture));
+        Architecture = architecture;
         Network = new NeuralNetwork<T>(architecture);
         _learningRate = _numOps.FromDouble(0.01); // Default learning rate
     }
@@ -292,11 +314,17 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     {
         if (featureIndex < 0 || featureIndex >= FeatureCount)
         {
-            throw new ArgumentOutOfRangeException(nameof(featureIndex), 
+            throw new ArgumentOutOfRangeException(nameof(featureIndex),
                 $"Feature index must be between 0 and {FeatureCount - 1}");
         }
-        
-        // Neural networks typically use all input features in some capacity
+
+        // If we have explicitly set active features, check those
+        if (_explicitlySetActiveFeatures != null && _explicitlySetActiveFeatures.Count > 0)
+        {
+            return _explicitlySetActiveFeatures.Contains(featureIndex);
+        }
+
+        // Otherwise, neural networks typically use all input features in some capacity
         return true;
     }
 
@@ -336,17 +364,16 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
         Network.SetTrainingMode(true);
         
         // Convert tensors to the format expected by the network
-        Vector<T> inputVector = input.ToVector();
         Vector<T> expectedOutputVector = expectedOutput.ToVector();
         
         // Forward pass with memory to store intermediate values for backpropagation
-        Vector<T> outputVector = Network.ForwardWithMemory(inputVector);
+        var output = Network.ForwardWithMemory(input);
         
         // Calculate error gradient
-        Vector<T> error = CalculateError(outputVector, expectedOutputVector);
+        Vector<T> error = CalculateError(output.ToVector(), expectedOutputVector);
         
         // Backpropagate error
-        Network.Backpropagate(error);
+        Network.Backpropagate(Tensor<T>.FromVector(error, expectedOutput.Shape));
         
         // Update weights using the calculated gradients
         Vector<T> gradients = Network.GetParameterGradients();
@@ -392,62 +419,6 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     
         // Forward pass through the network
         return Network.Predict(input);
-    }
-
-    /// <summary>
-    /// Trains the network with the provided input and expected output vectors.
-    /// </summary>
-    /// <param name="input">The input vector.</param>
-    /// <param name="expectedOutput">The expected output vector.</param>
-    /// <remarks>
-    /// <para>
-    /// This method implements the actual training of the neural network. It performs forward propagation to compute
-    /// the network's output, calculates the error gradient, and then performs backpropagation to update the network's
-    /// parameters. This is the core of the learning process for neural networks. The specific implementation may vary
-    /// depending on the type of neural network and the training algorithm being used.
-    /// </para>
-    /// <para><b>For Beginners:</b> This method handles the details of teaching the neural network.
-    /// 
-    /// During training:
-    /// 1. The input data is sent through the network (forward propagation)
-    /// 2. The error between the network's output and the expected output is calculated
-    /// 3. This error is sent backward through the network (backpropagation)
-    /// 4. The network adjusts its weights to reduce the error
-    /// 
-    /// This process is repeated many times over different examples,
-    /// gradually improving the network's accuracy.
-    /// </para>
-    /// </remarks>
-    private void TrainNetwork(Tensor<T> input, Tensor<T> expectedOutput)
-    {
-        // Implementation depends on the specific neural network type
-        if (!Network.SupportsTraining)
-        {
-            throw new InvalidOperationException("This neural network does not support training.");
-        }
-        
-        // Forward pass with memory to store intermediate values
-        Vector<T> output = Network.ForwardWithMemory(input.ToVector());
-        
-        // Calculate error gradient
-        Vector<T> error = CalculateError(output, expectedOutput.ToVector());
-        
-        // Backpropagate error
-        Network.Backpropagate(error);
-        
-        // Update weights using the calculated gradients
-        Vector<T> gradients = Network.GetParameterGradients();
-        Vector<T> currentParams = Network.GetParameters();
-        Vector<T> newParams = new Vector<T>(currentParams.Length);
-        
-        for (int i = 0; i < currentParams.Length; i++)
-        {
-            // Simple gradient descent: param = param - learningRate * gradient
-            T update = _numOps.Multiply(_learningRate, gradients[i]);
-            newParams[i] = _numOps.Subtract(currentParams[i], update);
-        }
-        
-        Network.UpdateParameters(newParams);
     }
 
     /// <summary>
@@ -517,11 +488,11 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     /// - Documenting the model for future reference
     /// </para>
     /// </remarks>
-    public ModelMetaData<T> GetModelMetaData()
+    public ModelMetadata<T> GetModelMetadata()
     {
         int[] layerSizes = Architecture.GetLayerSizes();
         
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             FeatureCount = FeatureCount,
             Complexity = Complexity,
@@ -692,6 +663,48 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     }
 
     /// <summary>
+    /// Sets the parameters of the neural network.
+    /// </summary>
+    /// <param name="parameters">The parameters to set.</param>
+    /// <exception cref="ArgumentNullException">Thrown when parameters is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when parameters has a different length than the network's parameter count.</exception>
+    /// <remarks>
+    /// <para>
+    /// This method sets all trainable parameters of the neural network from a single vector.
+    /// These parameters include weights and biases from all layers that support training.
+    /// The parameter vector must have the same length as the network's total parameter count.
+    /// </para>
+    /// <para><b>For Beginners:</b> This method updates all the learned weights and biases in the neural network
+    /// from a single list. This is useful for loading saved models or applying optimizations.
+    /// 
+    /// The parameters:
+    /// - Replace all the current weights and biases in the network
+    /// - Must be in the same order as returned by GetParameters()
+    /// - Must have exactly the right number of values
+    /// 
+    /// This is commonly used when:
+    /// - Loading a saved model
+    /// - Applying optimization algorithms
+    /// - Transferring knowledge between models
+    /// </para>
+    /// </remarks>
+    public void SetParameters(Vector<T> parameters)
+    {
+        if (parameters == null)
+        {
+            throw new ArgumentNullException(nameof(parameters));
+        }
+        
+        var currentParams = Network.GetParameters();
+        if (parameters.Length != currentParams.Length)
+        {
+            throw new ArgumentException($"Parameters length ({parameters.Length}) must match network's parameter count ({currentParams.Length}).", nameof(parameters));
+        }
+        
+        Network.UpdateParameters(parameters);
+    }
+
+    /// <summary>
     /// Updates the model with new parameter values.
     /// </summary>
     /// <param name="parameters">The new parameter values to use.</param>
@@ -750,7 +763,13 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     /// </remarks>
     public IEnumerable<int> GetActiveFeatureIndices()
     {
-        // Neural networks typically use all input features
+        // If we have explicitly set active features, return those
+        if (_explicitlySetActiveFeatures != null && _explicitlySetActiveFeatures.Count > 0)
+        {
+            return _explicitlySetActiveFeatures.OrderBy(i => i);
+        }
+
+        // Otherwise, neural networks typically use all input features
         // Return indices for all features from 0 to FeatureCount-1
         return Enumerable.Range(0, FeatureCount);
     }
@@ -820,4 +839,188 @@ public class NeuralNetworkModel<T> : IFullModel<T, Tensor<T>, Tensor<T>>
     {
         return DeepCopy();
     }
+
+    /// <summary>
+    /// Sets which features should be considered active in the model.
+    /// </summary>
+    /// <param name="featureIndices">The indices of features to mark as active.</param>
+    /// <exception cref="ArgumentNullException">Thrown when featureIndices is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when any feature index is negative or greater than the feature count.</exception>
+    /// <remarks>
+    /// <para>
+    /// This method explicitly specifies which features should be considered active in the neural network model,
+    /// overriding the default behavior where all features are considered active. Any features not included
+    /// in the provided collection will be considered inactive, even though neural networks typically
+    /// use all input features to some extent.
+    /// </para>
+    /// <para><b>For Beginners:</b> This method lets you manually specify which input features
+    /// the model should consider important, overriding the default neural network behavior
+    /// where all features are typically used.
+    /// 
+    /// For example, if you have 10 features but want to focus on only features 2, 5, and 7,
+    /// you can use this method to specify exactly those features. After setting these features:
+    /// - Only these specific features will be reported as active by GetActiveFeatureIndices()
+    /// - Only these features will return true when checked with IsFeatureUsed()
+    /// 
+    /// This can be useful for:
+    /// - Feature selection experiments (testing different feature subsets)
+    /// - Simplifying model interpretation
+    /// - Ensuring consistency across different models
+    /// - Highlighting specific features you know are important from domain expertise
+    /// 
+    /// Note that this doesn't actually modify the neural network's internal calculations -
+    /// it just changes what features the model reports as being active.
+    /// </para>
+    /// </remarks>
+    public void SetActiveFeatureIndices(IEnumerable<int> featureIndices)
+    {
+        if (featureIndices == null)
+        {
+            throw new ArgumentNullException(nameof(featureIndices), "Feature indices cannot be null.");
+        }
+
+        // Initialize the hash set if it doesn't exist
+        _explicitlySetActiveFeatures ??= [];
+
+        // Clear existing explicitly set features
+        _explicitlySetActiveFeatures.Clear();
+
+        // Add the new feature indices
+        foreach (var index in featureIndices)
+        {
+            if (index < 0 || index >= FeatureCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(featureIndices),
+                    $"Feature index {index} must be between 0 and {FeatureCount - 1}.");
+            }
+
+            _explicitlySetActiveFeatures.Add(index);
+        }
+    }
+
+    #region IInterpretableModel Implementation
+
+    protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
+    protected Vector<int> _sensitiveFeatures;
+    protected readonly List<FairnessMetric> _fairnessMetrics = new();
+    protected IModel<Tensor<T>, Tensor<T>, ModelMetadata<T>> _baseModel;
+
+    /// <summary>
+    /// Gets the global feature importance across all predictions.
+    /// </summary>
+    public virtual async Task<Dictionary<int, T>> GetGlobalFeatureImportanceAsync()
+    {
+        return await InterpretableModelHelper.GetGlobalFeatureImportanceAsync(this, _enabledMethods);
+    }
+
+    /// <summary>
+    /// Gets the local feature importance for a specific input.
+    /// </summary>
+    public virtual async Task<Dictionary<int, T>> GetLocalFeatureImportanceAsync(Tensor<T> input)
+    {
+        return await InterpretableModelHelper.GetLocalFeatureImportanceAsync(this, _enabledMethods, input);
+    }
+
+    /// <summary>
+    /// Gets SHAP values for the given inputs.
+    /// </summary>
+    public virtual async Task<Matrix<T>> GetShapValuesAsync(Tensor<T> inputs)
+    {
+        return await InterpretableModelHelper.GetShapValuesAsync(this, _enabledMethods);
+    }
+
+    /// <summary>
+    /// Gets LIME explanation for a specific input.
+    /// </summary>
+    public virtual async Task<LimeExplanation<T>> GetLimeExplanationAsync(Tensor<T> input, int numFeatures = 10)
+    {
+        return await InterpretableModelHelper.GetLimeExplanationAsync<T>(_enabledMethods, numFeatures);
+    }
+
+    /// <summary>
+    /// Gets partial dependence data for specified features.
+    /// </summary>
+    public virtual async Task<PartialDependenceData<T>> GetPartialDependenceAsync(Vector<int> featureIndices, int gridResolution = 20)
+    {
+        return await InterpretableModelHelper.GetPartialDependenceAsync<T>(_enabledMethods, featureIndices, gridResolution);
+    }
+
+    /// <summary>
+    /// Gets counterfactual explanation for a given input and desired output.
+    /// </summary>
+    public virtual async Task<CounterfactualExplanation<T>> GetCounterfactualAsync(Tensor<T> input, Tensor<T> desiredOutput, int maxChanges = 5)
+    {
+        return await InterpretableModelHelper.GetCounterfactualAsync<T>(_enabledMethods, maxChanges);
+    }
+
+    /// <summary>
+    /// Gets model-specific interpretability information.
+    /// </summary>
+    public virtual async Task<Dictionary<string, object>> GetModelSpecificInterpretabilityAsync()
+    {
+        return await InterpretableModelHelper.GetModelSpecificInterpretabilityAsync(this);
+    }
+
+    /// <summary>
+    /// Generates a text explanation for a prediction.
+    /// </summary>
+    public virtual async Task<string> GenerateTextExplanationAsync(Tensor<T> input, Tensor<T> prediction)
+    {
+        return await InterpretableModelHelper.GenerateTextExplanationAsync(this, input, prediction);
+    }
+
+    /// <summary>
+    /// Gets feature interaction effects between two features.
+    /// </summary>
+    public virtual async Task<T> GetFeatureInteractionAsync(int feature1Index, int feature2Index)
+    {
+        return await InterpretableModelHelper.GetFeatureInteractionAsync<T>(_enabledMethods, feature1Index, feature2Index);
+    }
+
+    /// <summary>
+    /// Validates fairness metrics for the given inputs.
+    /// </summary>
+    public virtual async Task<FairnessMetrics<T>> ValidateFairnessAsync(Tensor<T> inputs, int sensitiveFeatureIndex)
+    {
+        return await InterpretableModelHelper.ValidateFairnessAsync<T>(_fairnessMetrics);
+    }
+
+    /// <summary>
+    /// Gets anchor explanation for a given input.
+    /// </summary>
+    public virtual async Task<AnchorExplanation<T>> GetAnchorExplanationAsync(Tensor<T> input, T threshold)
+    {
+        return await InterpretableModelHelper.GetAnchorExplanationAsync(_enabledMethods, threshold);
+    }
+
+    /// <summary>
+    /// Sets the base model for interpretability analysis.
+    /// </summary>
+    public virtual void SetBaseModel(IModel<Tensor<T>, Tensor<T>, ModelMetadata<T>> model)
+    {
+        _baseModel = model ?? throw new ArgumentNullException(nameof(model));
+    }
+
+    /// <summary>
+    /// Enables specific interpretation methods.
+    /// </summary>
+    public virtual void EnableMethod(params InterpretationMethod[] methods)
+    {
+        foreach (var method in methods)
+        {
+            _enabledMethods.Add(method);
+        }
+    }
+
+    /// <summary>
+    /// Configures fairness evaluation settings.
+    /// </summary>
+    public virtual void ConfigureFairness(Vector<int> sensitiveFeatures, params FairnessMetric[] fairnessMetrics)
+    {
+        _sensitiveFeatures = sensitiveFeatures ?? throw new ArgumentNullException(nameof(sensitiveFeatures));
+        _fairnessMetrics.Clear();
+        _fairnessMetrics.AddRange(fairnessMetrics);
+    }
+
+    #endregion
 }

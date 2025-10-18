@@ -14,11 +14,36 @@ namespace AiDotNet.LinearAlgebra;
 public class Vector<T> : VectorBase<T>, IEnumerable<T>
 {
     /// <summary>
+    /// Creates an empty vector with zero elements.
+    /// </summary>
+    /// <returns>A new empty vector.</returns>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This creates a vector with no elements.
+    /// It's useful as a placeholder or when you need to represent the absence of data.</para>
+    /// </remarks>
+    public static new Vector<T> Empty()
+    {
+        _emptyVector ??= new Vector<T>(0);
+        return _emptyVector;
+    }
+
+    // Static field to hold the singleton empty vector instance
+    private static Vector<T>? _emptyVector;
+
+    /// <summary>
+    /// Gets the length of the vector.
+    /// </summary>
+    /// <remarks>
+    /// <para>For empty vectors, this will return 0.</para>
+    /// </remarks>
+    public new int Length => IsEmpty ? 0 : base.Length;
+
+    /// <summary>
     /// Initializes a new instance of the Vector class with the specified length.
     /// </summary>
     /// <param name="length">The length of the vector.</param>
     /// <remarks>
-    /// <para><b>For Beginners:</b> This creates an empty vector with the given size.
+    /// <para><b>For Beginners:</b> This creates a vector with the given size.
     /// All elements will be initialized to their default values (0 for numeric types).</para>
     /// </remarks>
     public Vector(int length) : base(length)
@@ -57,6 +82,30 @@ public class Vector<T> : VectorBase<T>, IEnumerable<T>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
+    }
+
+    /// <summary>
+    /// Creates a deep copy of this vector.
+    /// </summary>
+    /// <returns>A new vector that is a copy of this vector.</returns>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This creates an exact duplicate of the vector that can be modified independently.</para>
+    /// </remarks>
+    public override VectorBase<T> Clone()
+    {
+        return new Vector<T>(_data);
+    }
+
+    /// <summary>
+    /// Creates a deep copy of this vector.
+    /// </summary>
+    /// <returns>A new vector that is a copy of this vector.</returns>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This is an alias for Clone() that creates an exact duplicate of the vector.</para>
+    /// </remarks>
+    public Vector<T> DeepCopy()
+    {
+        return new Vector<T>(_data);
     }
 
     /// <summary>
@@ -130,18 +179,6 @@ public class Vector<T> : VectorBase<T>, IEnumerable<T>
         return new Vector<TResult>(_data.Select(selector));
     }
 
-    /// <summary>
-    /// Creates a deep copy of this vector.
-    /// </summary>
-    /// <returns>A new vector with the same values as this vector.</returns>
-    /// <remarks>
-    /// <para><b>For Beginners:</b> This creates an exact duplicate of your vector.
-    /// Changes to the copy won't affect the original vector, and vice versa.</para>
-    /// </remarks>
-    public new Vector<T> Clone()
-    {
-        return new Vector<T>([.. this]);
-    }
 
     /// <summary>
     /// Creates a vector of the specified size with all elements set to zero.
@@ -215,19 +252,6 @@ public class Vector<T> : VectorBase<T>, IEnumerable<T>
     public override VectorBase<T> Ones(int size)
     {
         return new Vector<T>(Enumerable.Repeat(_numOps.One, size));
-    }
-
-    /// <summary>
-    /// Creates an empty vector with zero elements.
-    /// </summary>
-    /// <returns>A new empty vector.</returns>
-    /// <remarks>
-    /// <para><b>For Beginners:</b> This creates a vector with no elements (length of 0).
-    /// It's useful as a starting point when you need to build a vector by adding elements.</para>
-    /// </remarks>
-    public new static Vector<T> Empty()
-    {
-        return new Vector<T>(0);
     }
 
     /// <summary>

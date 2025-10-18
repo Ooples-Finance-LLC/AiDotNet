@@ -48,7 +48,7 @@ public class TimeDistributedLayer<T> : LayerBase<T>
     /// that each word is processed independently but in sequence.
     /// </para>
     /// </remarks>
-    private readonly LayerBase<T> _innerLayer;
+    private readonly LayerBase<T> _innerLayer = default!;
 
     /// <summary>
     /// The input tensor from the last forward pass.
@@ -162,7 +162,7 @@ public class TimeDistributedLayer<T> : LayerBase<T>
     /// </para>
     /// <para><b>For Beginners:</b> This constructor is similar to the previous one, but uses vector activations.
     /// 
-    /// Vector activations:
+    /// Vector<double> activations:
     /// - Process entire groups of numbers at once, rather than one at a time
     /// - Can capture relationships between different elements
     /// - Allow for more complex transformations

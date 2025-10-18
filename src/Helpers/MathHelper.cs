@@ -16,6 +16,22 @@
 public static class MathHelper
 {
     /// <summary>
+    /// Gets a value indicating whether hardware acceleration (SIMD) is available for vector operations.
+    /// </summary>
+    /// <value>
+    /// <c>true</c> if hardware acceleration is available; otherwise, <c>false</c>.
+    /// </value>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Hardware acceleration uses special CPU instructions to perform 
+    /// multiple calculations at once, making vector and matrix operations much faster.
+    /// 
+    /// This property checks if your computer's processor supports these special instructions
+    /// (called SIMD - Single Instruction, Multiple Data).
+    /// </para>
+    /// </remarks>
+    public static bool IsHardwareAccelerated { get; } = System.Numerics.Vector.IsHardwareAccelerated;
+    /// <summary>
     /// Gets the appropriate numeric operations implementation for the specified type.
     /// </summary>
     /// <typeparam name="T">The numeric type to get operations for.</typeparam>
@@ -676,6 +692,80 @@ public static class MathHelper
     }
 
     /// <summary>
+    /// Returns positive infinity for the specified numeric type.
+    /// </summary>
+    /// <typeparam name="T">The numeric type for which to return positive infinity.</typeparam>
+    /// <returns>A value representing positive infinity for the specified type.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Infinity represents a value that is larger than any finite number.
+    /// This method provides a way to get the positive infinity value for different numeric types
+    /// (like double, float, decimal) in a consistent way.
+    /// 
+    /// In mathematics and computing, infinity is used to represent unbounded values or the result
+    /// of operations like division by zero.
+    /// </para>
+    /// </remarks>
+    public static T PositiveInfinity<T>()
+    {
+        var numOps = GetNumericOperations<T>();
+
+        // For floating-point types, return their specific infinity representation
+        if (typeof(T) == typeof(double))
+            return (T)(object)double.PositiveInfinity;
+        if (typeof(T) == typeof(float))
+            return (T)(object)float.PositiveInfinity;
+
+        // For other types, return the maximum value as an approximation of infinity
+        if (typeof(T) == typeof(decimal))
+            return (T)(object)decimal.MaxValue;
+        if (typeof(T) == typeof(int))
+            return (T)(object)int.MaxValue;
+        if (typeof(T) == typeof(long))
+            return (T)(object)long.MaxValue;
+
+        // Default fallback using the numeric operations
+        return numOps.MaxValue;
+    }
+
+    /// <summary>
+    /// Returns negative infinity for the specified numeric type.
+    /// </summary>
+    /// <typeparam name="T">The numeric type for which to return negative infinity.</typeparam>
+    /// <returns>A value representing negative infinity for the specified type.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> Negative infinity represents a value that is smaller than any finite number.
+    /// This method provides a way to get the negative infinity value for different numeric types
+    /// (like double, float, decimal) in a consistent way.
+    /// 
+    /// In mathematics and computing, negative infinity is used to represent unbounded negative values
+    /// or the result of certain operations like dividing a negative number by zero.
+    /// </para>
+    /// </remarks>
+    public static T NegativeInfinity<T>()
+    {
+        var numOps = GetNumericOperations<T>();
+
+        // For floating-point types, return their specific negative infinity representation
+        if (typeof(T) == typeof(double))
+            return (T)(object)double.NegativeInfinity;
+        if (typeof(T) == typeof(float))
+            return (T)(object)float.NegativeInfinity;
+
+        // For other types, return the minimum value as an approximation of negative infinity
+        if (typeof(T) == typeof(decimal))
+            return (T)(object)decimal.MinValue;
+        if (typeof(T) == typeof(int))
+            return (T)(object)int.MinValue;
+        if (typeof(T) == typeof(long))
+            return (T)(object)long.MinValue;
+
+        // Default fallback using the numeric operations
+        return numOps.MinValue;
+    }
+
+    /// <summary>
     /// Calculates the sine of an angle.
     /// </summary>
     /// <typeparam name="T">The numeric type to use for calculations.</typeparam>
@@ -692,6 +782,62 @@ public static class MathHelper
     public static T Sin<T>(T x)
     {
         return GetNumericOperations<T>().FromDouble(Math.Sin(Convert.ToDouble(x)));
+    }
+
+    /// <summary>
+    /// Rounds a numeric value to the nearest integral value.
+    /// </summary>
+    /// <typeparam name="T">The numeric type used for calculations.</typeparam>
+    /// <param name="value">The value to round.</param>
+    /// <param name="midpointRounding">Specifies how to round when a value is midway between two other values. Default is ToEven.</param>
+    /// <returns>The rounded value.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> This method rounds a number to the nearest integer, with control over how midpoint values 
+    /// (those exactly halfway between two integers) are handled. For example, 2.5 could round to either 2 or 3 
+    /// depending on the midpoint rounding strategy. ToEven (also called "banker's rounding") rounds to the nearest 
+    /// even number, while AwayFromZero always rounds up in magnitude.
+    /// </para>
+    /// </remarks>
+    public static T Round<T>(T value, MidpointRounding midpointRounding = MidpointRounding.ToEven)
+    {
+        return GetNumericOperations<T>().FromDouble(Math.Round(Convert.ToDouble(value), midpointRounding));
+    }
+
+    /// <summary>
+    /// Returns the largest integral value less than or equal to the specified number.
+    /// </summary>
+    /// <typeparam name="T">The numeric type used for calculations.</typeparam>
+    /// <param name="value">The value to floor.</param>
+    /// <returns>The largest integral value less than or equal to the specified number.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> This method rounds a number down to the nearest integer that's less than or equal to it.
+    /// For example, Floor(3.7) returns 3, and Floor(-3.7) returns -4. This is useful when you need to ensure 
+    /// a value doesn't exceed a certain threshold, or when working with indices that must stay within bounds.
+    /// </para>
+    /// </remarks>
+    public static T Floor<T>(T value)
+    {
+        return GetNumericOperations<T>().FromDouble(Math.Floor(Convert.ToDouble(value)));
+    }
+
+    /// <summary>
+    /// Returns the smallest integral value greater than or equal to the specified number.
+    /// </summary>
+    /// <typeparam name="T">The numeric type used for calculations.</typeparam>
+    /// <param name="value">The value to ceiling.</param>
+    /// <returns>The smallest integral value greater than or equal to the specified number.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>For Beginners:</b> This method rounds a number up to the nearest integer that's greater than or equal to it.
+    /// For example, Ceiling(3.2) returns 4, and Ceiling(-3.2) returns -3. This is useful when you need to ensure 
+    /// you have enough resources to cover a fractional need, like calculating how many containers you need to store items.
+    /// </para>
+    /// </remarks>
+    public static T Ceiling<T>(T value)
+    {
+        return GetNumericOperations<T>().FromDouble(Math.Ceiling(Convert.ToDouble(value)));
     }
 
     /// <summary>

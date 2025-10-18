@@ -45,7 +45,7 @@ public class RegressionOptions<T> : ModelOptions
     /// <value>An implementation of IMatrixDecomposition&lt;T&gt; or null to use the default method.</value>
     /// <remarks>
     /// <para>
-    /// Matrix decomposition is a crucial mathematical technique used in solving regression problems, 
+    /// Matrix<double> decomposition is a crucial mathematical technique used in solving regression problems, 
     /// especially when dealing with systems of linear equations. Different decomposition methods have 
     /// varying characteristics in terms of numerical stability, computational efficiency, and applicability 
     /// to specific problem types. Common decomposition methods include Singular Value Decomposition (SVD), 
@@ -53,13 +53,13 @@ public class RegressionOptions<T> : ModelOptions
     /// can significantly impact the accuracy and performance of the regression algorithm, particularly for 
     /// ill-conditioned problems or large datasets.
     /// </para>
-    /// <para><b>For Beginners:</b> Matrix decomposition is a mathematical technique that helps solve complex 
+    /// <para><b>For Beginners:</b> Matrix<double> decomposition is a mathematical technique that helps solve complex 
     /// equations more efficiently.
     /// 
     /// Think of it like breaking down a difficult math problem into simpler steps:
     /// - Regression often involves solving systems of equations with many variables
     /// - These equations can be represented as matrices (tables of numbers)
-    /// - Matrix decomposition breaks these complex matrices into simpler components
+    /// - Matrix<double> decomposition breaks these complex matrices into simpler components
     /// - This makes calculations faster, more accurate, and more stable
     /// 
     /// Different decomposition methods have different strengths:
@@ -117,4 +117,31 @@ public class RegressionOptions<T> : ModelOptions
     /// </para>
     /// </remarks>
     public bool UseIntercept { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether to allow fallback to alternative decomposition methods when the primary method fails.
+    /// </summary>
+    /// <value>True to allow fallbacks; otherwise, false. Defaults to true.</value>
+    /// <remarks>
+    /// <para>
+    /// When set to true, if the specified decomposition method fails, the system will automatically try
+    /// alternative methods in order of robustness. When set to false, only the specified method (or the default
+    /// Normal decomposition if none is specified) will be attempted.
+    /// </para>
+    /// <para><b>For Beginners:</b> This setting controls whether the system can try different mathematical 
+    /// approaches if the first one fails.
+    /// 
+    /// - True (default): The system will try multiple methods to solve your problem, starting with faster
+    ///   methods and moving to more robust ones as needed. This is like having multiple tools available
+    ///   and using whichever one works.
+    ///   
+    /// - False: The system will only use the exact method you specified. If that method fails, the system
+    ///   will report an error rather than trying alternative approaches.
+    ///   
+    /// Set to False when you specifically need a particular decomposition method for consistency or
+    /// mathematical reasons. Otherwise, leaving this as True gives the best chance of successfully
+    /// solving your problem.
+    /// </para>
+    /// </remarks>
+    public bool AllowDecompositionFallbacks { get; set; } = true;
 }

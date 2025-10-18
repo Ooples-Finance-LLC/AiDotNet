@@ -94,7 +94,7 @@ public static class ModelHelper<T, TInput, TOutput>
         {
             // For neural network models (tensor input and output)
             return (IFullModel<T, TInput, TOutput>)new NeuralNetworkModel<T>(
-                new NeuralNetworkArchitecture<T>(InputType.ThreeDimensional, NeuralNetworkTaskType.Custom));
+                new NeuralNetworkArchitecture<T>(taskType: NeuralNetworkTaskType.Custom, isPlaceholder: true));
         }
         else
         {
@@ -105,6 +105,42 @@ public static class ModelHelper<T, TInput, TOutput>
                 $"(Matrix<{typeof(T).Name}>, Vector<{typeof(T).Name}>) for linear models and " +
                 $"(Tensor<{typeof(T).Name}>, Tensor<{typeof(T).Name}>) for neural network models.");
         }
+    }
+
+    /// <summary>
+    /// Determines if the model is a classification model.
+    /// </summary>
+    public static bool IsClassificationModel(IFullModel<T, TInput, TOutput> model)
+    {
+        // Check if model implements classification interfaces
+        return model is IClassificationModel<T>;
+    }
+
+    /// <summary>
+    /// Determines if the model is a regression model.
+    /// </summary>
+    public static bool IsRegressionModel(IFullModel<T, TInput, TOutput> model)
+    {
+        // Check if model implements regression interfaces
+        return model is IRegressionModel<T>;
+    }
+
+    /// <summary>
+    /// Determines if the model is a time series model.
+    /// </summary>
+    public static bool IsTimeSeriesModel(IFullModel<T, TInput, TOutput> model)
+    {
+        // Check if model implements time series interfaces
+        return model is ITimeSeriesModel<T>;
+    }
+
+    /// <summary>
+    /// Determines if the model is a neural network model.
+    /// </summary>
+    public static bool IsNeuralNetworkModel(IFullModel<T, TInput, TOutput> model)
+    {
+        // Check if model implements neural network interfaces
+        return model is INeuralNetworkModel<T>;
     }
 
     /// <summary>
@@ -249,12 +285,14 @@ public static class ModelHelper<T, TInput, TOutput>
         int totalFeatures)
     {
         // Create a vector with the total number of features
-        Vector<T> coefficients = new Vector<T>(totalFeatures);
+        var coefficients = new Vector<T>(totalFeatures);
+
         // Initialize all features with very small values (effectively disabling them)
         for (int i = 0; i < totalFeatures; i++)
         {
             coefficients[i] = _numOps.FromDouble(_random.NextDouble() * 0.0001); // Near-zero initialization
         }
+
         // Set meaningful values for active features
         foreach (int index in activeFeatures)
         {
@@ -349,11 +387,8 @@ public static class ModelHelper<T, TInput, TOutput>
     {
         // Create a neural network architecture
         var architecture = new NeuralNetworkArchitecture<T>(
-            InputType.OneDimensional,
-            NeuralNetworkTaskType.Regression,
             NetworkComplexity.Simple,
-            inputSize: totalFeatures,
-            outputSize: 1  // Assuming regression task with single output
+            NeuralNetworkTaskType.Regression
         );
     
         // Create the neural network model

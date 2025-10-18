@@ -26,7 +26,7 @@ public class CalibratedProbabilityFitDetector<T, TInput, TOutput> : FitDetectorB
     /// including the number of bins used for calibration analysis and thresholds for determining 
     /// different types of model fit.
     /// </remarks>
-    private readonly CalibratedProbabilityFitDetectorOptions _options;
+    private readonly CalibratedProbabilityFitDetectorOptions _options = default!;
 
     /// <summary>
     /// Initializes a new instance of the CalibratedProbabilityFitDetector class.
@@ -268,8 +268,8 @@ public class CalibratedProbabilityFitDetector<T, TInput, TOutput> : FitDetectorB
     /// <summary>
     /// Calculates the calibration error between expected and observed calibration values.
     /// </summary>
-    /// <param name="expected">Vector of expected calibration values.</param>
-    /// <param name="observed">Vector of observed calibration values.</param>
+    /// <param name="expected">Vector<double> of expected calibration values.</param>
+    /// <param name="observed">Vector<double> of observed calibration values.</param>
     /// <returns>The root mean squared error between expected and observed calibration values.</returns>
     /// <remarks>
     /// <para>

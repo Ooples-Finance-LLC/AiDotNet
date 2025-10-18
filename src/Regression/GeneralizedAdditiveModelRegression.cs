@@ -32,22 +32,22 @@
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The numeric type used for calculations, typically float or double.</typeparam>
-public class GeneralizedAdditiveModel<T> : RegressionBase<T>
+public class GeneralizedAdditiveModel<T> : RegressionModelBase<T>
 {
     /// <summary>
     /// Configuration options for the Generalized Additive Model.
     /// </summary>
-    private readonly GeneralizedAdditiveModelOptions<T> _options;
+    private readonly GeneralizedAdditiveModelOptions<T> _options = default!;
     
     /// <summary>
     /// Matrix of basis functions applied to the input features.
     /// </summary>
-    private Matrix<T> _basisFunctions;
+    private Matrix<T> _basisFunctions = default!;
     
     /// <summary>
     /// Vector of model coefficients for the basis functions.
     /// </summary>
-    private Vector<T> _coefficients;
+    private Vector<T> _coefficients = default!;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GeneralizedAdditiveModel{T}"/> class.
@@ -85,7 +85,7 @@ public class GeneralizedAdditiveModel<T> : RegressionBase<T>
     public GeneralizedAdditiveModel(
         GeneralizedAdditiveModelOptions<T>? options = null,
         IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _options = options ?? new GeneralizedAdditiveModelOptions<T>();
         _basisFunctions = new Matrix<T>(0, 0);
@@ -297,9 +297,9 @@ public class GeneralizedAdditiveModel<T> : RegressionBase<T>
     /// ```
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = GetModelType(),
             AdditionalInfo = new Dictionary<string, object>

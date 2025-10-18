@@ -22,7 +22,7 @@ namespace AiDotNet.Regression;
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The numeric type used for calculations, typically float or double.</typeparam>
-public class TimeSeriesRegression<T> : RegressionBase<T>
+public class TimeSeriesRegression<T> : RegressionModelBase<T>
 {
     /// <summary>
     /// The options that configure this time series regression model.
@@ -42,7 +42,7 @@ public class TimeSeriesRegression<T> : RegressionBase<T>
     /// These settings shape how the model analyzes and learns from your data.
     /// </para>
     /// </remarks>
-    private readonly TimeSeriesRegressionOptions<T> _options;
+    private readonly TimeSeriesRegressionOptions<T> _options = default!;
     
     /// <summary>
     /// The underlying time series model that handles the core prediction logic.
@@ -62,7 +62,7 @@ public class TimeSeriesRegression<T> : RegressionBase<T>
     /// The type of engine is determined by the options you provide when creating the model.
     /// </para>
     /// </remarks>
-    private ITimeSeriesModel<T> _timeSeriesModel;
+    private ITimeSeriesModel<T> _timeSeriesModel = default!;
 
     /// <summary>
     /// The regularization strategy used to prevent overfitting.
@@ -80,7 +80,7 @@ public class TimeSeriesRegression<T> : RegressionBase<T>
     /// on new data because it learned the noise rather than the true patterns.
     /// </para>
     /// </remarks>
-    private readonly IRegularization<T, Matrix<T>, Vector<T>> _regularization;
+    private readonly IRegularization<T, Matrix<T>, Vector<T>> _regularization = default!;
 
     /// <summary>
     /// Initializes a new instance of the TimeSeriesRegression class with specified options and optional regularization.
@@ -102,12 +102,12 @@ public class TimeSeriesRegression<T> : RegressionBase<T>
     /// you choose will affect how well it works for your specific type of data.
     /// </para>
     /// </remarks>
-    public TimeSeriesRegression(TimeSeriesRegressionOptions<T> options, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+    public TimeSeriesRegression(TimeSeriesRegressionOptions<T>? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
-        _options = options;
+        _options = options ?? new();
         _regularization = regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>();
-        _timeSeriesModel = TimeSeriesModelFactory<T, Matrix<T>, Vector<T>>.CreateModel(options.ModelType, options);
+        _timeSeriesModel = TimeSeriesModelFactory<T, Matrix<T>, Vector<T>>.CreateModel(_options.ModelType, _options);
     }
 
     /// <summary>

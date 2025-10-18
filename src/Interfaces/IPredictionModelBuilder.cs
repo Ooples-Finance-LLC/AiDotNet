@@ -1,4 +1,8 @@
-﻿namespace AiDotNet.Interfaces;
+﻿using System;
+using AiDotNet.AutoML;
+using AiDotNet.Enums;
+
+namespace AiDotNet.Interfaces;
 
 /// <summary>
 /// Defines a builder pattern interface for creating and configuring predictive models.
@@ -35,6 +39,22 @@ public interface IPredictionModelBuilder<T, TInput, TOutput>
     IPredictionModelBuilder<T, TInput, TOutput> ConfigureFeatureSelector(IFeatureSelector<T, TInput> selector);
 
     /// <summary>
+    /// Sets the model to use for predictions.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This method sets the machine learning model that will be trained and used for predictions.
+    /// </para>
+    /// <para>
+    /// <b>For Beginners:</b> Use this to specify which machine learning algorithm you want to use.
+    /// Different models are better for different types of problems.
+    /// </para>
+    /// </remarks>
+    /// <param name="model">The model to use.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> SetModel(IFullModel<T, TInput, TOutput> model);
+
+    /// <summary>
     /// Configures the data normalizer component for the model.
     /// </summary>
     /// <remarks>
@@ -49,88 +69,6 @@ public interface IPredictionModelBuilder<T, TInput, TOutput>
     /// <param name="normalizer">The normalizer implementation to use.</param>
     /// <returns>The builder instance for method chaining.</returns>
     IPredictionModelBuilder<T, TInput, TOutput> ConfigureNormalizer(INormalizer<T, TInput, TOutput> normalizer);
-
-    /// <summary>
-    /// Configures the regularization component for the model.
-    /// </summary>
-    /// <remarks>
-    /// Regularization helps prevent overfitting by adding a penalty for complexity in the model.
-    /// 
-    /// <b>For Beginners:</b> Overfitting happens when a model learns the training data too well, including 
-    /// all its noise and peculiarities, making it perform poorly on new data. Regularization is like 
-    /// adding training wheels that prevent the model from becoming too complex. It's like telling the 
-    /// model "keep it simple" so it learns general patterns rather than memorizing specific examples.
-    /// </remarks>
-    /// <param name="regularization">The regularization implementation to use.</param>
-    /// <returns>The builder instance for method chaining.</returns>
-    IPredictionModelBuilder<T, TInput, TOutput> ConfigureRegularization(IRegularization<T, TInput, TOutput> regularization);
-
-    /// <summary>
-    /// Configures the fitness calculator component for the model.
-    /// </summary>
-    /// <remarks>
-    /// A fitness calculator measures how well the model is performing during training.
-    /// 
-    /// <b>For Beginners:</b> The fitness calculator is like a scorekeeper that tells you how well your 
-    /// model is doing. It compares the model's predictions to the actual correct answers and 
-    /// calculates a score. This score helps determine if changes to the model are making it 
-    /// better or worse.
-    /// </remarks>
-    /// <param name="calculator">The fitness calculator implementation to use.</param>
-    /// <returns>The builder instance for method chaining.</returns>
-    IPredictionModelBuilder<T, TInput, TOutput> ConfigureFitnessCalculator(IFitnessCalculator<T, TInput, TOutput> calculator);
-
-    /// <summary>
-    /// Configures the fit detector component for the model.
-    /// </summary>
-    /// <remarks>
-    /// A fit detector determines whether the model is underfitting, well-fitted, or overfitting.
-    /// 
-    /// <b>For Beginners:</b> This component checks if your model is learning properly. It's like a 
-    /// teacher who can tell if:
-    /// - Your model is "underfitting" (too simple and missing important patterns)
-    /// - Your model is "just right" (learning the important patterns without memorizing noise)
-    /// - Your model is "overfitting" (memorizing the training data instead of learning general rules)
-    /// 
-    /// This helps you know when to stop training or when to adjust your model's complexity.
-    /// </remarks>
-    /// <param name="detector">The fit detector implementation to use.</param>
-    /// <returns>The builder instance for method chaining.</returns>
-    IPredictionModelBuilder<T, TInput, TOutput> ConfigureFitDetector(IFitDetector<T, TInput, TOutput> detector);
-
-    /// <summary>
-    /// Configures the prediction model algorithm to use.
-    /// </summary>
-    /// <remarks>
-    /// This method lets you specify which machine learning algorithm will be used as the core of your predictive model.
-    /// 
-    /// <b>For Beginners:</b> This is where you choose the specific type of AI model for your prediction task.
-    /// You can select from various algorithms depending on your needs:
-    /// 
-    /// - <b>Regression models</b> for predicting numeric values:
-    ///   - Linear regression (for simple straight-line relationships)
-    ///   - Polynomial regression (for curved relationships)
-    ///   - Ridge or Lasso regression (to prevent overfitting)
-    /// 
-    /// - <b>Classification models</b> for categorizing data:
-    ///   - Logistic regression (for yes/no predictions)
-    ///   - Decision trees (for rule-based decisions)
-    ///   - Support vector machines (for complex boundaries)
-    /// 
-    /// - <b>Neural networks</b> for complex pattern recognition:
-    ///   - Simple neural networks (for moderate complexity)
-    ///   - Deep learning models (for highly complex patterns)
-    /// 
-    /// - <b>Time series models</b> for sequential data:
-    ///   - ARIMA (for forecasting trends)
-    ///   - LSTM networks (for long-term patterns)
-    /// 
-    /// Different models excel at different types of problems, so choosing the right one
-    /// depends on your specific data and prediction goals.
-    /// </remarks>
-    /// <param name="model">The prediction model implementation to use.</param>
-    /// <returns>The builder instance for method chaining.</returns>
-    IPredictionModelBuilder<T, TInput, TOutput> ConfigureModel(IFullModel<T, TInput, TOutput> model);
 
     /// <summary>
     /// Configures the optimization algorithm for the model.
@@ -287,4 +225,265 @@ public interface IPredictionModelBuilder<T, TInput, TOutput>
     /// <param name="modelData">The byte array containing the serialized model data.</param>
     /// <returns>The reconstructed predictive model.</returns>
     IPredictiveModel<T, TInput, TOutput> DeserializeModel(byte[] modelData);
+
+    #region Modern AI Capabilities
+
+    #region Multimodal AI
+
+    /// <summary>
+    /// Configures the builder to use a multimodal model that can process multiple data types.
+    /// </summary>
+    /// <param name="multimodalModel">The multimodal model to use.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <remarks>
+    /// <b>For Beginners:</b> Multimodal models can understand different types of data simultaneously,
+    /// like combining text, images, and audio. Think of it like a human who can read, see, and hear
+    /// all at once to understand something better.
+    /// </remarks>
+    IPredictionModelBuilder<T, TInput, TOutput> UseMultimodalModel(IMultimodalModel<T, TInput, TOutput> multimodalModel);
+
+    /// <summary>
+    /// Adds a data modality (type) to the multimodal model.
+    /// </summary>
+    /// <param name="modalityType">The type of data modality to add.</param>
+    /// <param name="preprocessor">Optional preprocessor specific to this modality.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> AddModality(
+        ModalityType modalityType,
+        IPipelineStep<T>? preprocessor = null);
+
+    /// <summary>
+    /// Configures how different modalities are combined.
+    /// </summary>
+    /// <param name="fusionStrategy">The strategy for combining different data types.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> ConfigureModalityFusion(ModalityFusionStrategy fusionStrategy);
+
+    #endregion
+
+    #region Foundation Models & LLMs
+
+    /// <summary>
+    /// Uses a foundation model (like GPT, BERT, etc.) as the base model.
+    /// </summary>
+    /// <param name="foundationModel">The foundation model to use.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <remarks>
+    /// <b>For Beginners:</b> Foundation models are large, pre-trained models that understand
+    /// language, code, or other data types. They're like having an expert who already knows
+    /// a lot about the world, and you're just teaching them your specific task.
+    /// </remarks>
+    IPredictionModelBuilder<T, TInput, TOutput> UseFoundationModel(IFoundationModel<T, TInput, TOutput> foundationModel);
+
+    /// <summary>
+    /// Configures fine-tuning for a foundation model.
+    /// </summary>
+    /// <param name="fineTuningOptions">Options for fine-tuning the model.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> ConfigureFineTuning(FineTuningOptions<double> fineTuningOptions);
+
+    /// <summary>
+    /// Enables few-shot learning with example prompts.
+    /// </summary>
+    /// <param name="examples">Example inputs and outputs for few-shot learning.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> WithFewShotExamples(params (TInput input, TOutput output)[] examples);
+
+    #endregion
+
+    #region AutoML
+
+    /// <summary>
+    /// Enables AutoML to automatically find the best model and hyperparameters.
+    /// </summary>
+    /// <param name="autoMLModel">The AutoML model to use.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <remarks>
+    /// <b>For Beginners:</b> AutoML is like having an AI assistant that tries different
+    /// models and settings automatically to find what works best for your data.
+    /// You don't need to be an expert - it figures out the details for you.
+    /// </remarks>
+    IPredictionModelBuilder<T, TInput, TOutput> EnableAutoML(IAutoMLModel<T, TInput, TOutput> autoMLModel);
+
+    /// <summary>
+    /// Configures AutoML search space and constraints.
+    /// </summary>
+    /// <param name="searchSpace">The hyperparameter search space.</param>
+    /// <param name="timeLimit">Maximum time for AutoML search.</param>
+    /// <param name="trialLimit">Maximum number of trials.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> ConfigureAutoMLSearch(
+        AutoML.HyperparameterSearchSpace searchSpace,
+        TimeSpan? timeLimit = null,
+        int? trialLimit = null);
+
+    /// <summary>
+    /// Enables neural architecture search (NAS).
+    /// </summary>
+    /// <param name="searchStrategy">The strategy for searching neural architectures.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> EnableNeuralArchitectureSearch(
+        NeuralArchitectureSearchStrategy searchStrategy);
+
+    #endregion
+
+    #region Interpretability
+
+    /// <summary>
+    /// Adds interpretability features to the model.
+    /// </summary>
+    /// <param name="interpretableModel">The interpretable model wrapper.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <remarks>
+    /// <b>For Beginners:</b> Interpretability helps you understand WHY your model makes
+    /// certain predictions. It's like asking the model to explain its reasoning,
+    /// which is important for trust and debugging.
+    /// </remarks>
+    IPredictionModelBuilder<T, TInput, TOutput> WithInterpretability(IInterpretableModel<T, TInput, TOutput> interpretableModel);
+
+    /// <summary>
+    /// Enables specific interpretation methods.
+    /// </summary>
+    /// <param name="methods">The interpretation methods to enable.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> EnableInterpretationMethods(params InterpretationMethod[] methods);
+
+    /// <summary>
+    /// Configures fairness constraints and monitoring.
+    /// </summary>
+    /// <param name="sensitiveFeatures">Indices of sensitive features to monitor for fairness.</param>
+    /// <param name="fairnessMetrics">Fairness metrics to track.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> ConfigureFairness(
+        int[] sensitiveFeatures,
+        params FairnessMetric[] fairnessMetrics);
+
+    #endregion
+
+    #region Production Monitoring
+
+    /// <summary>
+    /// Adds production monitoring capabilities to the model.
+    /// </summary>
+    /// <param name="monitor">The production monitor to use.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <remarks>
+    /// <b>For Beginners:</b> Production monitoring watches your model after deployment
+    /// to make sure it's still working well. It's like having a health monitor that
+    /// alerts you if something goes wrong or the model needs updating.
+    /// </remarks>
+    IPredictionModelBuilder<T, TInput, TOutput> WithProductionMonitoring(IProductionMonitor<T> monitor);
+
+    /// <summary>
+    /// Configures drift detection for production monitoring.
+    /// </summary>
+    /// <param name="dataDriftThreshold">Threshold for data drift detection.</param>
+    /// <param name="conceptDriftThreshold">Threshold for concept drift detection.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> ConfigureDriftDetection(
+        T dataDriftThreshold,
+        T conceptDriftThreshold);
+
+    /// <summary>
+    /// Sets up automatic retraining triggers.
+    /// </summary>
+    /// <param name="performanceDropThreshold">Performance drop that triggers retraining.</param>
+    /// <param name="timeBasedRetraining">Time interval for periodic retraining.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> ConfigureAutoRetraining(
+        T performanceDropThreshold,
+        TimeSpan? timeBasedRetraining = null);
+
+    #endregion
+
+    #region Pipeline & Workflow
+
+    /// <summary>
+    /// Adds a custom pipeline step to the model building process.
+    /// </summary>
+    /// <param name="step">The pipeline step to add.</param>
+    /// <param name="position">Where to insert the step in the pipeline.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    /// <remarks>
+    /// <b>For Beginners:</b> Pipeline steps are like assembly line stations - each one
+    /// does a specific job on your data as it flows through. You can add custom steps
+    /// to do special processing that's unique to your needs.
+    /// </remarks>
+    IPredictionModelBuilder<T, TInput, TOutput> AddPipelineStep(
+        IPipelineStep<T> step,
+        PipelinePosition position = PipelinePosition.Preprocessing);
+
+    /// <summary>
+    /// Creates a branching pipeline for A/B testing or ensemble approaches.
+    /// </summary>
+    /// <param name="branchName">Name for this pipeline branch.</param>
+    /// <param name="branchBuilder">Configuration for the branch.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> CreateBranch(
+        string branchName,
+        Action<IPredictionModelBuilder<T, TInput, TOutput>> branchBuilder);
+
+    /// <summary>
+    /// Merges multiple pipeline branches.
+    /// </summary>
+    /// <param name="mergeStrategy">How to combine results from different branches.</param>
+    /// <param name="branchNames">Names of branches to merge.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> MergeBranches(
+        BranchMergeStrategy mergeStrategy,
+        params string[] branchNames);
+
+    #endregion
+
+    #region Cloud & Edge Deployment
+
+    /// <summary>
+    /// Optimizes the model for cloud deployment.
+    /// </summary>
+    /// <param name="cloudPlatform">Target cloud platform.</param>
+    /// <param name="optimizationLevel">Level of optimization to apply.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> OptimizeForCloud(
+        CloudPlatform cloudPlatform,
+        OptimizationLevel optimizationLevel = OptimizationLevel.Balanced);
+
+    /// <summary>
+    /// Optimizes the model for edge deployment.
+    /// </summary>
+    /// <param name="edgeDevice">Target edge device type.</param>
+    /// <param name="memoryLimit">Maximum memory usage in MB.</param>
+    /// <param name="latencyTarget">Target inference latency in milliseconds.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> OptimizeForEdge(
+        EdgeDevice edgeDevice,
+        int? memoryLimit = null,
+        int? latencyTarget = null);
+
+    #endregion
+
+    #region Advanced Learning
+
+    /// <summary>
+    /// Enables federated learning capabilities.
+    /// </summary>
+    /// <param name="aggregationStrategy">How to aggregate updates from different clients.</param>
+    /// <param name="privacyBudget">Privacy budget for differential privacy.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> EnableFederatedLearning(
+        FederatedAggregationStrategy aggregationStrategy,
+        T? privacyBudget = default);
+
+    /// <summary>
+    /// Configures meta-learning for quick adaptation to new tasks.
+    /// </summary>
+    /// <param name="metaLearningAlgorithm">The meta-learning algorithm to use.</param>
+    /// <param name="innerLoopSteps">Number of gradient steps in the inner loop.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    IPredictionModelBuilder<T, TInput, TOutput> ConfigureMetaLearning(
+        Enums.MetaLearningAlgorithm metaLearningAlgorithm,
+        int innerLoopSteps = 5);
+
+    #endregion
+
+    #endregion
 }

@@ -55,7 +55,7 @@ public class Transformer<T> : NeuralNetworkBase<T>
     /// defines the structure of our Transformer neural network.
     /// </para>
     /// </remarks>
-    private readonly TransformerArchitecture<T> _transformerArchitecture;
+    private readonly TransformerArchitecture<T> _transformerArchitecture = default!;
 
     /// <summary>
     /// Gets or sets the attention mask used in the Transformer.
@@ -84,7 +84,7 @@ public class Transformer<T> : NeuralNetworkBase<T>
     /// The choice of optimizer can significantly affect how well and how quickly the Transformer learns.
     /// </para>
     /// </remarks>
-    private IGradientBasedOptimizer<T, Tensor<T>, Tensor<T>> _optimizer;
+    private IGradientBasedOptimizer<T, Tensor<T>, Tensor<T>> _optimizer = default!;
 
     /// <summary>
     /// Creates a new Transformer neural network with the specified architecture.
@@ -340,7 +340,7 @@ public class Transformer<T> : NeuralNetworkBase<T>
         var outputGradients = LossFunction.CalculateDerivative(flattenedPredictions, flattenedOutput);
 
         // Backpropagate to get gradients for all layers
-        Backpropagate(outputGradients);
+        Backpropagate(Tensor<T>.FromVector(outputGradients, expectedOutput.Shape));
 
         // Get parameter gradients
         Vector<T> parameterGradients = GetParameterGradients();
@@ -370,7 +370,7 @@ public class Transformer<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Retrieves metadata about the Transformer model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the Transformer.</returns>
+    /// <returns>A ModelMetadata object containing information about the Transformer.</returns>
     /// <remarks>
     /// <para>
     /// This method collects and returns various pieces of information about the Transformer,
@@ -388,9 +388,9 @@ public class Transformer<T> : NeuralNetworkBase<T>
     /// experimenting with multiple configurations.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.Transformer,
             AdditionalInfo = new Dictionary<string, object>
@@ -401,6 +401,8 @@ public class Transformer<T> : NeuralNetworkBase<T>
                 { "MaxSequenceLength", _transformerArchitecture.MaxSequenceLength },
                 { "VocabularySize", _transformerArchitecture.VocabularySize },
                 { "DropoutRate", _transformerArchitecture.DropoutRate },
+                { "UsePositionalEncoding", _transformerArchitecture.UsePositionalEncoding },
+                { "PositionalEncodingType", _transformerArchitecture.PositionalEncodingType.ToString() },
                 { "LayerCount", Layers.Count },
                 { "ParameterCount", GetParameterCount() },
                 { "LossFunction", LossFunction.GetType().Name },
@@ -437,6 +439,8 @@ public class Transformer<T> : NeuralNetworkBase<T>
         writer.Write(_transformerArchitecture.MaxSequenceLength);
         writer.Write(_transformerArchitecture.VocabularySize);
         writer.Write(Convert.ToDouble(_transformerArchitecture.DropoutRate));
+        writer.Write(_transformerArchitecture.UsePositionalEncoding);
+        writer.Write((int)_transformerArchitecture.PositionalEncodingType);
 
         // Write loss function and optimizer types
         SerializationHelper<T>.SerializeInterface(writer, LossFunction);
@@ -470,6 +474,8 @@ public class Transformer<T> : NeuralNetworkBase<T>
         int maxSequenceLength = reader.ReadInt32();
         int vocabularySize = reader.ReadInt32();
         T dropoutRate = NumOps.FromDouble(reader.ReadDouble());
+        bool usePositionalEncoding = reader.ReadBoolean();
+        PositionalEncodingType positionalEncodingType = (PositionalEncodingType)reader.ReadInt32();
 
         // Read and reconstruct loss function and optimizer
         _optimizer = DeserializationHelper.DeserializeInterface<IGradientBasedOptimizer<T, Tensor<T>, Tensor<T>>>(reader) ?? new GradientDescentOptimizer<T, Tensor<T>, Tensor<T>>();

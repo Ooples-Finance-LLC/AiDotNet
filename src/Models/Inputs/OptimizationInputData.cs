@@ -4,8 +4,8 @@ namespace AiDotNet.Models.Inputs;
 /// Represents the input data for optimization processes, including training, validation, and test datasets.
 /// </summary>
 /// <typeparam name="T">The numeric type used for calculations, typically float or double.</typeparam>
-/// <typeparam name="TInput">The type of the input data, typically Matrix&lt;T&gt; or Tensor&lt;T&gt;.</typeparam>
-/// <typeparam name="TOutput">The type of the output data, typically Vector&lt;T&gt; or Tensor&lt;T&gt;.</typeparam>
+/// <typeparam name="TInput">The type of the input data, typically Matrix<double>&lt;T&gt; or Tensor<double>&lt;T&gt;.</typeparam>
+/// <typeparam name="TOutput">The type of the output data, typically Vector<double>&lt;T&gt; or Tensor<double>&lt;T&gt;.</typeparam>
 public class OptimizationInputData<T, TInput, TOutput>
 {
     /// <summary>
@@ -39,6 +39,16 @@ public class OptimizationInputData<T, TInput, TOutput>
     public TOutput YTest { get; set; }
 
     /// <summary>
+    /// Gets or sets the input features for the test dataset.
+    /// </summary>
+    public TInput XFull { get; set; }
+
+    /// <summary>
+    /// Gets or sets the target values for the test dataset.
+    /// </summary>
+    public TOutput YFull { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of the OptimizationInputData class with empty datasets.
     /// </summary>
     public OptimizationInputData()
@@ -46,5 +56,6 @@ public class OptimizationInputData<T, TInput, TOutput>
         (XTrain, YTrain, _) = ModelHelper<T, TInput, TOutput>.CreateDefaultModelData();
         (XValidation, YValidation, _) = ModelHelper<T, TInput, TOutput>.CreateDefaultModelData();
         (XTest, YTest, _) = ModelHelper<T, TInput, TOutput>.CreateDefaultModelData();
+        (XFull, YFull, _) = ModelHelper<T, TInput, TOutput>.CreateDefaultModelData();
     }
 }

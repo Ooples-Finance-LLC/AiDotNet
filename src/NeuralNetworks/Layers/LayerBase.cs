@@ -26,6 +26,35 @@ namespace AiDotNet.NeuralNetworks.Layers;
 public abstract class LayerBase<T> : ILayer<T>
 {
     /// <summary>
+    /// Gets the name of this layer.
+    /// </summary>
+    /// <remarks>
+    /// <b>For Beginners:</b> This is a label or identifier for the layer, making it easier to track
+    /// and debug which layer is which in a neural network with many layers.
+    /// </remarks>
+    public virtual string Name { get; protected set; } = "Layer";
+
+    /// <summary>
+    /// Gets the size of the input dimension for this layer.
+    /// </summary>
+    /// <remarks>
+    /// <b>For Beginners:</b> This tells you how many input values this layer expects.
+    /// For example, if the layer expects a vector of 784 values (like flattened 28x28 images),
+    /// this property would return 784.
+    /// </remarks>
+    public virtual int InputSize => InputShape?.Aggregate((a, b) => a * b) ?? 0;
+
+    /// <summary>
+    /// Gets the size of the output dimension for this layer.
+    /// </summary>
+    /// <remarks>
+    /// <b>For Beginners:</b> This tells you how many output values this layer produces.
+    /// For example, a dense layer with 10 neurons will output 10 values,
+    /// so this property would return 10.
+    /// </remarks>
+    public virtual int OutputSize => OutputShape?.Aggregate((a, b) => a * b) ?? 0;
+
+    /// <summary>
     /// Gets the element-wise activation function for this layer, if specified.
     /// </summary>
     /// <remarks>
@@ -56,7 +85,7 @@ public abstract class LayerBase<T> : ILayer<T>
     /// </para>
     /// <para><b>For Beginners:</b> This is a more advanced function that processes groups of values together.
     /// 
-    /// Vector activation functions:
+    /// Vector<double> activation functions:
     /// - Process entire groups of numbers together, not just one at a time
     /// - Can capture relationships between different features
     /// - Are used for special purposes like classification (Softmax)
@@ -343,7 +372,7 @@ public abstract class LayerBase<T> : ILayer<T>
     /// <remarks>
     /// <para>
     /// This constructor creates a new Layer with the specified input and output shapes and vector activation function.
-    /// Vector activation functions operate on entire vectors rather than individual elements.
+    /// Vector<double> activation functions operate on entire vectors rather than individual elements.
     /// </para>
     /// <para><b>For Beginners:</b> This creates a new layer with an advanced vector-based activation.
     /// 
@@ -352,7 +381,7 @@ public abstract class LayerBase<T> : ILayer<T>
     /// - Configures a vector activation that processes groups of values together
     /// - Marks the layer as using vector activation
     /// 
-    /// Vector activations like Softmax are important for specific tasks like
+    /// Vector<double> activations like Softmax are important for specific tasks like
     /// classification, where outputs need to be interpreted as probabilities.
     /// </para>
     /// </remarks>
@@ -780,7 +809,7 @@ public abstract class LayerBase<T> : ILayer<T>
         {
             if (inputs[i].Rank != inputs[0].Rank)
             {
-                throw new ArgumentException($"All input tensors must have the same rank. Tensor at index {i} has a different rank.");
+                throw new ArgumentException($"All input tensors must have the same rank. Tensor<double> at index {i} has a different rank.");
             }
 
             for (int dim = 0; dim < inputs[i].Rank; dim++)
@@ -821,32 +850,87 @@ public abstract class LayerBase<T> : ILayer<T>
     }
 
     /// <summary>
-    /// Applies the activation function to a rank-1 tensor (vector).
+    /// Applies the activation function to each element of the input tensor while preserving its shape.
     /// </summary>
-    /// <param name="input">The input tensor to activate.</param>
-    /// <returns>The activated tensor.</returns>
-    /// <exception cref="ArgumentException">Thrown when the input tensor is not rank-1.</exception>
+    /// <param name="input">The input tensor to process.</param>
+    /// <returns>A new tensor with the same shape as the input, where the activation function has been applied to each element.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when the input tensor is null.</exception>
     /// <remarks>
-    /// <para>
-    /// This method applies the layer's activation function to a rank-1 tensor (a vector). It first converts
-    /// the tensor to a vector, applies the activation, and then converts it back to a tensor.
-    /// </para>
-    /// <para><b>For Beginners:</b> This method applies the activation function to a 1D array of values.
-    /// 
-    /// When processing a single "row" of data:
-    /// - This method converts it to a format the activation function can process
-    /// - Applies either the scalar or vector activation function
-    /// - Converts the result back to a tensor
-    /// 
-    /// This is a utility method used internally by various layer types.
-    /// </para>
+    /// This method efficiently applies the activation function to all elements while preserving the tensor's shape.
+    /// For large tensors, parallel processing is used to improve performance.
     /// </remarks>
     protected Tensor<T> ApplyActivation(Tensor<T> input)
     {
-        Vector<T> inputVector = input.ToVector();
-        Vector<T> outputVector = ApplyActivation(inputVector);
+        if (input == null)
+            throw new ArgumentNullException(nameof(input));
 
-        return Tensor<T>.FromVector(outputVector);
+        var result = new Tensor<T>(input.Shape);
+
+        // For small tensors, use simple iteration
+        if (input.Length < 10000) // Threshold can be tuned based on benchmarks
+        {
+            // Use indexers to process any rank tensor
+            var indices = new int[input.Rank];
+            ApplyActivationRecursive(input, result, indices, 0);
+        }
+        // For larger tensors, use parallel processing
+        else
+        {
+            // For rank-2 tensors, parallelize over the first dimension
+            if (input.Rank == 2)
+            {
+                Parallel.For(0, input.Shape[0], i =>
+                {
+                    for (int j = 0; j < input.Shape[1]; j++)
+                    {
+                        result[i, j] = Activation(input[i, j]);
+                    }
+                });
+            }
+            // For other ranks, use vector processing
+            else
+            {
+                // Use a thread-safe implementation
+                var inputArray = input.ToArray();
+                var resultVector = new Vector<T>(inputArray.Length);
+
+                Parallel.For(0, inputArray.Length, i =>
+                {
+                    result[i] = Activation(inputArray[i]);
+                });
+
+                result = Tensor<T>.FromVector(resultVector, input.Shape);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Recursively applies the activation function to each element of the tensor.
+    /// </summary>
+    private void ApplyActivationRecursive(Tensor<T> input, Tensor<T> result, int[] indices, int dimension)
+    {
+        if (dimension == input.Rank)
+        {
+            // We have full indices, apply activation
+            result[indices] = Activation(input[indices]);
+            return;
+        }
+
+        for (int i = 0; i < input.Shape[dimension]; i++)
+        {
+            indices[dimension] = i;
+            ApplyActivationRecursive(input, result, indices, dimension + 1);
+        }
+    }
+
+    /// <summary>
+    /// Applies activation function to a single value.
+    /// </summary>
+    private T Activation(T value)
+    {
+        return ScalarActivation != null ? ScalarActivation.Activate(value) : value;
     }
 
     /// <summary>
@@ -926,12 +1010,12 @@ public abstract class LayerBase<T> : ILayer<T>
     /// <remarks>
     /// <para>
     /// This helper method applies a vector activation function to a tensor. If the activation function is null,
-    /// it returns the input tensor unchanged. Vector activation functions operate on entire tensors at once,
+    /// it returns the input tensor unchanged. Vector<double> activation functions operate on entire tensors at once,
     /// which can be more efficient than element-wise operations.
     /// </para>
     /// <para><b>For Beginners:</b> This method applies an activation function to an entire tensor at once.
     /// 
-    /// Vector activation functions:
+    /// Vector<double> activation functions:
     /// - Process entire groups of values simultaneously
     /// - Can be more efficient than processing one value at a time
     /// - Provide the same mathematical result but often faster
@@ -1292,6 +1376,26 @@ public abstract class LayerBase<T> : ILayer<T>
     public virtual int ParameterCount => Parameters.Length;
 
     /// <summary>
+    /// Gets the total number of trainable parameters in this layer.
+    /// </summary>
+    /// <returns>The total count of trainable parameters.</returns>
+    /// <remarks>
+    /// <b>For Beginners:</b> This method returns the same information as the ParameterCount property,
+    /// but as a method call instead of a property access. It's provided for consistency with code
+    /// that expects to call a GetParameterCount() method.
+    ///
+    /// The number of parameters tells you how much the layer can learn. For example:
+    /// - A dense layer with 100 inputs and 50 outputs: 100×50 weights + 50 biases = 5,050 parameters
+    /// - A pooling layer (no learning): 0 parameters
+    ///
+    /// This is useful when analyzing model complexity or debugging parameter updates.
+    /// </remarks>
+    public virtual int GetParameterCount()
+    {
+        return ParameterCount;
+    }
+
+    /// <summary>
     /// Serializes the layer's parameters to a binary writer.
     /// </summary>
     /// <param name="writer">The binary writer to write to.</param>
@@ -1433,4 +1537,144 @@ public abstract class LayerBase<T> : ILayer<T>
     /// </para>
     /// </remarks>
     public abstract void ResetState();
+
+    /// <summary>
+    /// Creates a new instance of the layer with the specified parameters.
+    /// </summary>
+    /// <param name="parameters">The parameters to use for the new instance.</param>
+    /// <returns>A new model instance with the specified parameters.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method creates a new layer instance with the same configuration as the current layer
+    /// but with different parameter values. This is required by the IParameterizable interface
+    /// but is not typically used for layers since they are mutable.
+    /// </para>
+    /// </remarks>
+    public virtual IFullModel<T, Tensor<T>, Tensor<T>> WithParameters(Vector<T> parameters)
+    {
+        // Layers are not full models - they are components of models.
+        // This method is required by IParameterizable but doesn't make sense for layers.
+        // Most layers should use SetParameters instead for mutable updates.
+        throw new NotSupportedException(
+            "WithParameters is not supported for layers. Use SetParameters to update layer parameters in place. " +
+            "Layers are components of models, not full models themselves.");
+    }
+
+    /// <summary>
+    /// Serializes the layer to a byte array.
+    /// </summary>
+    /// <returns>A byte array containing the serialized layer data.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method converts the layer's configuration and parameters to a byte array
+    /// that can be saved to disk or transmitted over a network.
+    /// </para>
+    /// </remarks>
+    public virtual byte[] Serialize()
+    {
+        using var ms = new MemoryStream();
+        using var writer = new BinaryWriter(ms);
+        
+        // Write layer type name
+        writer.Write(GetType().FullName ?? GetType().Name);
+        
+        // Write input and output shapes
+        var inputShape = GetInputShape();
+        var outputShape = GetOutputShape();
+        
+        writer.Write(inputShape.Length);
+        foreach (var dim in inputShape)
+        {
+            writer.Write(dim);
+        }
+        
+        writer.Write(outputShape.Length);
+        foreach (var dim in outputShape)
+        {
+            writer.Write(dim);
+        }
+        
+        // Write parameter count and parameters
+        writer.Write(ParameterCount);
+        if (ParameterCount > 0)
+        {
+            var parameters = GetParameters();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                writer.Write(Convert.ToDouble(parameters[i]));
+            }
+        }
+        
+        // Write activation function info
+        var activationTypes = GetActivationTypes().ToList();
+        writer.Write(activationTypes.Count);
+        foreach (var activationType in activationTypes)
+        {
+            writer.Write((int)activationType);
+        }
+        
+        // Note: Training mode is typically managed externally
+        // and set via SetTrainingMode, so we don't serialize it
+        
+        return ms.ToArray();
+    }
+
+    /// <summary>
+    /// Deserializes the layer from a byte array.
+    /// </summary>
+    /// <param name="data">The byte array containing the serialized layer data.</param>
+    /// <remarks>
+    /// <para>
+    /// This method restores the layer's configuration and parameters from a byte array
+    /// that was previously created by the Serialize method.
+    /// </para>
+    /// </remarks>
+    public virtual void Deserialize(byte[] data)
+    {
+        using var ms = new MemoryStream(data);
+        using var reader = new BinaryReader(ms);
+        
+        // Read layer type name (for validation)
+        var typeName = reader.ReadString();
+        
+        // Read input shape
+        var inputShapeLength = reader.ReadInt32();
+        var inputShape = new int[inputShapeLength];
+        for (int i = 0; i < inputShapeLength; i++)
+        {
+            inputShape[i] = reader.ReadInt32();
+        }
+        
+        // Read output shape
+        var outputShapeLength = reader.ReadInt32();
+        var outputShape = new int[outputShapeLength];
+        for (int i = 0; i < outputShapeLength; i++)
+        {
+            outputShape[i] = reader.ReadInt32();
+        }
+        
+        // Read parameters
+        var paramCount = reader.ReadInt32();
+        if (paramCount > 0)
+        {
+            var parameters = new Vector<T>(paramCount);
+            for (int i = 0; i < paramCount; i++)
+            {
+                parameters[i] = NumOps.FromDouble(reader.ReadDouble());
+            }
+            SetParameters(parameters);
+        }
+        
+        // Read activation function info
+        var activationCount = reader.ReadInt32();
+        for (int i = 0; i < activationCount; i++)
+        {
+            var activationType = (ActivationFunction)reader.ReadInt32();
+            // Note: Activation functions are typically set in constructor,
+            // so we just read and discard here
+        }
+        
+        // Note: Training mode is typically managed externally
+        // and set via SetTrainingMode, so we don't deserialize it
+    }
 }

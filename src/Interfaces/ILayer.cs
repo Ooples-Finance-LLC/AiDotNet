@@ -1,3 +1,5 @@
+global using System.Collections.Generic;
+
 namespace AiDotNet.Interfaces;
 
 /// <summary>
@@ -11,15 +13,45 @@ namespace AiDotNet.Interfaces;
 /// This interface defines what all layers must be able to do, regardless of their specific type.
 /// Think of it as a checklist of abilities that every layer must have to work within our neural network.
 /// </remarks>
-public interface ILayer<T>
+public interface ILayer<T> : IParameterizable<T, Tensor<T>, Tensor<T>>, IModelSerializer
 {
+    /// <summary>
+    /// Gets the name of this layer.
+    /// </summary>
+    /// <remarks>
+    /// <b>For Beginners:</b> This is a label or identifier for the layer, making it easier to track
+    /// and debug which layer is which in a neural network with many layers.
+    /// For example, layers might be named "conv1", "pooling1", "dense_output", etc.
+    /// </remarks>
+    string Name { get; }
+
+    /// <summary>
+    /// Gets the size of the input dimension for this layer.
+    /// </summary>
+    /// <remarks>
+    /// <b>For Beginners:</b> This tells you how many input values this layer expects.
+    /// For example, if the layer expects a vector of 784 values (like flattened 28x28 images),
+    /// this property would return 784.
+    /// </remarks>
+    int InputSize { get; }
+
+    /// <summary>
+    /// Gets the size of the output dimension for this layer.
+    /// </summary>
+    /// <remarks>
+    /// <b>For Beginners:</b> This tells you how many output values this layer produces.
+    /// For example, a dense layer with 10 neurons will output 10 values,
+    /// so this property would return 10.
+    /// </remarks>
+    int OutputSize { get; }
+
     /// <summary>
     /// Gets the shape (dimensions) of the input data expected by this layer.
     /// </summary>
     /// <returns>An array of integers representing the input dimensions.</returns>
     /// <remarks>
     /// <b>For Beginners:</b> This tells us what size and shape of data this layer expects to receive.
-    /// For example, if processing images, this might be [3, 28, 28] for 28×28 pixel images with 3 color channels.
+    /// For example, if processing images, this might be [3, 28, 28] for 28ï¿½28 pixel images with 3 color channels.
     /// </remarks>
     int[] GetInputShape();
 
@@ -105,39 +137,13 @@ public interface ILayer<T>
     /// <b>For Beginners:</b> This tells you how many adjustable values this layer has.
     /// 
     /// For example:
-    /// - A dense layer with 10 inputs and 5 outputs has 10×5=50 weights plus 5 biases = 55 parameters
-    /// - A convolutional layer with 16 3×3 filters has 16×3×3=144 weights plus 16 biases = 160 parameters
+    /// - A dense layer with 10 inputs and 5 outputs has 10ï¿½5=50 weights plus 5 biases = 55 parameters
+    /// - A convolutional layer with 16 3ï¿½3 filters has 16ï¿½3ï¿½3=144 weights plus 16 biases = 160 parameters
     /// - A pooling layer has 0 parameters (it just selects values, no weights to adjust)
     /// 
     /// More parameters means the layer can learn more complex patterns, but also requires more data to train effectively.
     /// </remarks>
     int ParameterCount { get; }
-
-    /// <summary>
-    /// Saves the layer's configuration and parameters to a binary stream.
-    /// </summary>
-    /// <param name="writer">The binary writer to write the data to.</param>
-    /// <remarks>
-    /// <b>For Beginners:</b> This method saves all the information about the layer so it can be loaded later.
-    /// 
-    /// It's like saving your progress in a video game - all the important information about the layer
-    /// (its type, shape, and learned parameters) gets written to a file so you can continue using
-    /// the same trained layer later without having to train it again.
-    /// </remarks>
-    void Serialize(BinaryWriter writer);
-
-    /// <summary>
-    /// Loads the layer's configuration and parameters from a binary stream.
-    /// </summary>
-    /// <param name="reader">The binary reader to read the data from.</param>
-    /// <remarks>
-    /// <b>For Beginners:</b> This method loads previously saved information about the layer.
-    /// 
-    /// It's the counterpart to Serialize - if Serialize is like saving your game progress,
-    /// Deserialize is like loading that saved game. It restores all the layer's settings and
-    /// learned parameters from a file.
-    /// </remarks>
-    void Deserialize(BinaryReader reader);
 
     /// <summary>
     /// Gets the activation functions used by this layer.
@@ -155,23 +161,6 @@ public interface ILayer<T>
     /// This method tells you which activation functions this layer uses.
     /// </remarks>
     IEnumerable<ActivationFunction> GetActivationTypes();
-
-    /// <summary>
-    /// Gets all trainable parameters of the layer as a single vector.
-    /// </summary>
-    /// <returns>A vector containing all trainable parameters.</returns>
-    /// <remarks>
-    /// <b>For Beginners:</b> This method returns all the values that can be adjusted during training
-    /// (weights and biases) as a single list.
-    /// 
-    /// This is useful for:
-    /// 1. Saving and loading models
-    /// 2. Advanced optimization techniques
-    /// 3. Analyzing or visualizing the learned parameters
-    /// 
-    /// Some layers (like pooling layers) might return an empty vector because they have no trainable parameters.
-    /// </remarks>
-    Vector<T> GetParameters();
 
     /// <summary>
     /// Indicates whether this layer supports training operations.
@@ -230,21 +219,6 @@ public interface ILayer<T>
     /// </remarks>
     void ClearGradients();
 
-    /// <summary>
-    /// Sets all trainable parameters of the layer to the specified values.
-    /// </summary>
-    /// <param name="parameters">The new parameter values to set.</param>
-    /// <remarks>
-    /// <b>For Beginners:</b> This method lets you directly set all the weights and biases of the layer.
-    /// 
-    /// This is useful when:
-    /// 1. Loading a pre-trained model
-    /// 2. Initializing parameters in a specific way
-    /// 3. Testing how different parameter values affect performance
-    /// 
-    /// It's like replacing all the settings in the layer at once.
-    /// </remarks>
-    void SetParameters(Vector<T> parameters);
 
     /// <summary>
     /// Resets the internal state of the layer to its initial condition.
@@ -263,4 +237,21 @@ public interface ILayer<T>
     /// affect how the next sentence is processed.
     /// </remarks>
     void ResetState();
+
+    /// <summary>
+    /// Gets the total number of trainable parameters in this layer.
+    /// </summary>
+    /// <returns>The total count of trainable parameters.</returns>
+    /// <remarks>
+    /// <b>For Beginners:</b> This method returns the same information as the ParameterCount property,
+    /// but as a method call instead of a property access. It's provided for consistency with code
+    /// that expects to call a GetParameterCount() method.
+    ///
+    /// The number of parameters tells you how much the layer can learn. For example:
+    /// - A dense layer with 100 inputs and 50 outputs: 100Ã—50 weights + 50 biases = 5,050 parameters
+    /// - A pooling layer (no learning): 0 parameters
+    ///
+    /// This is useful when analyzing model complexity or debugging parameter updates.
+    /// </remarks>
+    int GetParameterCount();
 }

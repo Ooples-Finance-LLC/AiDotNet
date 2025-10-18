@@ -24,7 +24,7 @@ namespace AiDotNet.Regression;
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The numeric type used for calculations, typically float or double.</typeparam>
-public class LogisticRegression<T> : RegressionBase<T>
+public class LogisticRegression<T> : RegressionModelBase<T>
 {
     /// <summary>
     /// The configuration options for the logistic regression model.
@@ -44,7 +44,7 @@ public class LogisticRegression<T> : RegressionBase<T>
     /// Think of these like the knobs on a machine that you can adjust to get better results.
     /// </para>
     /// </remarks>
-    private readonly LogisticRegressionOptions<T> _options;
+    private readonly LogisticRegressionOptions<T> _options = default!;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LogisticRegression{T}"/> class with optional custom options
@@ -69,7 +69,7 @@ public class LogisticRegression<T> : RegressionBase<T>
     /// </para>
     /// </remarks>
     public LogisticRegression(LogisticRegressionOptions<T>? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _options = options ?? new LogisticRegressionOptions<T>();
     }

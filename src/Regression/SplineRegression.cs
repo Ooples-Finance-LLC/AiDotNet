@@ -31,7 +31,7 @@ namespace AiDotNet.Regression;
 /// A spline regression can capture these changing relationships much better than a simple line.
 /// </para>
 /// </remarks>
-public class SplineRegression<T> : NonLinearRegressionBase<T>
+public class SplineRegression<T> : NonLinearRegressionModelBase<T>
 {
     /// <summary>
     /// Configuration options for the spline regression model.
@@ -51,7 +51,7 @@ public class SplineRegression<T> : NonLinearRegressionBase<T>
     /// wiggly (overfitting).
     /// </para>
     /// </remarks>
-    private readonly SplineRegressionOptions _options;
+    private readonly SplineRegressionOptions _options = default!;
     
     /// <summary>
     /// The collection of knot points for each feature.
@@ -72,7 +72,7 @@ public class SplineRegression<T> : NonLinearRegressionBase<T>
     /// These knots help the model capture changing patterns across your data range.
     /// </para>
     /// </remarks>
-    private List<Vector<T>> _knots;
+    private List<Vector<T>> _knots = default!;
     
     /// <summary>
     /// The coefficients for the spline model.
@@ -92,7 +92,7 @@ public class SplineRegression<T> : NonLinearRegressionBase<T>
     /// The coefficients are what the model learns when you train it on your data.
     /// </para>
     /// </remarks>
-    private Vector<T> _coefficients;
+    private Vector<T> _coefficients = default!;
 
     /// <summary>
     /// Creates a new spline regression model.

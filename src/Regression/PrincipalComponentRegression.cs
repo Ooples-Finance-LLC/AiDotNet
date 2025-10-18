@@ -24,7 +24,7 @@ namespace AiDotNet.Regression;
 /// problems in standard regression.
 /// </para>
 /// </remarks>
-public class PrincipalComponentRegression<T> : RegressionBase<T>
+public class PrincipalComponentRegression<T> : RegressionModelBase<T>
 {
     /// <summary>
     /// Configuration options for the principal component regression model.
@@ -32,7 +32,7 @@ public class PrincipalComponentRegression<T> : RegressionBase<T>
     /// <value>
     /// Contains settings like the number of components to use or the explained variance ratio threshold.
     /// </value>
-    private readonly PrincipalComponentRegressionOptions<T> _options;
+    private readonly PrincipalComponentRegressionOptions<T> _options = default!;
 
     /// <summary>
     /// The principal components extracted from the training data.
@@ -40,7 +40,7 @@ public class PrincipalComponentRegression<T> : RegressionBase<T>
     /// <value>
     /// A matrix where each column represents a principal component.
     /// </value>
-    private Matrix<T> _components;
+    private Matrix<T> _components = default!;
 
     /// <summary>
     /// The mean of each predictor variable used for centering.
@@ -48,7 +48,7 @@ public class PrincipalComponentRegression<T> : RegressionBase<T>
     /// <value>
     /// A vector containing the mean value of each predictor variable.
     /// </value>
-    private Vector<T> _xMean;
+    private Vector<T> _xMean = default!;
 
     /// <summary>
     /// The mean of the target variable used for centering.
@@ -56,7 +56,7 @@ public class PrincipalComponentRegression<T> : RegressionBase<T>
     /// <value>
     /// A vector containing the mean value of the target variable.
     /// </value>
-    private Vector<T> _yMean;
+    private Vector<T> _yMean = default!;
 
     /// <summary>
     /// The standard deviation of each predictor variable used for scaling.
@@ -64,7 +64,7 @@ public class PrincipalComponentRegression<T> : RegressionBase<T>
     /// <value>
     /// A vector containing the standard deviation of each predictor variable.
     /// </value>
-    private Vector<T> _xStd;
+    private Vector<T> _xStd = default!;
 
     /// <summary>
     /// The standard deviation of the target variable used for scaling.
@@ -72,7 +72,7 @@ public class PrincipalComponentRegression<T> : RegressionBase<T>
     /// <value>
     /// The standard deviation value of the target variable.
     /// </value>
-    private T _yStd;
+    private T _yStd = default!;
 
     /// <summary>
     /// Initializes a new instance of the PrincipalComponentRegression class with the specified options and regularization.
@@ -90,7 +90,7 @@ public class PrincipalComponentRegression<T> : RegressionBase<T>
     /// </para>
     /// </remarks>
     public PrincipalComponentRegression(PrincipalComponentRegressionOptions<T>? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _options = options ?? new PrincipalComponentRegressionOptions<T>();
         _components = new Matrix<T>(0, 0);
@@ -309,9 +309,9 @@ public class PrincipalComponentRegression<T> : RegressionBase<T>
     /// variables are most influential in making predictions.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = GetModelType(),
             AdditionalInfo = new Dictionary<string, object>

@@ -1,3 +1,6 @@
+using System.Threading.Tasks;
+using AiDotNet.Interpretability;
+
 namespace AiDotNet.Regression;
 
 /// <summary>
@@ -22,7 +25,7 @@ namespace AiDotNet.Regression;
 /// straight line.
 /// </para>
 /// </remarks>
-public abstract class NonLinearRegressionBase<T> : INonLinearRegression<T>
+public abstract class NonLinearRegressionModelBase<T> : INonLinearRegression<T>
 {
     /// <summary>
     /// Gets the numeric operations provider for the specified type T.
@@ -39,6 +42,25 @@ public abstract class NonLinearRegressionBase<T> : INonLinearRegression<T>
     /// </para>
     /// </remarks>
     protected INumericOperations<T> NumOps { get; private set; }
+
+    /// <summary>
+    /// Set of feature indices that have been explicitly marked as active.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This field stores feature indices that have been explicitly set as active through
+    /// the SetActiveFeatureIndices method, overriding the automatic determination based
+    /// on the model parameters.
+    /// </para>
+    /// <para><b>For Beginners:</b> This tracks which input features have been manually
+    /// selected as important for the non-linear regression model, regardless of what features
+    /// are actually used in the model's calculations.
+    /// 
+    /// When set, these manually selected features take precedence over the automatic
+    /// feature detection based on the model parameters.
+    /// </para>
+    /// </remarks>
+    private HashSet<int>? _explicitlySetActiveFeatures;
 
     /// <summary>
     /// Gets the configuration options for the non-linear regression model.
@@ -121,7 +143,7 @@ public abstract class NonLinearRegressionBase<T> : INonLinearRegression<T>
     protected T B { get; set; }
 
     /// <summary>
-    /// Initializes a new instance of the NonLinearRegressionBase class with the specified options and regularization.
+    /// Initializes a new instance of the NonLinearRegressionModelBase class with the specified options and regularization.
     /// </summary>
     /// <param name="options">Configuration options for the non-linear regression model. If null, default options will be used.</param>
     /// <param name="regularization">Regularization method to prevent overfitting. If null, no regularization will be applied.</param>
@@ -136,7 +158,7 @@ public abstract class NonLinearRegressionBase<T> : INonLinearRegression<T>
     /// before you actually train it with data.
     /// </para>
     /// </remarks>
-    protected NonLinearRegressionBase(NonLinearRegressionOptions? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
+    protected NonLinearRegressionModelBase(NonLinearRegressionOptions? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
     {
         Options = options ?? new NonLinearRegressionOptions();
         Regularization = regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>();
@@ -441,9 +463,9 @@ public abstract class NonLinearRegressionBase<T> : INonLinearRegression<T>
     /// can be useful for understanding the model's complexity and for debugging purposes.
     /// </para>
     /// </remarks>
-    public virtual ModelMetaData<T> GetModelMetaData()
+    public virtual ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = GetModelType(),
             AdditionalInfo = new Dictionary<string, object>
@@ -674,7 +696,7 @@ public abstract class NonLinearRegressionBase<T> : INonLinearRegression<T>
         }
     
         // Create a new instance of the model
-        var clone = (NonLinearRegressionBase<T>)this.Clone();
+        var clone = (NonLinearRegressionModelBase<T>)this.Clone();
     
         // Set the bias term
         clone.B = parameters[0];
@@ -686,6 +708,49 @@ public abstract class NonLinearRegressionBase<T> : INonLinearRegression<T>
         }
     
         return clone;
+    }
+
+    /// <summary>
+    /// Sets the parameters of the model.
+    /// </summary>
+    /// <param name="parameters">A vector containing all model parameters (bias term followed by alpha coefficients).</param>
+    /// <exception cref="ArgumentNullException">Thrown when parameters is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when the parameters vector doesn't match the expected length.</exception>
+    /// <remarks>
+    /// <para>
+    /// This method updates the model's parameters in place. The first element of the parameters vector
+    /// is interpreted as the bias term, and the remaining elements are interpreted as alpha coefficients.
+    /// </para>
+    /// <para>
+    /// For Beginners:
+    /// This method updates the model's internal values (parameters) with new ones you provide.
+    /// It's like adjusting the settings on a machine to change how it operates.
+    /// This is useful when loading saved models or applying parameter updates
+    /// from optimization algorithms.
+    /// </para>
+    /// </remarks>
+    public virtual void SetParameters(Vector<T> parameters)
+    {
+        if (parameters == null)
+        {
+            throw new ArgumentNullException(nameof(parameters));
+        }
+
+        // Verify that the parameters vector has the correct length
+        if (parameters.Length != Alphas.Length + 1)
+        {
+            throw new ArgumentException($"Parameters vector length ({parameters.Length}) " +
+                                       $"does not match expected length ({Alphas.Length + 1}).", nameof(parameters));
+        }
+
+        // Set the bias term
+        B = parameters[0];
+
+        // Set the alpha coefficients
+        for (int i = 0; i < Alphas.Length; i++)
+        {
+            Alphas[i] = parameters[i + 1];
+        }
     }
 
     /// <summary>
@@ -803,7 +868,7 @@ public abstract class NonLinearRegressionBase<T> : INonLinearRegression<T>
     public virtual IFullModel<T, Matrix<T>, Vector<T>> DeepCopy()
     {
         // Create a new instance through cloning
-        var clone = (NonLinearRegressionBase<T>)this.Clone();
+        var clone = (NonLinearRegressionModelBase<T>)this.Clone();
     
         // Perform deep copy of all mutable fields
         clone.SupportVectors = SupportVectors.Clone();
@@ -842,7 +907,7 @@ public abstract class NonLinearRegressionBase<T> : INonLinearRegression<T>
     public virtual IFullModel<T, Matrix<T>, Vector<T>> Clone()
     {
         // Create a new instance using the factory method
-        var clone = (NonLinearRegressionBase<T>)CreateInstance();
+        var clone = (NonLinearRegressionModelBase<T>)CreateInstance();
     
         // Copy the model parameters
         clone.SupportVectors = SupportVectors;  // Shallow copy
@@ -853,4 +918,185 @@ public abstract class NonLinearRegressionBase<T> : INonLinearRegression<T>
     
         return clone;
     }
+
+    /// <summary>
+    /// Sets which features should be considered active in the model.
+    /// </summary>
+    /// <param name="featureIndices">The indices of features to mark as active.</param>
+    /// <exception cref="ArgumentNullException">Thrown when featureIndices is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when any feature index is negative.</exception>
+    /// <remarks>
+    /// <para>
+    /// This method explicitly specifies which features should be considered active in the
+    /// non-linear regression model, overriding the automatic determination based on the model parameters.
+    /// Any features not included in the provided collection will be considered inactive,
+    /// regardless of whether they are used in model calculations.
+    /// </para>
+    /// <para><b>For Beginners:</b> This method lets you manually tell the model which input features
+    /// are important, regardless of what the model actually learned during training.
+    /// 
+    /// For example, if you have 10 features but want to focus on only features 2, 5, and 7,
+    /// you can use this method to specify exactly those features. After setting these features:
+    /// - Only these specific features will be reported as active by GetActiveFeatureIndices()
+    /// - Only these features will return true when checked with IsFeatureUsed()
+    /// - This selection will persist when the model is saved and loaded
+    /// 
+    /// This can be useful for:
+    /// - Feature selection experiments (testing different feature subsets)
+    /// - Simplifying model interpretation
+    /// - Ensuring consistency across different models
+    /// - Highlighting specific features you know are important from domain expertise
+    /// </para>
+    /// </remarks>
+    public virtual void SetActiveFeatureIndices(IEnumerable<int> featureIndices)
+    {
+        if (featureIndices == null)
+        {
+            throw new ArgumentNullException(nameof(featureIndices), "Feature indices cannot be null.");
+        }
+
+        // Initialize the hash set if it doesn't exist
+        _explicitlySetActiveFeatures ??= [];
+
+        // Clear existing explicitly set features
+        _explicitlySetActiveFeatures.Clear();
+
+        // Add the new feature indices
+        foreach (var index in featureIndices)
+        {
+            if (index < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(featureIndices),
+                    $"Feature index {index} cannot be negative.");
+            }
+
+            _explicitlySetActiveFeatures.Add(index);
+        }
+    }
+
+    #region IInterpretableModel Implementation
+
+    protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
+    protected Vector<int> _sensitiveFeatures;
+    protected readonly List<FairnessMetric> _fairnessMetrics = new();
+    protected IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> _baseModel;
+
+    /// <summary>
+    /// Gets the global feature importance across all predictions.
+    /// </summary>
+    public virtual async Task<Dictionary<int, T>> GetGlobalFeatureImportanceAsync()
+    {
+        return await InterpretableModelHelper.GetGlobalFeatureImportanceAsync(this, _enabledMethods);
+    }
+
+    /// <summary>
+    /// Gets the local feature importance for a specific input.
+    /// </summary>
+    public virtual async Task<Dictionary<int, T>> GetLocalFeatureImportanceAsync(Matrix<T> input)
+    {
+        return await InterpretableModelHelper.GetLocalFeatureImportanceAsync(this, _enabledMethods, input);
+    }
+
+    /// <summary>
+    /// Gets SHAP values for the given inputs.
+    /// </summary>
+    public virtual async Task<Matrix<T>> GetShapValuesAsync(Matrix<T> inputs)
+    {
+        return await InterpretableModelHelper.GetShapValuesAsync(this, _enabledMethods);
+    }
+
+    /// <summary>
+    /// Gets LIME explanation for a specific input.
+    /// </summary>
+    public virtual async Task<LimeExplanation<T>> GetLimeExplanationAsync(Matrix<T> input, int numFeatures = 10)
+    {
+        return await InterpretableModelHelper.GetLimeExplanationAsync<T>(_enabledMethods, numFeatures);
+    }
+
+    /// <summary>
+    /// Gets partial dependence data for specified features.
+    /// </summary>
+    public virtual async Task<PartialDependenceData<T>> GetPartialDependenceAsync(Vector<int> featureIndices, int gridResolution = 20)
+    {
+        return await InterpretableModelHelper.GetPartialDependenceAsync<T>(_enabledMethods, featureIndices, gridResolution);
+    }
+
+    /// <summary>
+    /// Gets counterfactual explanation for a given input and desired output.
+    /// </summary>
+    public virtual async Task<CounterfactualExplanation<T>> GetCounterfactualAsync(Matrix<T> input, Vector<T> desiredOutput, int maxChanges = 5)
+    {
+        return await InterpretableModelHelper.GetCounterfactualAsync<T>(_enabledMethods, maxChanges);
+    }
+
+    /// <summary>
+    /// Gets model-specific interpretability information.
+    /// </summary>
+    public virtual async Task<Dictionary<string, object>> GetModelSpecificInterpretabilityAsync()
+    {
+        return await InterpretableModelHelper.GetModelSpecificInterpretabilityAsync(this);
+    }
+
+    /// <summary>
+    /// Generates a text explanation for a prediction.
+    /// </summary>
+    public virtual async Task<string> GenerateTextExplanationAsync(Matrix<T> input, Vector<T> prediction)
+    {
+        return await InterpretableModelHelper.GenerateTextExplanationAsync(this, input, prediction);
+    }
+
+    /// <summary>
+    /// Gets feature interaction effects between two features.
+    /// </summary>
+    public virtual async Task<T> GetFeatureInteractionAsync(int feature1Index, int feature2Index)
+    {
+        return await InterpretableModelHelper.GetFeatureInteractionAsync<T>(_enabledMethods, feature1Index, feature2Index);
+    }
+
+    /// <summary>
+    /// Validates fairness metrics for the given inputs.
+    /// </summary>
+    public virtual async Task<FairnessMetrics<T>> ValidateFairnessAsync(Matrix<T> inputs, int sensitiveFeatureIndex)
+    {
+        return await InterpretableModelHelper.ValidateFairnessAsync<T>(_fairnessMetrics);
+    }
+
+    /// <summary>
+    /// Gets anchor explanation for a given input.
+    /// </summary>
+    public virtual async Task<AnchorExplanation<T>> GetAnchorExplanationAsync(Matrix<T> input, T threshold)
+    {
+        return await InterpretableModelHelper.GetAnchorExplanationAsync(_enabledMethods, threshold);
+    }
+
+    /// <summary>
+    /// Sets the base model for interpretability analysis.
+    /// </summary>
+    public virtual void SetBaseModel(IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> model)
+    {
+        _baseModel = model ?? throw new ArgumentNullException(nameof(model));
+    }
+
+    /// <summary>
+    /// Enables specific interpretation methods.
+    /// </summary>
+    public virtual void EnableMethod(params InterpretationMethod[] methods)
+    {
+        foreach (var method in methods)
+        {
+            _enabledMethods.Add(method);
+        }
+    }
+
+    /// <summary>
+    /// Configures fairness evaluation settings.
+    /// </summary>
+    public virtual void ConfigureFairness(Vector<int> sensitiveFeatures, params FairnessMetric[] fairnessMetrics)
+    {
+        _sensitiveFeatures = sensitiveFeatures ?? throw new ArgumentNullException(nameof(sensitiveFeatures));
+        _fairnessMetrics.Clear();
+        _fairnessMetrics.AddRange(fairnessMetrics);
+    }
+
+    #endregion
 }

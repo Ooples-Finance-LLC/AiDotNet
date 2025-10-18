@@ -65,7 +65,7 @@ public class GlobalPoolingLayer<T> : LayerBase<T>
     /// Selecting the right pooling type depends on your specific task and data.
     /// </para>
     /// </remarks>
-    private readonly PoolingType _poolingType;
+    private readonly PoolingType _poolingType = default!;
 
     /// <summary>
     /// The input tensor from the last forward pass, saved for backpropagation.
@@ -201,9 +201,9 @@ public class GlobalPoolingLayer<T> : LayerBase<T>
     /// 
     /// This constructor is almost identical to the first one, but with one key difference:
     /// - Regular activation: processes each pooled value separately
-    /// - Vector activation: processes groups of pooled values together
+    /// - Vector<double> activation: processes groups of pooled values together
     /// 
-    /// Vector activation functions are useful when the relationship between
+    /// Vector<double> activation functions are useful when the relationship between
     /// different channels needs to be considered. For example, softmax might
     /// be applied across all channels to normalize them into a probability distribution.
     /// 

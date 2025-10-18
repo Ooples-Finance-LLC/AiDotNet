@@ -195,7 +195,7 @@ public class OptimizationResult<T, TInput, TOutput>
     /// <summary>
     /// Gets or sets the list of feature vectors selected for the model.
     /// </summary>
-    /// <value>A list of Vector&lt;T&gt; objects representing the selected features, initialized as an empty list.</value>
+    /// <value>A list of Vector<double>&lt;T&gt; objects representing the selected features, initialized as an empty list.</value>
     /// <remarks>
     /// <para>
     /// This property contains the list of feature vectors that were selected for use in the best model. Feature selection 
@@ -412,7 +412,7 @@ public class OptimizationResult<T, TInput, TOutput>
     /// This field stores an instance of INumericOperations&lt;T&gt; that provides mathematical operations for the generic 
     /// type T. It allows the class to perform numeric operations regardless of the specific numeric type used.
     /// </remarks>
-    private readonly INumericOperations<T> _numOps;
+    private readonly INumericOperations<T> _numOps = default!;
 
     /// <summary>
     /// Initializes a new instance of the OptimizationResult class with default values.
@@ -447,9 +447,9 @@ public class OptimizationResult<T, TInput, TOutput>
         _numOps = MathHelper.GetNumericOperations<T>();
         FitnessHistory = Vector<T>.Empty();
         SelectedFeatures = [];
-        TrainingResult = new DatasetResult();
-        ValidationResult = new DatasetResult();
-        TestResult = new DatasetResult();
+        TrainingResult = new DatasetResult(ModelType.None);
+        ValidationResult = new DatasetResult(ModelType.None);
+        TestResult = new DatasetResult(ModelType.None);
         FitDetectionResult = new FitDetectorResult<T>();
         CoefficientLowerBounds = Vector<T>.Empty();
         CoefficientUpperBounds = Vector<T>.Empty();
@@ -702,7 +702,7 @@ public class OptimizationResult<T, TInput, TOutput>
         /// used internally when creating the OptimizationResult.
         /// </para>
         /// </remarks>
-        public DatasetResult()
+        public DatasetResult(ModelType modelType)
         {
             (X, Y, Predictions) = ModelHelper<T, TInput, TOutput>.CreateDefaultModelData();
             ErrorStats = ErrorStats<T>.Empty();

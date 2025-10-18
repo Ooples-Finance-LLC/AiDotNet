@@ -1,0 +1,20 @@
+MSBuild version 17.8.27+3ab07f0cf for .NET
+/usr/lib/dotnet/sdk/8.0.116/Microsoft.Common.CurrentVersion.targets(1190,5): warning MSB3191: Unable to create directory "bin/Debug/net6.0/". Input/output error : '/mnt/c/projects/AiDotNet/src/bin/Debug/net6.0/' [/mnt/c/projects/AiDotNet/src/AiDotNet.csproj::TargetFramework=net6.0]
+/usr/lib/dotnet/sdk/8.0.116/Microsoft.Common.CurrentVersion.targets(1190,5): warning MSB3191: Unable to create directory "obj/Debug/net6.0/". Input/output error : '/mnt/c/projects/AiDotNet/src/obj/Debug/net6.0/' [/mnt/c/projects/AiDotNet/src/AiDotNet.csproj::TargetFramework=net6.0]
+/usr/lib/dotnet/sdk/8.0.116/Microsoft.Common.CurrentVersion.targets(1190,5): warning MSB3191: Unable to create directory "/mnt/c/projects/AiDotNet/src/obj/Debug/net6.0/refint/". Input/output error : '/mnt/c/projects/AiDotNet/src/obj/Debug/net6.0/refint/' [/mnt/c/projects/AiDotNet/src/AiDotNet.csproj::TargetFramework=net6.0]
+/usr/lib/dotnet/sdk/8.0.116/Microsoft.Common.CurrentVersion.targets(1190,5): warning MSB3191: Unable to create directory "obj/Debug/net6.0/ref". Input/output error : '/mnt/c/projects/AiDotNet/src/obj/Debug/net6.0/ref' [/mnt/c/projects/AiDotNet/src/AiDotNet.csproj::TargetFramework=net6.0]
+/usr/lib/dotnet/sdk/8.0.116/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.GenerateGlobalUsings.targets(45,5): error MSB3491: Could not write lines to file "obj/Debug/net6.0/AiDotNet.GlobalUsings.g.cs". Input/output error : '/mnt/c/projects/AiDotNet/src/obj/Debug/net6.0' [/mnt/c/projects/AiDotNet/src/AiDotNet.csproj::TargetFramework=net6.0]
+/usr/lib/dotnet/sdk/8.0.116/Microsoft.Common.CurrentVersion.targets(5748,5): error MSB3191: Unable to create directory "obj/Debug/net6.0/". Input/output error : '/mnt/c/projects/AiDotNet/src/obj/Debug/net6.0/' [/mnt/c/projects/AiDotNet/src/AiDotNet.csproj::TargetFramework=net6.0]
+
+Build FAILED.
+
+/usr/lib/dotnet/sdk/8.0.116/Microsoft.Common.CurrentVersion.targets(1190,5): warning MSB3191: Unable to create directory "bin/Debug/net6.0/". Input/output error : '/mnt/c/projects/AiDotNet/src/bin/Debug/net6.0/' [/mnt/c/projects/AiDotNet/src/AiDotNet.csproj::TargetFramework=net6.0]
+/usr/lib/dotnet/sdk/8.0.116/Microsoft.Common.CurrentVersion.targets(1190,5): warning MSB3191: Unable to create directory "obj/Debug/net6.0/". Input/output error : '/mnt/c/projects/AiDotNet/src/obj/Debug/net6.0/' [/mnt/c/projects/AiDotNet/src/AiDotNet.csproj::TargetFramework=net6.0]
+/usr/lib/dotnet/sdk/8.0.116/Microsoft.Common.CurrentVersion.targets(1190,5): warning MSB3191: Unable to create directory "/mnt/c/projects/AiDotNet/src/obj/Debug/net6.0/refint/". Input/output error : '/mnt/c/projects/AiDotNet/src/obj/Debug/net6.0/refint/' [/mnt/c/projects/AiDotNet/src/AiDotNet.csproj::TargetFramework=net6.0]
+/usr/lib/dotnet/sdk/8.0.116/Microsoft.Common.CurrentVersion.targets(1190,5): warning MSB3191: Unable to create directory "obj/Debug/net6.0/ref". Input/output error : '/mnt/c/projects/AiDotNet/src/obj/Debug/net6.0/ref' [/mnt/c/projects/AiDotNet/src/AiDotNet.csproj::TargetFramework=net6.0]
+/usr/lib/dotnet/sdk/8.0.116/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.GenerateGlobalUsings.targets(45,5): error MSB3491: Could not write lines to file "obj/Debug/net6.0/AiDotNet.GlobalUsings.g.cs". Input/output error : '/mnt/c/projects/AiDotNet/src/obj/Debug/net6.0' [/mnt/c/projects/AiDotNet/src/AiDotNet.csproj::TargetFramework=net6.0]
+/usr/lib/dotnet/sdk/8.0.116/Microsoft.Common.CurrentVersion.targets(5748,5): error MSB3191: Unable to create directory "obj/Debug/net6.0/". Input/output error : '/mnt/c/projects/AiDotNet/src/obj/Debug/net6.0/' [/mnt/c/projects/AiDotNet/src/AiDotNet.csproj::TargetFramework=net6.0]
+    4 Warning(s)
+    2 Error(s)
+
+Time Elapsed 00:00:00.69

@@ -36,22 +36,17 @@
 /// to build multiple models.
 /// </para>
 /// </remarks>
-public class AdaBoostR2Regression<T> : AsyncDecisionTreeRegressionBase<T>
+public class AdaBoostR2Regression<T> : AsyncDecisionTreeRegressionModelBase<T>
 {
     /// <summary>
     /// Options for configuring the AdaBoost.R2 regression algorithm.
     /// </summary>
-    private AdaBoostR2RegressionOptions _options;
+    private AdaBoostR2RegressionOptions _options = default!;
     
     /// <summary>
     /// The ensemble of decision trees and their corresponding weights.
     /// </summary>
     private List<(DecisionTreeRegression<T> Tree, T Weight)> _ensemble;
-    
-    /// <summary>
-    /// Random number generator for creating diverse decision trees.
-    /// </summary>
-    private Random _random;
 
     /// <summary>
     /// Gets the number of decision trees in the ensemble.
@@ -89,12 +84,11 @@ public class AdaBoostR2Regression<T> : AsyncDecisionTreeRegressionBase<T>
     /// for many regression problems.
     /// </para>
     /// </remarks>
-    public AdaBoostR2Regression(AdaBoostR2RegressionOptions options, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+    public AdaBoostR2Regression(AdaBoostR2RegressionOptions? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
-        _options = options;
+        _options = options ?? new();
         _ensemble = [];
-        _random = _options.Seed.HasValue ? new Random(_options.Seed.Value) : new Random();
     }
 
     /// <summary>
@@ -148,7 +142,7 @@ public class AdaBoostR2Regression<T> : AsyncDecisionTreeRegressionBase<T>
                 MaxDepth = _options.MaxDepth,
                 MinSamplesSplit = _options.MinSamplesSplit,
                 MaxFeatures = _options.MaxFeatures,
-                Seed = _random.Next(),
+                Seed = Random.Next(),
                 SplitCriterion = _options.SplitCriterion
             };
 
@@ -398,7 +392,7 @@ public class AdaBoostR2Regression<T> : AsyncDecisionTreeRegressionBase<T>
     /// <summary>
     /// Gets metadata about the trained model.
     /// </summary>
-    /// <returns>A <see cref="ModelMetaData{T}"/> object containing information about the model.</returns>
+    /// <returns>A <see cref="ModelMetadata{T}"/> object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata about the trained AdaBoost.R2 regression model, including
@@ -418,9 +412,9 @@ public class AdaBoostR2Regression<T> : AsyncDecisionTreeRegressionBase<T>
     /// their characteristics without having to retrain or examine the internal structure.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.AdaBoostR2,
             AdditionalInfo = new Dictionary<string, object>
@@ -538,8 +532,6 @@ public class AdaBoostR2Regression<T> : AsyncDecisionTreeRegressionBase<T>
             tree.Deserialize(Convert.FromBase64String((string)e.Tree));
             return (Tree: tree, Weight: (T)e.Weight);
         })];
-
-        _random = _options.Seed.HasValue ? new Random(_options.Seed.Value) : new Random();
     }
 
     /// <summary>

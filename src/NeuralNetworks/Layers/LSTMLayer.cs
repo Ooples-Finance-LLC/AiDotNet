@@ -91,7 +91,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// about previous subjects when a new subject is introduced.
     /// </para>
     /// </remarks>
-    private Tensor<T> _weightsFi;
+    private Tensor<T> _weightsFi = default!;
 
     /// <summary>
     /// Weights for the input gate input connections.
@@ -112,7 +112,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// information about a new subject being discussed.
     /// </para>
     /// </remarks>
-    private Tensor<T> _weightsIi;
+    private Tensor<T> _weightsIi = default!;
 
     /// <summary>
     /// Weights for the cell state input connections.
@@ -133,7 +133,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// in the cell's memory.
     /// </para>
     /// </remarks>
-    private Tensor<T> _weightsCi;
+    private Tensor<T> _weightsCi = default!;
 
     /// <summary>
     /// Weights for the output gate input connections.
@@ -154,7 +154,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// parts of the accumulated context are relevant for predicting the next word.
     /// </para>
     /// </remarks>
-    private Tensor<T> _weightsOi;
+    private Tensor<T> _weightsOi = default!;
 
     /// <summary>
     /// Weights for the forget gate hidden state connections.
@@ -175,7 +175,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// on both current input and previous context.
     /// </para>
     /// </remarks>
-    private Tensor<T> _weightsFh;
+    private Tensor<T> _weightsFh = default!;
 
     /// <summary>
     /// Weights for the input gate hidden state connections.
@@ -196,7 +196,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// or complements existing knowledge.
     /// </para>
     /// </remarks>
-    private Tensor<T> _weightsIh;
+    private Tensor<T> _weightsIh = default!;
 
     /// <summary>
     /// Weights for the cell state hidden state connections.
@@ -217,7 +217,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// that consider both current input and previous context.
     /// </para>
     /// </remarks>
-    private Tensor<T> _weightsCh;
+    private Tensor<T> _weightsCh = default!;
 
     /// <summary>
     /// Weights for the output gate hidden state connections.
@@ -238,7 +238,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// output decisions based on both current input and previous context.
     /// </para>
     /// </remarks>
-    private Tensor<T> _weightsOh;
+    private Tensor<T> _weightsOh = default!;
 
     /// <summary>
     /// Bias for the forget gate.
@@ -260,7 +260,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// or context is considered.
     /// </para>
     /// </remarks>
-    private Tensor<T> _biasF;
+    private Tensor<T> _biasF = default!;
 
     /// <summary>
     /// Bias for the input gate.
@@ -281,7 +281,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// the specific input or context.
     /// </para>
     /// </remarks>
-    private Tensor<T> _biasI;
+    private Tensor<T> _biasI = default!;
 
     /// <summary>
     /// Bias for the cell state candidate.
@@ -302,7 +302,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// considering specific inputs or context.
     /// </para>
     /// </remarks>
-    private Tensor<T> _biasC;
+    private Tensor<T> _biasC = default!;
 
     /// <summary>
     /// Bias for the output gate.
@@ -323,7 +323,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// the specific input or context.
     /// </para>
     /// </remarks>
-    private Tensor<T> _biasO;
+    private Tensor<T> _biasO = default!;
 
     /// <summary>
     /// The input tensor from the last forward pass.
@@ -477,13 +477,13 @@ public class LSTMLayer<T> : LayerBase<T>
     /// <remarks>
     /// <para>
     /// This field stores a flag indicating whether to use vector-based activation functions or scalar (element-wise)
-    /// activation functions. Vector functions operate on entire tensors at once, which can be more efficient for
+    /// activation functions. Vector<double> functions operate on entire tensors at once, which can be more efficient for
     /// certain operations.
     /// </para>
     /// <para><b>For Beginners:</b> This flag chooses between two ways of applying activation functions.
     /// 
     /// When set to true:
-    /// - Vector activation functions are used
+    /// - Vector<double> activation functions are used
     /// - Processing is done on entire tensors at once
     /// - Can be faster for large models
     /// 
@@ -617,7 +617,7 @@ public class LSTMLayer<T> : LayerBase<T>
     /// </para>
     /// <para><b>For Beginners:</b> This creates a new LSTM layer using advanced vector-based activation functions.
     /// 
-    /// Vector activation functions:
+    /// Vector<double> activation functions:
     /// - Process entire groups of numbers at once, rather than one at a time
     /// - Can be more efficient on certain hardware
     /// - May capture more complex relationships between different values
@@ -1088,17 +1088,17 @@ public class LSTMLayer<T> : LayerBase<T>
     /// <remarks>
     /// <para>
     /// This helper method applies either a vector activation function or a scalar activation function to a tensor,
-    /// depending on the layer's configuration. Vector activation functions operate on entire tensors at once, while
+    /// depending on the layer's configuration. Vector<double> activation functions operate on entire tensors at once, while
     /// scalar activation functions operate element by element.
     /// </para>
     /// <para><b>For Beginners:</b> This method applies the right type of activation function to a tensor.
     /// 
     /// The LSTM can use two types of activation functions:
     /// - Scalar functions that process one number at a time
-    /// - Vector functions that process entire groups at once
+    /// - Vector<double> functions that process entire groups at once
     /// 
     /// This method checks which type you're using and applies the appropriate function.
-    /// Vector functions can be faster for large datasets but work the same way in principle.
+    /// Vector<double> functions can be faster for large datasets but work the same way in principle.
     /// </para>
     /// </remarks>
     private Tensor<T> ActivateTensorConditional(IVectorActivationFunction<T>? vectorActivation, IActivationFunction<T>? scalarActivation, Tensor<T> input)

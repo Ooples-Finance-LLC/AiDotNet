@@ -31,22 +31,22 @@ namespace AiDotNet.Regression;
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The numeric type used for calculations, typically float or double.</typeparam>
-public class GradientBoostingRegression<T> : AsyncDecisionTreeRegressionBase<T>
+public class GradientBoostingRegression<T> : AsyncDecisionTreeRegressionModelBase<T>
 {
     /// <summary>
     /// Collection of decision trees that make up the ensemble.
     /// </summary>
-    private List<DecisionTreeRegression<T>> _trees;
+    private List<DecisionTreeRegression<T>> _trees = default!;
     
     /// <summary>
     /// The initial prediction value, typically the mean of the target values.
     /// </summary>
-    private T _initialPrediction;
+    private T _initialPrediction = default!;
     
     /// <summary>
     /// Configuration options for the Gradient Boosting algorithm.
     /// </summary>
-    private readonly GradientBoostingRegressionOptions _options;
+    private readonly GradientBoostingRegressionOptions _options = default!;
 
     /// <summary>
     /// Gets the number of trees in the ensemble model.
@@ -107,7 +107,7 @@ public class GradientBoostingRegression<T> : AsyncDecisionTreeRegressionBase<T>
     /// </para>
     /// </remarks>
     public GradientBoostingRegression(GradientBoostingRegressionOptions? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _options = options ?? new();
         _trees = [];
@@ -349,9 +349,9 @@ public class GradientBoostingRegression<T> : AsyncDecisionTreeRegressionBase<T>
     /// ```
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.GradientBoosting,
             AdditionalInfo = new Dictionary<string, object>

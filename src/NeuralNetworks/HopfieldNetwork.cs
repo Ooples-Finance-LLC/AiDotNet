@@ -55,7 +55,7 @@ public class HopfieldNetwork<T> : NeuralNetworkBase<T>
     /// These connection strengths are what allow the network to store and recall patterns.
     /// </para>
     /// </remarks>
-    private Matrix<T> _weights;
+    private Matrix<T> _weights = default!;
 
     /// <summary>
     /// Gets or sets the size of the network, which is the number of neurons.
@@ -97,7 +97,7 @@ public class HopfieldNetwork<T> : NeuralNetworkBase<T>
     /// This binary nature (on/off) is what allows the network to store and recall distinct patterns.
     /// </para>
     /// </remarks>
-    private readonly IActivationFunction<T> _activationFunction;
+    private readonly IActivationFunction<T> _activationFunction = default!;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HopfieldNetwork{T}"/> class with the specified architecture and size.
@@ -200,7 +200,7 @@ public class HopfieldNetwork<T> : NeuralNetworkBase<T>
     /// better recall. This process is different from training in most neural networks because:
     /// - It happens in one pass, not through repeated iterations
     /// - It doesn't use backpropagation or gradients
-    /// - It has limited capacity (can only store approximately 0.14 × network size patterns reliably)
+    /// - It has limited capacity (can only store approximately 0.14 ï¿½ network size patterns reliably)
     /// </para>
     /// </remarks>
     public void Train(List<Vector<T>> patterns)
@@ -314,8 +314,11 @@ public class HopfieldNetwork<T> : NeuralNetworkBase<T>
     /// </remarks>
     public override void UpdateParameters(Vector<T> parameters)
     {
-        // Hopfield networks typically don't use gradient-based updates
-        throw new NotImplementedException("Hopfield networks do not support gradient-based parameter updates.");
+        // Hopfield networks use Hebbian learning, not gradient-based updates
+        // To train a Hopfield network, use the StorePattern method instead
+        throw new NotSupportedException(
+            "Hopfield networks do not support gradient-based parameter updates. " +
+            "Use the StorePattern method to train the network with Hebbian learning.");
     }
 
     /// <summary>
@@ -473,7 +476,7 @@ public class HopfieldNetwork<T> : NeuralNetworkBase<T>
     /// <summary>
     /// Gets metadata about the Hopfield network model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata about the Hopfield network, including its model type, size,
@@ -493,9 +496,9 @@ public class HopfieldNetwork<T> : NeuralNetworkBase<T>
     /// - Analyzing the network's properties
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.HopfieldNetwork,
             AdditionalInfo = new Dictionary<string, object>

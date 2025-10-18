@@ -368,8 +368,7 @@ public class RadialBasisFunctionNetwork<T> : NeuralNetworkBase<T>
         }
 
         // Forward pass with memory for backpropagation
-        Vector<T> inputVector = input.ToVector();
-        Vector<T> outputVector = ForwardWithMemory(inputVector);
+        var outputVector = ForwardWithMemory(input).ToVector();
 
         // Calculate error/loss
         Vector<T> expectedOutputVector = expectedOutput.ToVector();
@@ -379,13 +378,13 @@ public class RadialBasisFunctionNetwork<T> : NeuralNetworkBase<T>
         LastLoss = LossFunction.CalculateLoss(outputVector, expectedOutputVector);
 
         // Backpropagate error through the network
-        Backpropagate(errorVector);
+        Backpropagate(Tensor<T>.FromVector(errorVector, expectedOutput.Shape));
     }
 
     /// <summary>
     /// Gets metadata about the Radial Basis Function Network model.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the model.</returns>
+    /// <returns>A ModelMetadata object containing information about the model.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata that describes the RBFN, including its type, architecture details,
@@ -408,9 +407,9 @@ public class RadialBasisFunctionNetwork<T> : NeuralNetworkBase<T>
     /// Think of it like a spec sheet for a car, listing all its important features and capabilities.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.NeuralNetworkRegression,
             FeatureCount = _inputSize,

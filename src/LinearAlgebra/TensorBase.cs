@@ -47,6 +47,24 @@ public abstract class TensorBase<T>
     public int Rank => Shape.Length;
 
     /// <summary>
+    /// Gets the underlying data vector of the tensor.
+    /// </summary>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This gives you direct access to the internal vector storing the tensor's values.
+    /// The data is stored in a flattened format.</para>
+    /// </remarks>
+    public Vector<T> Data => _data;
+
+    /// <summary>
+    /// Gets or sets metadata associated with the tensor.
+    /// </summary>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> Metadata is additional information about the tensor,
+    /// such as labels, descriptions, or other contextual data.</para>
+    /// </remarks>
+    public Dictionary<string, object> Metadata { get; set; } = new Dictionary<string, object>();
+
+    /// <summary>
     /// Initializes a new instance of the TensorBase class with the specified shape.
     /// </summary>
     /// <param name="shape">The shape of the tensor.</param>
@@ -213,6 +231,31 @@ public abstract class TensorBase<T>
             indices[i] = remainder % Shape[i];
             remainder /= Shape[i];
         }
+    }
+
+    /// <summary>
+    /// Converts a flat index to multi-dimensional indices and returns them as a new array.
+    /// </summary>
+    /// <param name="flatIndex">The flat index to convert.</param>
+    /// <returns>An array containing the multi-dimensional indices.</returns>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This method converts a single number (flat index) that represents
+    /// a position in the tensor's internal storage back to the multi-dimensional coordinates.
+    /// For example, in a 3x3 matrix stored as a flat array, flat index 4 would convert to [1, 1]
+    /// (row 1, column 1 in 0-based indexing).</para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when flatIndex is negative or exceeds the tensor's length.</exception>
+    public int[] GetIndexFromFlat(int flatIndex)
+    {
+        if (flatIndex < 0 || flatIndex >= Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(flatIndex), 
+                $"Flat index {flatIndex} is out of range for tensor with {Length} elements.");
+        }
+
+        var indices = new int[Rank];
+        GetIndices(flatIndex, indices);
+        return indices;
     }
 
     /// <summary>

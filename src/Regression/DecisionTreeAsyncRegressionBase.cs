@@ -1,4 +1,19 @@
-﻿namespace AiDotNet.Regression;
+﻿using System.Threading.Tasks;
+using AiDotNet.Enums;
+using AiDotNet.Helpers;
+using AiDotNet.Interfaces;
+using AiDotNet.LinearAlgebra;
+using AiDotNet.Models;
+using AiDotNet.Models.Options;
+using AiDotNet.Statistics;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+
+using AiDotNet.Interpretability;
+
+namespace AiDotNet.Regression;
 
 /// <summary>
 /// Represents an abstract base class for asynchronous decision tree regression models.
@@ -22,12 +37,27 @@
 /// questions and answers based on numerical data.
 /// </para>
 /// </remarks>
-public abstract class AsyncDecisionTreeRegressionBase<T> : IAsyncTreeBasedModel<T>
+public abstract class AsyncDecisionTreeRegressionModelBase<T> : IAsyncTreeBasedModel<T>
 {
     /// <summary>
     /// Gets the numeric operations for the type T.
     /// </summary>
     protected readonly INumericOperations<T> NumOps;
+
+    /// <summary>
+    /// Set of feature indices that have been explicitly marked as active.
+    /// </summary>
+    /// <remarks>
+    /// <para><b>For Beginners:</b> This field stores which input features have been manually
+    /// selected as important for the decision tree model, overriding the automatic detection
+    /// based on the trained tree structure.
+    /// 
+    /// When this is set, it takes precedence over the features actually used in the tree.
+    /// This can be useful for feature selection experiments or when you want to force the
+    /// model to consider specific features as important.
+    /// </para>
+    /// </remarks>
+    private HashSet<int>? _explicitlySetActiveFeatures;
 
     /// <summary>
     /// Gets or sets the root node of the decision tree.
@@ -93,16 +123,16 @@ public abstract class AsyncDecisionTreeRegressionBase<T> : IAsyncTreeBasedModel<
     protected Random Random => new(Options.Seed ?? Environment.TickCount);
 
     /// <summary>
-    /// Initializes a new instance of the AsyncDecisionTreeRegressionBase class.
+    /// Initializes a new instance of the AsyncDecisionTreeRegressionModelBase class.
     /// </summary>
     /// <param name="options">The options for configuring the decision tree.</param>
     /// <param name="regularization">The regularization method to use.</param>
-    protected AsyncDecisionTreeRegressionBase(DecisionTreeOptions? options, IRegularization<T, Matrix<T>, Vector<T>>? regularization)
+    protected AsyncDecisionTreeRegressionModelBase(DecisionTreeOptions options, IRegularization<T, Matrix<T>, Vector<T>> regularization)
     {
-        Options = options ?? new();
+        Options = options;
         NumOps = MathHelper.GetNumericOperations<T>();
         FeatureImportances = new Vector<T>(0);
-        Regularization = regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>();
+        Regularization = regularization;
     }
 
     /// <summary>
@@ -154,7 +184,7 @@ public abstract class AsyncDecisionTreeRegressionBase<T> : IAsyncTreeBasedModel<
     /// It's like getting a report card for your model, showing how well it learned and what it learned.
     /// </para>
     /// </remarks>
-    public abstract ModelMetaData<T> GetModelMetaData();
+    public abstract ModelMetadata<T> GetModelMetadata();
 
     /// <summary>
     /// Asynchronously calculates the importance of each feature in the model.
@@ -451,16 +481,78 @@ public abstract class AsyncDecisionTreeRegressionBase<T> : IAsyncTreeBasedModel<
     
         // Reconstruct the tree from the parameter vector
         int currentIndex = 1;
-        ((AsyncDecisionTreeRegressionBase<T>)newModel).Root = DeserializeNodeFromVector(parameters, ref currentIndex);
+        ((AsyncDecisionTreeRegressionModelBase<T>)newModel).Root = DeserializeNodeFromVector(parameters, ref currentIndex);
     
         // Assume the feature importances are already calculated and stored in the parameters
         // or recalculate them based on the reconstructed tree
         if (FeatureImportances.Length > 0)
         {
-            ((AsyncDecisionTreeRegressionBase<T>)newModel).FeatureImportances = new Vector<T>(FeatureImportances);
+            ((AsyncDecisionTreeRegressionModelBase<T>)newModel).FeatureImportances = new Vector<T>(FeatureImportances);
         }
     
         return newModel;
+    }
+
+    /// <summary>
+    /// Sets the parameters of the model from a vector representation.
+    /// </summary>
+    /// <param name="parameters">A vector containing a serialized representation of the decision tree structure.</param>
+    /// <exception cref="ArgumentNullException">Thrown when parameters is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when the parameter vector has an invalid length.</exception>
+    /// <remarks>
+    /// <para>
+    /// This method reconstructs the decision tree model from a parameter vector that was previously
+    /// created using the GetParameters method. The current tree structure is replaced with the
+    /// structure defined in the parameter vector.
+    /// </para>
+    /// <para><b>For Beginners:</b> This method rebuilds the decision tree from a flat list of numbers.
+    /// 
+    /// It takes the specialized vector representation created by GetParameters() and reconstructs
+    /// the decision tree from it, replacing the current tree structure. This is challenging because
+    /// decision trees are complex structures that don't easily convert to and from simple lists of numbers.
+    /// 
+    /// This method is primarily used when:
+    /// - Loading a saved model
+    /// - Applying parameter updates from optimization algorithms
+    /// - Transferring parameters between models
+    /// 
+    /// For most purposes, the Serialize and Deserialize methods provide a more reliable way to
+    /// save and load tree models.
+    /// </para>
+    /// </remarks>
+    public virtual void SetParameters(Vector<T> parameters)
+    {
+        if (parameters == null)
+        {
+            throw new ArgumentNullException(nameof(parameters));
+        }
+
+        // If the parameter vector is empty or invalid, clear the tree
+        if (parameters.Length < 1)
+        {
+            Root = null;
+            return;
+        }
+
+        // Get the node count from the first parameter
+        int nodeCount = NumOps.ToInt32(parameters[0]);
+
+        // If there are no nodes, clear the tree
+        if (nodeCount == 0)
+        {
+            Root = null;
+            return;
+        }
+
+        // Check if the parameter vector has the expected length
+        if (parameters.Length != nodeCount * 4 + 1)
+        {
+            throw new ArgumentException($"Invalid parameter vector length. Expected {nodeCount * 4 + 1} but got {parameters.Length}.", nameof(parameters));
+        }
+
+        // Reconstruct the tree from the parameter vector
+        int currentIndex = 1;
+        Root = DeserializeNodeFromVector(parameters, ref currentIndex);
     }
 
     /// <summary>
@@ -489,8 +581,16 @@ public abstract class AsyncDecisionTreeRegressionBase<T> : IAsyncTreeBasedModel<
     /// </remarks>
     public virtual IEnumerable<int> GetActiveFeatureIndices()
     {
+        // If we have explicitly set active features, return those
+        if (_explicitlySetActiveFeatures != null && _explicitlySetActiveFeatures.Count > 0)
+        {
+            return _explicitlySetActiveFeatures.OrderBy(i => i);
+        }
+
+        // Otherwise, continue with the existing implementation
         var activeFeatures = new HashSet<int>();
         CollectActiveFeatures(Root, activeFeatures);
+
         return activeFeatures;
     }
 
@@ -517,6 +617,18 @@ public abstract class AsyncDecisionTreeRegressionBase<T> : IAsyncTreeBasedModel<
     /// </remarks>
     public virtual bool IsFeatureUsed(int featureIndex)
     {
+        // If feature index is explicitly set as active, return true immediately
+        if (_explicitlySetActiveFeatures != null && _explicitlySetActiveFeatures.Contains(featureIndex))
+        {
+            return true;
+        }
+
+        // If explicitly set active features exist but don't include this index, it's not used
+        if (_explicitlySetActiveFeatures != null && _explicitlySetActiveFeatures.Count > 0)
+        {
+            return false;
+        }
+
         return IsFeatureUsedInSubtree(Root, featureIndex);
     }
 
@@ -582,13 +694,13 @@ public abstract class AsyncDecisionTreeRegressionBase<T> : IAsyncTreeBasedModel<
         // Deep copy the tree structure
         if (Root != null)
         {
-            ((AsyncDecisionTreeRegressionBase<T>)clone).Root = DeepCloneNode(Root);
+            ((AsyncDecisionTreeRegressionModelBase<T>)clone).Root = DeepCloneNode(Root);
         }
     
         // Copy feature importances
         if (FeatureImportances.Length > 0)
         {
-            ((AsyncDecisionTreeRegressionBase<T>)clone).FeatureImportances = new Vector<T>(FeatureImportances);
+            ((AsyncDecisionTreeRegressionModelBase<T>)clone).FeatureImportances = new Vector<T>(FeatureImportances);
         }
     
         return clone;
@@ -754,4 +866,183 @@ public abstract class AsyncDecisionTreeRegressionBase<T> : IAsyncTreeBasedModel<
     
         return clone;
     }
+
+    /// <summary>
+    /// Sets which features should be considered active in the model.
+    /// </summary>
+    /// <param name="featureIndices">The indices of features to mark as active.</param>
+    /// <exception cref="ArgumentNullException">Thrown when featureIndices is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when any feature index is negative.</exception>
+    /// <remarks>
+    /// <para>
+    /// This method explicitly specifies which features should be considered active in the
+    /// decision tree model, overriding the automatic determination based on the tree structure.
+    /// Any features not included in the provided collection will be considered inactive,
+    /// regardless of whether they are used in decision nodes.
+    /// </para>
+    /// <para><b>For Beginners:</b> This method lets you manually tell the model which input features
+    /// are important, regardless of what the decision tree actually learned during training.
+    /// 
+    /// For example, if you have features like age, income, and education level, you can use
+    /// this method to specify that only age and education level should be considered active,
+    /// even if the trained tree also uses income for some decisions.
+    /// 
+    /// This is useful for:
+    /// - Testing how the model performs with a specific set of features
+    /// - Forcing the model to focus on features you believe are important
+    /// - Comparing different feature sets without retraining the model
+    /// - Implementing manual feature selection techniques
+    /// </para>
+    /// </remarks>
+    public virtual void SetActiveFeatureIndices(IEnumerable<int> featureIndices)
+    {
+        if (featureIndices == null)
+        {
+            throw new ArgumentNullException(nameof(featureIndices), "Feature indices cannot be null.");
+        }
+
+        // Initialize the hash set if it doesn't exist
+        _explicitlySetActiveFeatures ??= [];
+
+        // Clear existing explicitly set features
+        _explicitlySetActiveFeatures.Clear();
+
+        // Add the new feature indices
+        foreach (var index in featureIndices)
+        {
+            if (index < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(featureIndices),
+                    $"Feature index {index} cannot be negative.");
+            }
+
+            _explicitlySetActiveFeatures.Add(index);
+        }
+    }
+
+    #region IInterpretableModel Implementation
+
+    protected readonly HashSet<InterpretationMethod> _enabledMethods = new();
+    protected Vector<int> _sensitiveFeatures;
+    protected readonly List<FairnessMetric> _fairnessMetrics = new();
+    protected IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> _baseModel;
+
+    /// <summary>
+    /// Gets the global feature importance across all predictions.
+    /// </summary>
+    public virtual async Task<Dictionary<int, T>> GetGlobalFeatureImportanceAsync()
+    {
+        return await InterpretableModelHelper.GetGlobalFeatureImportanceAsync(this, _enabledMethods);
+    }
+
+    /// <summary>
+    /// Gets the local feature importance for a specific input.
+    /// </summary>
+    public virtual async Task<Dictionary<int, T>> GetLocalFeatureImportanceAsync(Matrix<T> input)
+    {
+        return await InterpretableModelHelper.GetLocalFeatureImportanceAsync(this, _enabledMethods, input);
+    }
+
+    /// <summary>
+    /// Gets SHAP values for the given inputs.
+    /// </summary>
+    public virtual async Task<Matrix<T>> GetShapValuesAsync(Matrix<T> inputs)
+    {
+        return await InterpretableModelHelper.GetShapValuesAsync(this, _enabledMethods);
+    }
+
+    /// <summary>
+    /// Gets LIME explanation for a specific input.
+    /// </summary>
+    public virtual async Task<LimeExplanation<T>> GetLimeExplanationAsync(Matrix<T> input, int numFeatures = 10)
+    {
+        return await InterpretableModelHelper.GetLimeExplanationAsync<T>(_enabledMethods, numFeatures);
+    }
+
+    /// <summary>
+    /// Gets partial dependence data for specified features.
+    /// </summary>
+    public virtual async Task<PartialDependenceData<T>> GetPartialDependenceAsync(Vector<int> featureIndices, int gridResolution = 20)
+    {
+        return await InterpretableModelHelper.GetPartialDependenceAsync<T>(_enabledMethods, featureIndices, gridResolution);
+    }
+
+    /// <summary>
+    /// Gets counterfactual explanation for a given input and desired output.
+    /// </summary>
+    public virtual async Task<CounterfactualExplanation<T>> GetCounterfactualAsync(Matrix<T> input, Vector<T> desiredOutput, int maxChanges = 5)
+    {
+        return await InterpretableModelHelper.GetCounterfactualAsync<T>(_enabledMethods, maxChanges);
+    }
+
+    /// <summary>
+    /// Gets model-specific interpretability information.
+    /// </summary>
+    public virtual async Task<Dictionary<string, object>> GetModelSpecificInterpretabilityAsync()
+    {
+        return await InterpretableModelHelper.GetModelSpecificInterpretabilityAsync(this);
+    }
+
+    /// <summary>
+    /// Generates a text explanation for a prediction.
+    /// </summary>
+    public virtual async Task<string> GenerateTextExplanationAsync(Matrix<T> input, Vector<T> prediction)
+    {
+        return await InterpretableModelHelper.GenerateTextExplanationAsync(this, input, prediction);
+    }
+
+    /// <summary>
+    /// Gets feature interaction effects between two features.
+    /// </summary>
+    public virtual async Task<T> GetFeatureInteractionAsync(int feature1Index, int feature2Index)
+    {
+        return await InterpretableModelHelper.GetFeatureInteractionAsync<T>(_enabledMethods, feature1Index, feature2Index);
+    }
+
+    /// <summary>
+    /// Validates fairness metrics for the given inputs.
+    /// </summary>
+    public virtual async Task<FairnessMetrics<T>> ValidateFairnessAsync(Matrix<T> inputs, int sensitiveFeatureIndex)
+    {
+        return await InterpretableModelHelper.ValidateFairnessAsync<T>(_fairnessMetrics);
+    }
+
+    /// <summary>
+    /// Gets anchor explanation for a given input.
+    /// </summary>
+    public virtual async Task<AnchorExplanation<T>> GetAnchorExplanationAsync(Matrix<T> input, T threshold)
+    {
+        return await InterpretableModelHelper.GetAnchorExplanationAsync(_enabledMethods, threshold);
+    }
+
+    /// <summary>
+    /// Sets the base model for interpretability analysis.
+    /// </summary>
+    public virtual void SetBaseModel(IModel<Matrix<T>, Vector<T>, ModelMetadata<T>> model)
+    {
+        _baseModel = model ?? throw new ArgumentNullException(nameof(model));
+    }
+
+    /// <summary>
+    /// Enables specific interpretation methods.
+    /// </summary>
+    public virtual void EnableMethod(params InterpretationMethod[] methods)
+    {
+        foreach (var method in methods)
+        {
+            _enabledMethods.Add(method);
+        }
+    }
+
+    /// <summary>
+    /// Configures fairness evaluation settings.
+    /// </summary>
+    public virtual void ConfigureFairness(Vector<int> sensitiveFeatures, params FairnessMetric[] fairnessMetrics)
+    {
+        _sensitiveFeatures = sensitiveFeatures ?? throw new ArgumentNullException(nameof(sensitiveFeatures));
+        _fairnessMetrics.Clear();
+        _fairnessMetrics.AddRange(fairnessMetrics);
+    }
+
+    #endregion
 }

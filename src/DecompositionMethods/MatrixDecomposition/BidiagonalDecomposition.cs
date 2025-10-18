@@ -2,7 +2,7 @@ namespace AiDotNet.DecompositionMethods.MatrixDecomposition;
 
 public class BidiagonalDecomposition<T> : IMatrixDecomposition<T>
 {
-    private readonly INumericOperations<T> _numOps;
+    private readonly INumericOperations<T> _numOps = default!;
 
     /// <summary>
     /// Gets the original matrix that was decomposed.
@@ -212,7 +212,7 @@ public class BidiagonalDecomposition<T> : IMatrixDecomposition<T>
     public Vector<T> Solve(Vector<T> b)
     {
         if (b.Length != A.Rows)
-            throw new ArgumentException("Vector b must have the same length as the number of rows in matrix A.");
+            throw new ArgumentException("Vector<double> b must have the same length as the number of rows in matrix A.");
 
         // Solve Ax = b using U*B*V^T * x = b
         Vector<T> y = U.Transpose().Multiply(b);
@@ -255,7 +255,7 @@ public class BidiagonalDecomposition<T> : IMatrixDecomposition<T>
     private Vector<T> HouseholderVector(Vector<T> x)
     {
         T norm = x.Norm();
-        Vector<T> v = x.Clone();
+        Vector<T> v = (Vector<T>)x.Clone();
         v[0] = _numOps.Add(v[0], _numOps.Multiply(_numOps.SignOrZero(x[0]), norm));
 
         return v.Divide(v.Norm());

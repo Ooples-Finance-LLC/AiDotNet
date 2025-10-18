@@ -35,7 +35,7 @@ public class NestedCrossValidator<T> : CrossValidatorBase<T>
     /// This validator is responsible for creating the main folds used for overall model assessment.
     /// For beginners: Think of this as the main test that your model will go through.
     /// </remarks>
-    private readonly ICrossValidator<T> _outerValidator;
+    private readonly ICrossValidator<T> _outerValidator = default!;
 
     /// <summary>
     /// The cross-validator used for the inner loop of nested cross-validation.
@@ -44,7 +44,7 @@ public class NestedCrossValidator<T> : CrossValidatorBase<T>
     /// This validator is used within each outer fold to tune hyperparameters.
     /// For beginners: This is like a practice test that helps your model improve before the main test.
     /// </remarks>
-    private readonly ICrossValidator<T> _innerValidator;
+    private readonly ICrossValidator<T> _innerValidator = default!;
 
     /// <summary>
     /// A function that selects the best model based on inner cross-validation results.
@@ -53,7 +53,7 @@ public class NestedCrossValidator<T> : CrossValidatorBase<T>
     /// This function takes the results of the inner cross-validation and returns the best model configuration.
     /// For beginners: This is like choosing the best version of your model after the practice tests.
     /// </remarks>
-    private readonly Func<CrossValidationResult<T>, IFullModel<T, Matrix<T>, Vector<T>>> _modelSelector;
+    private readonly Func<CrossValidationResult<T>, IFullModel<T, Matrix<T>, Vector<T>>> _modelSelector = default!;
 
     /// <summary>
     /// Initializes a new instance of the NestedCrossValidator class.
@@ -77,8 +77,8 @@ public class NestedCrossValidator<T> : CrossValidatorBase<T>
     /// </para>
     /// </remarks>
     public NestedCrossValidator(ICrossValidator<T> outerValidator, ICrossValidator<T> innerValidator, 
-        Func<CrossValidationResult<T>, IFullModel<T, Matrix<T>, Vector<T>>> modelSelector, CrossValidationOptions? options = null) 
-        : base(options ?? new())
+        Func<CrossValidationResult<T>, IFullModel<T, Matrix<T>, Vector<T>>> modelSelector, ModelType modelType, CrossValidationOptions? options = null) 
+        : base(options ?? new(), modelType)
     {
         _outerValidator = outerValidator;
         _innerValidator = innerValidator;
@@ -137,7 +137,7 @@ public class NestedCrossValidator<T> : CrossValidatorBase<T>
             var validationPredictions = bestModel.Predict(X.Submatrix(validationIndices));
 
             // Get feature importance from the best model
-            var featureImportance = bestModel.GetModelMetaData().FeatureImportance;
+            var featureImportance = bestModel.GetModelMetadata().FeatureImportance;
 
             // Create adjusted fold result
             var adjustedFoldResult = new FoldResult<T>(
@@ -156,7 +156,7 @@ public class NestedCrossValidator<T> : CrossValidatorBase<T>
         }
 
         totalTimer.Stop();
-        return new CrossValidationResult<T>(nestedResults, totalTimer.Elapsed);
+        return new CrossValidationResult<T>(nestedResults, totalTimer.Elapsed, ModelType);
     }
 
     /// <summary>

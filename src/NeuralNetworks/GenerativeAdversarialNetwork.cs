@@ -51,7 +51,7 @@ public class GenerativeAdversarialNetwork<T> : NeuralNetworkBase<T>
     /// the same direction, momentum helps it make bigger adjustments over time.
     /// </para>
     /// </remarks>
-    private Vector<T> _momentum;
+    private Vector<T> _momentum = default!;
 
     /// <summary>
     /// Gets or sets the second moment estimates for the Adam optimizer.
@@ -75,7 +75,7 @@ public class GenerativeAdversarialNetwork<T> : NeuralNetworkBase<T>
     /// based on how jumpy they've been in the past.
     /// </para>
     /// </remarks>
-    private Vector<T> _secondMoment;
+    private Vector<T> _secondMoment = default!;
 
     /// <summary>
     /// Gets or sets the current value of beta1 raised to the power of the iteration count for Adam optimizer.
@@ -99,7 +99,7 @@ public class GenerativeAdversarialNetwork<T> : NeuralNetworkBase<T>
     /// training complex models like GANs.
     /// </para>
     /// </remarks>
-    private T _beta1Power;
+    private T _beta1Power = default!;
 
     /// <summary>
     /// Gets or sets the current value of beta2 raised to the power of the iteration count for Adam optimizer.
@@ -123,7 +123,7 @@ public class GenerativeAdversarialNetwork<T> : NeuralNetworkBase<T>
     /// for training GANs.
     /// </para>
     /// </remarks>
-    private T _beta2Power;
+    private T _beta2Power = default!;
 
     /// <summary>
     /// Gets or sets the current learning rate for the optimizer.
@@ -281,8 +281,6 @@ public class GenerativeAdversarialNetwork<T> : NeuralNetworkBase<T>
     /// </summary>
     /// <param name="generatorArchitecture">The neural network architecture for the generator.</param>
     /// <param name="discriminatorArchitecture">The neural network architecture for the discriminator.</param>
-    /// <param name="fitnessCalculator">The fitness calculator used to compute loss values during training.</param>
-    /// <param name="inputType">The type of input the GAN will process.</param>
     /// <param name="initialLearningRate">The initial learning rate for the optimizer. Default is 0.001.</param>
     /// <remarks>
     /// <para>
@@ -1302,13 +1300,13 @@ public class GenerativeAdversarialNetwork<T> : NeuralNetworkBase<T>
         }
 
         // Combine all quality images into a single tensor
-        return Tensor<T>.Stack(qualityImages.ToArray());
+        return Tensor<T>.Stack([.. qualityImages]);
     }
 
     /// <summary>
     /// Gets metadata about the GAN model, including information about both generator and discriminator components.
     /// </summary>
-    /// <returns>A ModelMetaData object containing information about the GAN.</returns>
+    /// <returns>A ModelMetadata object containing information about the GAN.</returns>
     /// <remarks>
     /// <para>
     /// This method returns comprehensive metadata about the GAN, including its architecture, training state,
@@ -1328,9 +1326,9 @@ public class GenerativeAdversarialNetwork<T> : NeuralNetworkBase<T>
     /// comparing experimental results, and documenting your work.
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        return new ModelMetaData<T>
+        return new ModelMetadata<T>
         {
             ModelType = ModelType.GenerativeAdversarialNetwork,
             AdditionalInfo = new Dictionary<string, object>
@@ -1338,8 +1336,8 @@ public class GenerativeAdversarialNetwork<T> : NeuralNetworkBase<T>
                 { "GeneratorParameters", Generator.GetParameterCount() },
                 { "DiscriminatorParameters", Discriminator.GetParameterCount() },
                 { "TotalParameters", Generator.GetParameterCount() + Discriminator.GetParameterCount() },
-                { "GeneratorArchitecture", Generator.GetModelMetaData() },
-                { "DiscriminatorArchitecture", Discriminator.GetModelMetaData() },
+                { "GeneratorArchitecture", Generator.GetModelMetadata() },
+                { "DiscriminatorArchitecture", Discriminator.GetModelMetadata() },
                 { "OptimizationType", "Adam" }
             },
             ModelData = this.Serialize()

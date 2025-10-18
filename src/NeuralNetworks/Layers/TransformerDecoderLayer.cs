@@ -134,7 +134,7 @@ public class TransformerDecoderLayer<T> : LayerBase<T>
     /// with what it has already generated, maintaining grammar, style, and topic consistency.
     /// </para>
     /// </remarks>
-    private MultiHeadAttentionLayer<T> _selfAttention;
+    private MultiHeadAttentionLayer<T> _selfAttention = default!;
 
     /// <summary>
     /// The layer normalization applied after self-attention.
@@ -155,7 +155,7 @@ public class TransformerDecoderLayer<T> : LayerBase<T>
     /// it prevents sudden spikes or drops that might disrupt the learning process.
     /// </para>
     /// </remarks>
-    private LayerNormalizationLayer<T> _norm1;
+    private LayerNormalizationLayer<T> _norm1 = default!;
 
     /// <summary>
     /// The cross-attention mechanism for attending to the encoder output.
@@ -176,7 +176,7 @@ public class TransformerDecoderLayer<T> : LayerBase<T>
     /// are most important when generating the next word in the target language.
     /// </para>
     /// </remarks>
-    private MultiHeadAttentionLayer<T> _crossAttention;
+    private MultiHeadAttentionLayer<T> _crossAttention = default!;
 
     /// <summary>
     /// The layer normalization applied after cross-attention.
@@ -197,7 +197,7 @@ public class TransformerDecoderLayer<T> : LayerBase<T>
     /// helping maintain consistent signal strength throughout the network.
     /// </para>
     /// </remarks>
-    private LayerNormalizationLayer<T> _norm2;
+    private LayerNormalizationLayer<T> _norm2 = default!;
 
     /// <summary>
     /// The feed-forward network for additional transformation of the sequence.
@@ -218,7 +218,7 @@ public class TransformerDecoderLayer<T> : LayerBase<T>
     /// and cross-attention, making final decisions about what to output.
     /// </para>
     /// </remarks>
-    private FeedForwardLayer<T> _feedForward;
+    private FeedForwardLayer<T> _feedForward = default!;
 
     /// <summary>
     /// The layer normalization applied after the feed-forward network.
@@ -239,7 +239,7 @@ public class TransformerDecoderLayer<T> : LayerBase<T>
     /// or for the final output projection in the complete transformer model.
     /// </para>
     /// </remarks>
-    private LayerNormalizationLayer<T> _norm3;
+    private LayerNormalizationLayer<T> _norm3 = default!;
 
     /// <summary>
     /// The input tensor from the last forward pass.
@@ -481,7 +481,7 @@ public class TransformerDecoderLayer<T> : LayerBase<T>
     /// </para>
     /// <para><b>For Beginners:</b> This constructor is similar to the previous one, but uses vector activations.
     /// 
-    /// Vector activations:
+    /// Vector<double> activations:
     /// - Process entire groups of numbers at once, rather than one at a time
     /// - Can capture relationships between different elements
     /// - Allow for more complex transformations
@@ -518,7 +518,7 @@ public class TransformerDecoderLayer<T> : LayerBase<T>
     }
 
     /// <summary>
-    /// Not supported for this layer. Use Forward(Tensor&lt;T&gt; input, Tensor&lt;T&gt; encoderOutput) instead.
+    /// Not supported for this layer. Use Forward(Tensor<double>&lt;T&gt; input, Tensor<double>&lt;T&gt; encoderOutput) instead.
     /// </summary>
     /// <param name="input">The input tensor.</param>
     /// <returns>Never returns as this method throws an exception.</returns>

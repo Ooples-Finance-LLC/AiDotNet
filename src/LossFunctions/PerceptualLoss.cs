@@ -32,12 +32,12 @@ public class PerceptualLoss<T> : LossFunctionBase<T>
     /// <summary>
     /// The feature extractor function that converts images to feature representations.
     /// </summary>
-    private readonly Func<Matrix<T>, Vector<Vector<T>>> _featureExtractor;
+    private readonly Func<Matrix<T>, Vector<Vector<T>>> _featureExtractor = default!;
     
     /// <summary>
     /// The weights for each feature layer.
     /// </summary>
-    private readonly Vector<T> _layerWeights;
+    private readonly Vector<T> _layerWeights = default!;
     
     /// <summary>
     /// Initializes a new instance of the PerceptualLoss class.
@@ -103,7 +103,7 @@ public class PerceptualLoss<T> : LossFunctionBase<T>
     {
         if (v1.Length != v2.Length)
         {
-            throw new ArgumentException("Vectors must have the same length.");
+            throw new ArgumentException("Vector<double>s must have the same length.");
         }
         
         T sum = NumOps.Zero;

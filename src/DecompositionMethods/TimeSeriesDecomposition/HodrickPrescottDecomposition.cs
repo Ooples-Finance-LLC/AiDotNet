@@ -23,7 +23,7 @@ public class HodrickPrescottDecomposition<T> : TimeSeriesDecompositionBase<T>
     /// but potentially less accurate, while lower values make the trend follow the data more closely.
     /// Common values: 1600 for quarterly data, 100 for yearly data, 14400 for monthly data.
     /// </remarks>
-    private readonly T _lambda;
+    private readonly T _lambda = default!;
 
     /// <summary>
     /// Optional matrix decomposition method used for solving the linear system in the matrix method.
@@ -33,7 +33,7 @@ public class HodrickPrescottDecomposition<T> : TimeSeriesDecompositionBase<T>
     /// <summary>
     /// The algorithm type to use for the Hodrick-Prescott decomposition.
     /// </summary>
-    private readonly HodrickPrescottAlgorithmType _algorithm;
+    private readonly HodrickPrescottAlgorithmType _algorithm = default!;
 
     /// <summary>
     /// Initializes a new instance of the Hodrick-Prescott decomposition.
@@ -41,7 +41,7 @@ public class HodrickPrescottDecomposition<T> : TimeSeriesDecompositionBase<T>
     /// <param name="timeSeries">The time series data to decompose.</param>
     /// <param name="lambda">The smoothing parameter (default: 1600, suitable for quarterly data).</param>
     /// <param name="decomposition">Optional matrix decomposition method for solving linear systems.</param>
-    /// <param name="algorithm">The algorithm type to use for decomposition (default: MatrixMethod).</param>
+    /// <param name="algorithm">The algorithm type to use for decomposition (default: Matrix<double>Method).</param>
     /// <exception cref="ArgumentException">Thrown when lambda is not positive.</exception>
     public HodrickPrescottDecomposition(Vector<T> timeSeries, double lambda = 1600, IMatrixDecomposition<T>? decomposition = null, 
         HodrickPrescottAlgorithmType algorithm = HodrickPrescottAlgorithmType.MatrixMethod) 
@@ -203,7 +203,7 @@ public class HodrickPrescottDecomposition<T> : TimeSeriesDecompositionBase<T>
     private Vector<T> DiscreteWaveletTransform(Vector<T> data, int levels)
     {
         int n = data.Length;
-        Vector<T> coeffs = data.Clone();
+        Vector<T> coeffs = (Vector<T>)data.Clone();
 
         for (int level = 0; level < levels; level++)
         {
@@ -236,7 +236,7 @@ public class HodrickPrescottDecomposition<T> : TimeSeriesDecompositionBase<T>
     private Vector<T> InverseDiscreteWaveletTransform(Vector<T> coeffs, int levels)
     {
         int n = coeffs.Length;
-        Vector<T> data = coeffs.Clone();
+        Vector<T> data = (Vector<T>)coeffs.Clone();
 
         for (int level = levels - 1; level >= 0; level--)
         {

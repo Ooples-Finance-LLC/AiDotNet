@@ -52,7 +52,7 @@ public class SvdDecomposition<T> : IMatrixDecomposition<T>
     /// </summary>
     public Matrix<T> A { get; private set; }
 
-    private readonly INumericOperations<T> _numOps;
+    private readonly INumericOperations<T> _numOps = default!;
 
     /// <summary>
     /// Initializes a new instance of the SVD decomposition for the specified matrix.
@@ -188,7 +188,7 @@ public class SvdDecomposition<T> : IMatrixDecomposition<T>
             if (_numOps.LessThan(A[k, k], _numOps.Zero))
                 alpha = _numOps.Negate(alpha);
 
-            Vector<T> u = x.Clone();
+            Vector<T> u = (Vector<T>)x.Clone();
             u[0] = _numOps.Add(u[0], alpha);
             T beta = _numOps.Multiply(_numOps.FromDouble(2), _numOps.Divide(_numOps.One, u.DotProduct(u)));
 
@@ -225,7 +225,7 @@ public class SvdDecomposition<T> : IMatrixDecomposition<T>
                 if (_numOps.LessThan(A[k, k + 1], _numOps.Zero))
                     alpha = _numOps.Negate(alpha);
 
-                Vector<T> v = x.Clone();
+                Vector<T> v = (Vector<T>)x.Clone();
                 v[0] = _numOps.Add(v[0], alpha);
                 beta = _numOps.Multiply(_numOps.FromDouble(2), _numOps.Divide(_numOps.One, v.DotProduct(v)));
 
@@ -550,7 +550,7 @@ public class SvdDecomposition<T> : IMatrixDecomposition<T>
     /// <summary>
     /// Sorts singular values in descending order and rearranges the corresponding columns/rows in U and VT.
     /// </summary>
-    /// <param name="S">Vector of singular values to sort</param>
+    /// <param name="S">Vector<double> of singular values to sort</param>
     /// <param name="U">Left singular vectors matrix to rearrange</param>
     /// <param name="VT">Right singular vectors matrix (transposed) to rearrange</param>
     private void SortSingularValues(Vector<T> S, Matrix<T> U, Matrix<T> VT)

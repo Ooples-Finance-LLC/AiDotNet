@@ -26,7 +26,7 @@
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The numeric type used for calculations, typically float or double.</typeparam>
-public class ConditionalInferenceTreeRegression<T> : AsyncDecisionTreeRegressionBase<T>
+public class ConditionalInferenceTreeRegression<T> : AsyncDecisionTreeRegressionModelBase<T>
 {
     /// <summary>
     /// The options that control the behavior of the conditional inference tree.
@@ -47,7 +47,7 @@ public class ConditionalInferenceTreeRegression<T> : AsyncDecisionTreeRegression
     /// These settings shape how the model learns from your data and makes predictions.
     /// </para>
     /// </remarks>
-    private readonly ConditionalInferenceTreeOptions _options;
+    private readonly ConditionalInferenceTreeOptions _options = default!;
 
     /// <summary>
     /// The root node of the decision tree.
@@ -95,10 +95,10 @@ public class ConditionalInferenceTreeRegression<T> : AsyncDecisionTreeRegression
     /// Think of it like teaching a student the principles rather than just memorizing specific examples.
     /// </para>
     /// </remarks>
-    public ConditionalInferenceTreeRegression(ConditionalInferenceTreeOptions options, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+    public ConditionalInferenceTreeRegression(ConditionalInferenceTreeOptions? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
-        _options = options;
+        _options = options ?? new();
     }
 
     /// <summary>
@@ -324,7 +324,7 @@ public class ConditionalInferenceTreeRegression<T> : AsyncDecisionTreeRegression
             return null;
         }
 
-        var bestSplit = (Threshold: default(T), PValue: NumOps.MaxValue);
+        var bestSplit = (Threshold: NumOps.Zero, PValue: NumOps.MaxValue);
 
         for (int i = 0; i < uniqueValues.Count - 1; i++)
         {
@@ -505,7 +505,7 @@ public class ConditionalInferenceTreeRegression<T> : AsyncDecisionTreeRegression
     /// <summary>
     /// Gets metadata about the regression model.
     /// </summary>
-    /// <returns>A <see cref="ModelMetaData{T}"/> object containing model information.</returns>
+    /// <returns>A <see cref="ModelMetadata{T}"/> object containing model information.</returns>
     /// <remarks>
     /// <para>
     /// This method returns metadata about the regression model, including its type, hyperparameters,
@@ -528,9 +528,9 @@ public class ConditionalInferenceTreeRegression<T> : AsyncDecisionTreeRegression
     /// - Generating reports about the model's performance
     /// </para>
     /// </remarks>
-    public override ModelMetaData<T> GetModelMetaData()
+    public override ModelMetadata<T> GetModelMetadata()
     {
-        var metadata = new ModelMetaData<T>
+        var metadata = new ModelMetadata<T>
         {
             ModelType = ModelType.ConditionalInferenceTree,
             AdditionalInfo = new Dictionary<string, object>

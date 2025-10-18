@@ -57,7 +57,7 @@ public class FullyConnectedLayer<T> : LayerBase<T>
     /// so every input-output pair has exactly one weight value.
     /// </para>
     /// </remarks>
-    private Matrix<T> _weights;
+    private Matrix<T> _weights = default!;
 
     /// <summary>
     /// The bias values for each output neuron.
@@ -82,7 +82,7 @@ public class FullyConnectedLayer<T> : LayerBase<T>
     /// Each output neuron has its own bias value that can be learned independently.
     /// </para>
     /// </remarks>
-    private Vector<T> _biases;
+    private Vector<T> _biases = default!;
 
     /// <summary>
     /// The input tensor from the last forward pass, saved for backpropagation.
@@ -261,9 +261,9 @@ public class FullyConnectedLayer<T> : LayerBase<T>
     /// 
     /// This constructor is almost identical to the first one, but with one key difference:
     /// - Regular activation: processes each output value separately
-    /// - Vector activation: processes the entire output vector together
+    /// - Vector<double> activation: processes the entire output vector together
     /// 
-    /// Vector activation functions like Softmax are useful for:
+    /// Vector<double> activation functions like Softmax are useful for:
     /// - Classification problems (choosing between multiple categories)
     /// - Problems where outputs need to sum to 1 (like probabilities)
     /// - Cases where output values should influence each other

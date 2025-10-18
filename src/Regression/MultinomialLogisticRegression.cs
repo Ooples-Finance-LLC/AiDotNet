@@ -24,7 +24,7 @@ namespace AiDotNet.Regression;
 /// </para>
 /// </remarks>
 /// <typeparam name="T">The numeric type used for calculations, typically float or double.</typeparam>
-public class MultinomialLogisticRegression<T> : RegressionBase<T>
+public class MultinomialLogisticRegression<T> : RegressionModelBase<T>
 {
     /// <summary>
     /// The configuration options for the multinomial logistic regression model.
@@ -46,7 +46,7 @@ public class MultinomialLogisticRegression<T> : RegressionBase<T>
     /// Think of them as the "knobs" you can adjust to fine-tune the learning process.
     /// </para>
     /// </remarks>
-    private readonly MultinomialLogisticRegressionOptions<T> _options;
+    private readonly MultinomialLogisticRegressionOptions<T> _options = default!;
 
     /// <summary>
     /// The coefficients matrix, where each row corresponds to a class and each column to a feature (plus intercept).
@@ -114,7 +114,7 @@ public class MultinomialLogisticRegression<T> : RegressionBase<T>
     /// </para>
     /// </remarks>
     public MultinomialLogisticRegression(MultinomialLogisticRegressionOptions<T>? options = null, IRegularization<T, Matrix<T>, Vector<T>>? regularization = null)
-        : base(options, regularization)
+        : base(options ?? new(), regularization ?? new NoRegularization<T, Matrix<T>, Vector<T>>())
     {
         _options = options ?? new MultinomialLogisticRegressionOptions<T>();
     }

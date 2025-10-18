@@ -32,7 +32,7 @@
 /// "growth = sunlight² × water / (1 + temperature)".
 /// </para>
 /// </remarks>
-public class SymbolicRegression<T> : NonLinearRegressionBase<T>
+public class SymbolicRegression<T> : NonLinearRegressionModelBase<T>
 {
     /// <summary>
     /// Configuration options for the symbolic regression model.
@@ -56,7 +56,7 @@ public class SymbolicRegression<T> : NonLinearRegressionBase<T>
     /// like giving the AI more time and resources to experiment with different formulas.
     /// </para>
     /// </remarks>
-    private readonly SymbolicRegressionOptions _options;
+    private readonly SymbolicRegressionOptions _options = default!;
     
     /// <summary>
     /// The calculator used to evaluate the fitness or quality of symbolic models.
@@ -77,50 +77,7 @@ public class SymbolicRegression<T> : NonLinearRegressionBase<T>
     /// Higher scores mean the formula better explains your data pattern.
     /// </para>
     /// </remarks>
-    private readonly IFitnessCalculator<T, Matrix<T>, Vector<T>> _fitnessCalculator;
-    
-    /// <summary>
-    /// The component responsible for normalizing input and output data.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Data normalization transforms values to a standard range, typically between 0 and 1
-    /// or -1 and 1. This improves the stability and performance of the symbolic regression process.
-    /// </para>
-    /// <para><b>For Beginners:</b> This is like converting all measurements to the same scale.
-    /// 
-    /// Think of it like this:
-    /// - If you have measurements in inches, feet, and miles
-    /// - The normalizer converts them all to a common unit
-    /// - This makes it easier for the AI to find patterns
-    /// 
-    /// Without normalization, the AI might think larger numbers are more important
-    /// simply because of their scale, not their actual significance.
-    /// </para>
-    /// </remarks>
-    private readonly INormalizer<T, Matrix<T>, Vector<T>> _normalizer;
-    
-    /// <summary>
-    /// The component responsible for selecting relevant features from the input data.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Feature selection identifies which input variables are most relevant to predicting
-    /// the target variable. This can improve model performance by removing irrelevant or
-    /// redundant features.
-    /// </para>
-    /// <para><b>For Beginners:</b> This helps focus on what actually matters in your data.
-    /// 
-    /// It's like a detective who:
-    /// - Examines all the possible clues (features)
-    /// - Figures out which ones are actually relevant to solving the case
-    /// - Ignores the red herrings that would just confuse the investigation
-    /// 
-    /// For example, when predicting house prices, it might determine that square footage
-    /// and location are important, but the house's street number isn't.
-    /// </para>
-    /// </remarks>
-    private readonly IFeatureSelector<T, Matrix<T>> _featureSelector;
+    private readonly IFitnessCalculator<T, Matrix<T>, Vector<T>> _fitnessCalculator = default!;
     
     /// <summary>
     /// The component that detects when a satisfactory model has been found.
@@ -141,51 +98,7 @@ public class SymbolicRegression<T> : NonLinearRegressionBase<T>
     /// you've already found a formula that works well enough.
     /// </para>
     /// </remarks>
-    private readonly IFitDetector<T, Matrix<T>, Vector<T>> _fitDetector;
-    
-    /// <summary>
-    /// The component responsible for identifying and removing outliers from the data.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Outlier removal identifies and handles data points that deviate significantly from
-    /// the norm. These outliers could otherwise disproportionately influence the model.
-    /// </para>
-    /// <para><b>For Beginners:</b> This removes unusual data points that might throw off the results.
-    /// 
-    /// It's like:
-    /// - Picking out the wildly incorrect measurements in your data
-    /// - Setting them aside so they don't confuse the formula-finding process
-    /// - Ensuring your formula fits the typical pattern, not the exceptions
-    /// 
-    /// For example, if measuring typical household income and your data includes a billionaire,
-    /// the outlier removal might identify this as an extreme value that shouldn't influence
-    /// the general pattern.
-    /// </para>
-    /// </remarks>
-    private readonly IOutlierRemoval<T, Matrix<T>, Vector<T>> _outlierRemoval;
-    
-    /// <summary>
-    /// The component that handles data preprocessing tasks before model training.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The data preprocessor coordinates various data preparation steps including normalization,
-    /// feature selection, and outlier removal. It ensures that the data is in optimal form
-    /// for the symbolic regression process.
-    /// </para>
-    /// <para><b>For Beginners:</b> This prepares your raw data for analysis.
-    /// 
-    /// Think of it as a chef who:
-    /// - Takes your raw ingredients (data)
-    /// - Washes, peels, and chops them (normalizes values)
-    /// - Removes spoiled items (outliers)
-    /// - Selects the ingredients that work well together (feature selection)
-    /// 
-    /// This preparation ensures the AI gets high-quality data that's ready for modeling.
-    /// </para>
-    /// </remarks>
-    private readonly IDataPreprocessor<T, Matrix<T>, Vector<T>> _dataPreprocessor;
+    private readonly IFitDetector<T, Matrix<T>, Vector<T>> _fitDetector = default!;
     
     /// <summary>
     /// The optimizer used to evolve and improve symbolic models.
@@ -208,7 +121,7 @@ public class SymbolicRegression<T> : NonLinearRegressionBase<T>
     /// It mimics natural evolution, but for mathematical formulas instead of organisms.
     /// </para>
     /// </remarks>
-    private readonly IOptimizer<T, Matrix<T>, Vector<T>> _optimizer;
+    private readonly IOptimizer<T, Matrix<T>, Vector<T>> _optimizer = default!;
     
     /// <summary>
     /// The best symbolic model found during the optimization process.
@@ -251,7 +164,7 @@ public class SymbolicRegression<T> : NonLinearRegressionBase<T>
     /// of the variation in your data, which is typically very good.
     /// </para>
     /// </remarks>
-    private T _bestFitness;
+    private T _bestFitness = default!;
 
     /// <summary>
     /// Creates a new symbolic regression model.
@@ -271,26 +184,9 @@ public class SymbolicRegression<T> : NonLinearRegressionBase<T>
     /// Optional calculator for evaluating model fitness.
     /// If not provided, R-squared will be used as the fitness metric.
     /// </param>
-    /// <param name="normalizer">
-    /// Optional component for normalizing input and output data.
-    /// If not provided, no normalization will be applied.
-    /// </param>
-    /// <param name="featureSelector">
-    /// Optional component for selecting relevant features.
-    /// If not provided, all features will be used.
-    /// </param>
     /// <param name="fitDetector">
     /// Optional component for detecting when a satisfactory model has been found.
     /// If not provided, the default fit detector will be used.
-    /// </param>
-    /// <param name="outlierRemoval">
-    /// Optional component for identifying and removing outliers.
-    /// If not provided, no outlier removal will be performed.
-    /// </param>
-    /// <param name="dataPreprocessor">
-    /// Optional component for preprocessing data before model training.
-    /// If not provided, a default preprocessor will be used with the specified normalizer,
-    /// feature selector, and outlier removal components.
     /// </param>
     /// <remarks>
     /// <para>
@@ -312,18 +208,14 @@ public class SymbolicRegression<T> : NonLinearRegressionBase<T>
     /// </para>
     /// </remarks>
     public SymbolicRegression(
-        SymbolicRegressionOptions? options = null, 
+        SymbolicRegressionOptions? options = null,
         IRegularization<T, Matrix<T>, Vector<T>>? regularization = null,
         IFitnessCalculator<T, Matrix<T>, Vector<T>>? fitnessCalculator = null,
-        INormalizer<T, Matrix<T>, Vector<T>>? normalizer = null,
-        IFeatureSelector<T, Matrix<T>>? featureSelector = null,
-        IFitDetector<T, Matrix<T>, Vector<T>>? fitDetector = null,
-        IOutlierRemoval<T, Matrix<T>, Vector<T>>? outlierRemoval = null,
-        IDataPreprocessor<T, Matrix<T>, Vector<T>>? dataPreprocessor = null)
+        IFitDetector<T, Matrix<T>, Vector<T>>? fitDetector = null)
         : base(options, regularization)
     {
         _options = options ?? new SymbolicRegressionOptions();
-        _optimizer = new GeneticAlgorithmOptimizer<T, Matrix<T>, Vector<T>>(new GeneticAlgorithmOptimizerOptions<T, Matrix<T>, Vector<T>>
+        _optimizer = new GeneticAlgorithmOptimizer<T, Matrix<T>, Vector<T>>(this, new GeneticAlgorithmOptimizerOptions<T, Matrix<T>, Vector<T>>
         {
             PopulationSize = _options.PopulationSize,
             MaxGenerations = _options.MaxGenerations,
@@ -331,11 +223,7 @@ public class SymbolicRegression<T> : NonLinearRegressionBase<T>
             CrossoverRate = _options.CrossoverRate
         });
         _fitnessCalculator = fitnessCalculator ?? new RSquaredFitnessCalculator<T, Matrix<T>, Vector<T>>();
-        _normalizer = normalizer ?? new NoNormalizer<T, Matrix<T>, Vector<T>>();
-        _featureSelector = featureSelector ?? new NoFeatureSelector<T, Matrix<T>>();
         _fitDetector = fitDetector ?? new DefaultFitDetector<T, Matrix<T>, Vector<T>>();
-        _outlierRemoval = outlierRemoval ?? new NoOutlierRemoval<T, Matrix<T>, Vector<T>>();
-        _dataPreprocessor = dataPreprocessor ?? new DefaultDataPreprocessor<T, Matrix<T>, Vector<T>>(_normalizer, _featureSelector, _outlierRemoval);
         _bestFitness = _fitnessCalculator.IsHigherScoreBetter ? NumOps.MinValue : NumOps.MaxValue;
     }
 
@@ -370,12 +258,12 @@ public class SymbolicRegression<T> : NonLinearRegressionBase<T>
     /// </remarks>
     protected override void OptimizeModel(Matrix<T> x, Vector<T> y)
     {
-        // Preprocess the data
-        var (preprocessedX, preprocessedY, _) = _dataPreprocessor.PreprocessData(x, y);
-        // Split the data
-        var (XTrain, yTrain, XVal, yVal, XTest, yTest) = _dataPreprocessor.SplitData(preprocessedX, preprocessedY);
-        // Optimize the model
-        var optimizationResult = _optimizer.Optimize(OptimizerHelper<T, Matrix<T>, Vector<T>>.CreateOptimizationInputData(XTrain, yTrain, XVal, yVal, XTest, yTest));
+        // Get the cached input data (whether we just created it or it was already there)
+        var optimizationData = DefaultInputCache.GetDefaultInputData<T, Matrix<T>, Vector<T>>();
+
+        // Use the cached data for optimization
+        var optimizationResult = _optimizer.Optimize(optimizationData);
+
         _bestFitness = optimizationResult.BestFitnessScore;
         _bestModel = optimizationResult.BestSolution ?? throw new InvalidOperationException("Optimization result does not contain a valid symbolic model.");
     }
@@ -497,11 +385,7 @@ public class SymbolicRegression<T> : NonLinearRegressionBase<T>
             options: _options,
             regularization: Regularization,
             fitnessCalculator: _fitnessCalculator,
-            normalizer: _normalizer,
-            featureSelector: _featureSelector,
-            fitDetector: _fitDetector,
-            outlierRemoval: _outlierRemoval,
-            dataPreprocessor: _dataPreprocessor);
+            fitDetector: _fitDetector);
         
         // Copy the best model found (if any)
         if (_bestModel != null)
